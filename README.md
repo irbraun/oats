@@ -1,7 +1,7 @@
 # OATS: Ontology Annotation and Text Similarity
 
 ### Description
-This is a python package created to provide methods for generating and working with gene networks constructed by determining similarity between strings of text associated with genes. However, several submodules of the package generalize to working with text descriptions and constructed related networks for data from any domain. Specifically, this package provides methods with the following uses:
+This is a python package created to provide methods for generating and working with gene networks constructed by determining similarity between strings of text associated with genes. However, several submodules of the package generalize to working with text descriptions and constructing related networks for data from any domain. Specifically, this package provides methods with the following uses:
 
 1. Preprocessing, cleaning, and organizing text descriptions (of any length).
 2. Preprocessing, cleaning, and organizing datasets of gene names and accessions.
