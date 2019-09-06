@@ -10,4 +10,4 @@ This is a python package created to provide methods for generating and working w
 5. Training and testing machine learning models over these networks.
 
 ### Feedback
-This package is a work-in-progress. Send any feedback, questions, or suggestions to irbraun at iastate dot edu.
+This package is a work in progress. Send any feedback, questions, or suggestions to irbraun at iastate dot edu.
