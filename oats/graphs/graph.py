@@ -36,15 +36,18 @@ class Graph:
 
 	def get_value(self, id_1, id_2):
 		""" Get the value for the edge between these two nodes in the graph.
-
 		Args:
 		    id_1 (TYPE): Description
 		    id_2 (TYPE): Description
-		
 		Returns:
 		    TYPE: Description
 		"""
 		return(self.np_array[self.id_to_array_index[id_1]][self.id_to_array_index[id_2]])
+
+
+
+	def get_ids_in_graph(self):
+		return(self.ids_in_graph)
 
 
 
@@ -116,7 +119,6 @@ class Graph:
 		value_pos = df.columns.get_loc(value)+1
 
 		for row in df.itertuples():
-			print(row)
 			arr[self.id_to_array_index[row[from_pos]]][self.id_to_array_index[row[to_pos]]] = row[value_pos]
 			arr[self.id_to_array_index[row[to_pos]]][self.id_to_array_index[row[from_pos]]] = row[value_pos]
 		return(arr)
