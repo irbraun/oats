@@ -5,7 +5,6 @@ import numpy as np
 import re
 import itertools
 
-
 from oats.nlp.preprocess import concatenate_with_bar_delim
 from oats.nlp.preprocess import add_prefix
 from oats.utils.constants import REFGEN_V3_TAG, REFGEN_V4_TAG, NCBI_TAG, UNIPROT_TAG
