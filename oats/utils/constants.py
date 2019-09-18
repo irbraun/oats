@@ -19,30 +19,30 @@ ABBREVIATIONS_MAP = {
 }
 
 EVIDENCE_CODES = {
-	"EXP":"exp",	# Experimental evidence codes.
-	"IDA":"exp",
-	"IPI":"exp",
-	"IMP":"exp",
-	"IGI":"exp",
-	"IEP":"exp",
-	"HTP":"exp",
-	"HDA":"exp",
-	"HMP":"exp",
-	"HGI":"exp",
-	"HEP":"exp",
-	"IBA":"phy", 	# Phylogenetically inferred evidence codes.
-	"IBD":"phy",
-	"IKR":"phy",
-	"IRD":"phy",
-	"ISS":"comp", 	# Computationally inferred evidence codes.
-	"ISO":"comp",
-	"ISA":"comp",
-	"ISM":"comp",
-	"IGC":"comp",
-	"RCA":"comp",
-	"TAS":"auth",	# Author statement inferred evidence codes.
-	"NAS":"auth",
-	"IC":"cur",		# Curator statement evidence codes. 
-	"ND":"cur",
-	"IEA":"elc"		# Electronic annotation evidence codes.
+	"EXP":"experimental",		# Experimental evidence codes.
+	"IDA":"experimental",
+	"IPI":"experimental",
+	"IMP":"experimental",
+	"IGI":"experimental",
+	"IEP":"experimental",
+	"HTP":"high_throughput",
+	"HDA":"high_throughput",
+	"HMP":"high_throughput",
+	"HGI":"high_throughput",
+	"HEP":"high_throughput",
+	"IBA":"phylogenetics", 			# Phylogenetically inferred evidence codes.
+	"IBD":"phylogenetics",
+	"IKR":"phylogenetics",
+	"IRD":"phylogenetics",
+	"ISS":"computational", 			# Computationally inferred evidence codes.
+	"ISO":"computational",
+	"ISA":"computational",
+	"ISM":"computational",
+	"IGC":"computational",
+	"RCA":"computational",
+	"TAS":"author_statement",		# Author statement inferred evidence codes.
+	"NAS":"author_statement",
+	"IC":"curator_statement",		# Curator statement evidence codes. 
+	"ND":"curator_statement",
+	"IEA":"electronic_annotation"	# Electronic annotation evidence codes.
 }
