@@ -66,6 +66,7 @@ class Dataset:
 		df_newlines = df_newlines[self.col_names_without_id]
 		df_newlines["id"] = None
 		df_newlines.fillna("", inplace=True)
+		df_newlines["pmid"] = str(df_newlines["pmid"])
 		self.df = self.df.append(df_newlines, ignore_index=True, sort=False)
 		self.df = self.df.drop_duplicates(keep="first", inplace=False)
 		self._reset_ids()
