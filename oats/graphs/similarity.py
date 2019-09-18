@@ -122,19 +122,33 @@ def get_similarity_df_using_doc2vec(doc2vec_model_file, object_dict, duration=Fa
 	Returns:
 	    pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
 	"""
+	
 	start_time = time.perf_counter()
+
+
+	# Build a dictionary that maps distinct descriptions to a list of object IDs that description applies to.
+	shared_description_dict = defaultdict(list) 
+	for identifier,description in object_dict.items():
+		shared_description_dict[description].append(identifier)
+	
+	# Load a document embedding model from the file specified in the argument.
 	model = gensim.models.Doc2Vec.load(doc2vec_model_file)
 
+	# Infer a vector for each unique description, and make the vectors map to indices in a matrix.
+	# Remember a mapping between the ID for each object and the positition of the vector for its 
+	# description in the matrix so that the similarity values can be recovered later given a pair 
+	# of IDs for two objects.
 	vectors = []
 	identifier_to_index_in_matrix = {}
-	for identifier,description in object_dict.items():
+	for description,id_list in shared_description_dict.items():
 		inferred_vector = model.infer_vector(description.lower().split())
 		index_in_matrix = len(vectors)
 		vectors.append(inferred_vector)
-		identifier_to_index_in_matrix[identifier] = index_in_matrix
-
+		for identifier in id_list:
+			identifier_to_index_in_matrix[identifier] = index_in_matrix
 	matrix = cosine_similarity(vectors)
 
+	# Build the dataframe representation of the pairwise similarities found for this method.
 	result = pd.DataFrame(columns=["from", "to", "similarity"])
 	for (p1, p2) in list(itertools.combinations_with_replacement(object_dict, 2)):	
 		row = [p1, p2, matrix[identifier_to_index_in_matrix[p1]][identifier_to_index_in_matrix[p2]]]
@@ -146,10 +160,6 @@ def get_similarity_df_using_doc2vec(doc2vec_model_file, object_dict, duration=Fa
 		duration_in_seconds = end_time-start_time
 		return(result,duration_in_seconds)
 	return(result)
-
-
-
-
 
 
 
@@ -211,15 +221,25 @@ def get_similarity_df_using_bagofwords(object_dict, duration=False):
 	"""
 
 	start_time = time.perf_counter()
+
+	# Avoid processing the same description twice.
+	shared_description_dict = defaultdict(list) 
+	for identifier,description in object_dict.items():
+		shared_description_dict[description].append(identifier)
+
+	# Map descriptions to coordinates in a matrix.
 	descriptions = []
 	identifier_to_index_in_matrix = {}
-	for identifier,description in object_dict.items():
+	for description, id_list in shared_description_dict.items():
 		index_in_matrix = len(descriptions)
 		descriptions.append(description)
-		identifier_to_index_in_matrix[identifier] = index_in_matrix
+		for identifier in id_list:
+			identifier_to_index_in_matrix[identifier] = index_in_matrix
 
+	# Find all the pairwise values for the similiarity matrix.
 	matrix = get_cosine_sim_matrix(*descriptions)
 
+	# Output as a dataframe specifying edges between nodes in a graph.
 	result = pd.DataFrame(columns=["from", "to", "similarity"])
 	for (p1, p2) in list(itertools.combinations_with_replacement(object_dict, 2)):	
 		row = [p1, p2, matrix[identifier_to_index_in_matrix[p1]][identifier_to_index_in_matrix[p2]]]
@@ -257,17 +277,26 @@ def get_similarity_df_using_setofwords(object_dict, duration=False):
 	"""
 
 	start_time = time.perf_counter()
+
+	# Avoid processing the same description twice.
+	shared_description_dict = defaultdict(list) 
+	for identifier,description in object_dict.items():
+		shared_description_dict[description].append(identifier)
+
+	# Map descriptions to coordinates in a matrix.
 	descriptions = []
 	identifier_to_index_in_matrix = {}
-	for identifier,description in object_dict.items():
+	for description,id_list in shared_description_dict.items():
 		index_in_matrix = len(descriptions)
 		descriptions.append(description)
-		identifier_to_index_in_matrix[identifier] = index_in_matrix
+		for identifier in id_list:
+			identifier_to_index_in_matrix[identifier] = index_in_matrix
 
+	# Find all the pairwise values for the similarity matrix.
 	matrix = get_jaccard_sim_matrix(*descriptions)
 
+	# Output as a dataframe specifying edges between nodes in a graph.
 	result = pd.DataFrame(columns=["from", "to", "similarity"])
-	
 	for (p1, p2) in list(itertools.combinations_with_replacement(object_dict, 2)):	
 		row = [p1, p2, matrix[identifier_to_index_in_matrix[p1]][identifier_to_index_in_matrix[p2]]]
 		result.loc[len(result)] = row
@@ -278,6 +307,78 @@ def get_similarity_df_using_setofwords(object_dict, duration=False):
 		duration_in_seconds = end_time-start_time
 		return(result,duration_in_seconds)
 	return(result)
+
+
+
+
+
+
+
+def get_similarity_df_using_annotations_unweighted_jaccard(annotations_dict, ontology, duration=False):
+	"""
+	Method for creating a pandas dataframe of similarity values between all passed in object IDs
+	based on the annotations of ontology terms to to all the natural language descriptions that
+	those object IDs represent. The individually terms found in the intersection and union between
+	two objects are all weighted equally. This function does not make assumptions about whether 
+	the annotations include only leaf terms or not, subclass and superclass relationships are 
+	accounted for here in either case.
+	
+	Args:
+	    annotations_dict (dict): Mapping from object IDs to lists of ontology term IDs.
+	    ontology (Ontology): Ontology object with all necessary fields.
+	    duration (bool, optional): Set to true to return the runtime for this method in seconds.
+	
+	Returns:
+	    pandas.Dataframe: Each row in the dataframe is [first ID, second ID, similarity].
+	"""
+
+	start_time = time.perf_counter()
+
+	# Avoid processing the same list of ontology terms twice. The sort is performed so different 
+	# orders are not considered unique (because they are being treated as a set anyway).
+	shared_joined_term_list_dict = defaultdict(list) 
+	for identifier,term_list in annotations_dict.items():
+		
+		# Explicitly include all the terms that are inherited, then sort the list of term IDs.
+		term_list = [ontology.subclass_dict[x] for x in term_list]
+		term_list = list(itertools.chain.from_iterable(term_list))
+		term_list.sort()
+
+		# Create a string of term IDs as if they were tokens separated by spaces.
+		joined_term_list = " ".join(term_list).strip()
+		shared_joined_term_list_dict[joined_term_list].append(identifier)
+
+	# Map lists of terms as strings to coordinates in the matrix.
+	joined_term_strings = []
+	identifier_to_index_in_matrix = {}
+	for joined_term_list, id_list in shared_joined_term_list_dict.items():
+
+		# Prepare to create an indexed matrix from that information.
+		index_in_matrix = len(joined_term_strings)
+		joined_term_strings.append(joined_term_list)
+		for identifier in id_list:
+			identifier_to_index_in_matrix[identifier] = index_in_matrix
+
+	# Send the list of term lists to the method which produces a pairwise matrix.
+	matrix = get_jaccard_sim_matrix(*joined_term_strings)
+
+	# Produce a pandas dataframe that contains that same information.
+	result = pd.DataFrame(columns=["from", "to", "similarity"])
+	for (p1, p2) in list(itertools.combinations_with_replacement(annotations_dict, 2)):	
+		row = [p1, p2, matrix[identifier_to_index_in_matrix[p1]][identifier_to_index_in_matrix[p2]]]
+		result.loc[len(result)] = row
+	
+	# Return the results.
+	if (duration):
+		end_time = time.perf_counter()
+		duration_in_seconds = end_time-start_time
+		return(result,duration_in_seconds)
+	return(result)
+
+
+
+
+
 
 
 
@@ -306,64 +407,6 @@ def jaccard_similarity(set_1, set_2):
 	car_union = len(set_1.union(set_2))
 	similarity = float(card_intersection)/float(card_union)
 	return(similarity)
-
-
-
-
-
-
-
-def get_similarity_df_using_annotations_unweighted_jaccard(annotations_dict, ontology, duration=False):
-	"""
-	Method for creating a pandas dataframe of similarity values between all passed in object IDs
-	based on the annotations of ontology terms to to all the natural language descriptions that
-	those object IDs represent. The individually terms found in the intersection and union between
-	two objects are all weighted equally. This function does not make assumptions about whether 
-	the annotations include only leaf terms or not, subclass and superclass relationships are 
-	accounted for here in either case.
-	
-	Args:
-	    annotations_dict (dict): Mapping from object IDs to lists of ontology term IDs.
-	    ontology (Ontology): Ontology object with all necessary fields.
-	    duration (bool, optional): Set to true to return the runtime for this method in seconds.
-	
-	Returns:
-	    pandas.Dataframe: Each row in the dataframe is [first ID, second ID, similarity].
-	"""
-	
-	# annotations_dict maps object IDs to a list of term annotations.
-	start_time = time.perf_counter()
-	joined_term_strings = []
-	identifier_to_index_in_matrix = {}
-	for identifier, term_list in annotations_dict.items():
-
-		# Update the term list to reflect all the terms those terms are subclasses of.
-		term_list = [ontology.subclass_dict[x] for x in term_list]
-		term_list = itertools.chain.from_iterable(term_list)
-
-		# Prepare to create an indexed matrix from that information.
-		index_in_matrix = len(joined_term_strings)
-		joined_term_string = " ".join(term_list).strip()
-		joined_term_strings.append(joined_term_string)
-		identifier_to_index_in_matrix[identifier] = index_in_matrix
-
-	# Send the list of term lists to the method which produces a pairwise matrix.
-	matrix = get_jaccard_sim_matrix(*joined_term_strings)
-
-	# Produce a pandas dataframe that contains that same information.
-	result = pd.DataFrame(columns=["from", "to", "similarity"])
-	for (p1, p2) in list(itertools.combinations_with_replacement(annotations_dict, 2)):	
-		row = [p1, p2, matrix[identifier_to_index_in_matrix[p1]][identifier_to_index_in_matrix[p2]]]
-		result.loc[len(result)] = row
-	
-	# Return the results.
-	if (duration):
-		end_time = time.perf_counter()
-		duration_in_seconds = end_time-start_time
-		return(result,duration_in_seconds)
-	return(result)
-
-
 
 
 
