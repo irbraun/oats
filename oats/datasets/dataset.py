@@ -19,9 +19,9 @@ import sys
 import glob
 
 
-
 from oats.datasets.gene import Gene
-from oats.nlp.preprocess import concatenate_descriptions, concatenate_with_bar_delim
+from oats.nlp.preprocess import concatenate_descriptions
+from oats.nlp.preprocess import concatenate_with_bar_delim
 
 
 
@@ -64,9 +64,9 @@ class Dataset:
 		    df_newlines (pandas.DataFrame): The dataframe containing rows to be added.
 		"""
 		df_newlines = df_newlines[self.col_names_without_id]
-		df_newlines["id"] = None
+		df_newlines.loc[:,"id"] = None
 		df_newlines.fillna("", inplace=True)
-		df_newlines["pmid"] = str(df_newlines["pmid"])
+		df_newlines.loc[:,"pmid"] = str(df_newlines["pmid"])
 		self.df = self.df.append(df_newlines, ignore_index=True, sort=False)
 		self.df = self.df.drop_duplicates(keep="first", inplace=False)
 		self._reset_ids()
@@ -138,7 +138,7 @@ class Dataset:
 		annotations_dict = {}
 		for row in self.df.itertuples():
 			delim = "|"
-			term_ids = row.gene_names.split(delim)
+			term_ids = row.term_ids.split(delim)
 			annotations_dict[row.id] = term_ids
 		return(annotations_dict)
 
@@ -165,8 +165,8 @@ class Dataset:
 		to the same species and where the first value in the list of gene names is identical for 
 		the entry are merged. Text descriptions are concatenated and a union of the gene names, term
 		IDs and references are retained. This is much faster than collapsing based on all the gene
-		names because it can use the groupby because it's looking at a single value rather than 
-		overlap in a list of values. 
+		names because it can use the groupby function because it's looking at a single value rather
+		than an overlap in a list of values. 
 		"""
 
 		# Create the column that can be used to group by.
