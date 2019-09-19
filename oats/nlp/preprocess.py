@@ -17,6 +17,8 @@ from collections import defaultdict
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 
+from oats.utils.utils import remove_duplicates_retain_order
+
 
 
 
@@ -104,21 +106,6 @@ def other_delim_to_bar_delim(string, delim):
 	joined = "|".join(tokens)
 	joined = remove_newlines(joined)
 	return(joined)
-
-
-
-
-
-def remove_duplicates_retain_order(seq):
-    """ Code credited to https://stackoverflow.com/a/480227.
-    Args:
-        l (TYPE): Description
-    Returns:
-        TYPE: Description
-    """
-    seen = set()
-    seen_add = seen.add
-    return([x for x in seq if not (x in seen or seen_add(x))])
 
 
 
