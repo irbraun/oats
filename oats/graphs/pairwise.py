@@ -320,7 +320,7 @@ def get_edgelist_with_annotations(annotations_dict, ontology):
 	joined_term_strings = []
 	index_in_matrix_to_id = {}
 	for identifier,term_list in annotations_dict.items():
-		term_list = [ontology.subclass_dict[x] for x in term_list]
+		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
 		term_list = list(itertools.chain.from_iterable(term_list))
 		joined_term_string = " ".join(term_list).strip()
 		index_in_matrix = len(joined_term_strings)
