@@ -41,7 +41,7 @@ def to_abbreviation(name, mapping=None):
 
 
 
-######### Functions that do some logic step that is often needed #########
+######### Functions that do some logic step that is used often #########
 
 def merge_list_dicts(*dicts):
 	"""
@@ -84,7 +84,7 @@ def remove_duplicates_retain_order(seq):
 
 
 
-######### Random things found to be useful. ########
+######### Random things found to be useful ########
 
 def to_hms(num_seconds):
 	hms_str = time.strftime('%H:%M:%S',time.gmtime(num_seconds))
@@ -93,6 +93,21 @@ def to_hms(num_seconds):
 def function_wrapper(function, args):
 	result = function(*args)
 	return(result)
+
+
+def function_wrapper_with_duration(function, args):
+	""" Call a function and return the result plus duration in seconds.
+	Args:
+	    function (function): Any arbitrary method.
+	    args (list): The arguments to be sent to the function.
+	Returns:
+	    tuple: The output of the function and runtime in seconds.
+	"""
+	start_time = time.perf_counter()
+	return_value = function(*args)
+	total_time = time.perf_counter()-start_time
+	return(return_value,total_time)
+
 
 
 

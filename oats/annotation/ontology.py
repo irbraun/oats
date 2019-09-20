@@ -25,17 +25,6 @@ from oats.nlp.search import binary_search_rabin_karp
 
 
 
-#  - Notes on problems working with PO and fastsemsim package - 
-# There is some problem with how PO is treated by the fastsemsim utilities, not reproducible with GO or PATO.
-# The [SemSim Object].util.lineage dictionary should map each node (string ID) in the ontology to it's root in
-# the graph. It looks like the methods are set up so that there should only be one root (node without parents)
-# for each node in the graph. I think those nodes are allowable in DAGs so I'm not sure why that is. But even 
-# when editing the .obo ontology file add "is_a: Thing" edges to each term and creating the "Thing" root term 
-# to provide a single root for the whole graph, the problem still persists and that dictionary only contains
-# only a few terms. This is with version 1.0.0 of fastsemsim and po.obo file released on 6/5/2019.
-
-
-
 
 class Ontology:
 
@@ -44,19 +33,11 @@ class Ontology:
 
 		self.pronto_ontology_obj = pronto.Ontology(ontology_obo_file)
 		self.subclass_dict = self._get_subclass_dict()
-
 		self.ic_dict = self._get_graph_based_ic_dictionary()
-		#self.ic_dict = self._get_corpus_based_ic_dictionary_from_raw_counts_in_text()
-		#self.ic_dict = self._get_corpus_based_ic_dictionary_from_annotations()
-
 
 		forward_term_dict, reverse_term_dict = self._get_term_dictionaries()
 		self.forward_term_dict = forward_term_dict
 		self.reverse_term_dict = reverse_term_dict
-
-
-
-
 
 
 
@@ -206,7 +187,7 @@ class Ontology:
 		try:
 			return(self.pronto_ontology_obj[term_id].name)
 		except:
-			raise KeyError("Term ID matches no terms in the ontology.")
+			raise KeyError("term ID matches no terms in the ontology")
 
 
 
