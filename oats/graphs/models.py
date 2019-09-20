@@ -49,9 +49,7 @@ def apply_weights(df, predictor_columns, weights_dict):
 	multiplied = np.multiply(X,W)
 	y = [np.sum(row) for row in multiplied]
 	return(y)
-	#df = df[["from", "to"]]
-	#df.loc[:,"similarity"] = y
-	#return(df)
+
 
 
 def apply_mean(df, predictor_columns):
@@ -72,9 +70,7 @@ def apply_linear_regression_model(df, predictor_columns, model):
 	X = _get_X(df, predictor_columns)
 	y = model.predict(X)
 	return(y)
-	#df = df[["from", "to"]]
-	#df.loc[:,"similarity"] = y
-	#return(df)
+
 
 
 
@@ -86,9 +82,6 @@ def apply_logistic_regression_model(df, predictor_columns, model, positive_label
 	positive_class_index = model.classes_.tolist().index(positive_class_label)
 	positive_class_probs = [x[positive_class_index] for x in class_probabilities]
 	return(positive_class_probs)
-	#df = df[["from", "to"]]
-	#df.loc[:,"similarity"] = positive_class_probs
-	#return(df)
 
 
 
@@ -99,9 +92,6 @@ def apply_random_forest_model(df, predictor_columns, model, positive_label=1):
 	positive_class_index = model.classes_.tolist().index(positive_class_label)
 	positive_class_probs = [x[positive_class_index] for x in class_probabilities]
 	return(positive_class_probs)
-	#df = df[["from", "to"]]
-	#df.loc[:,"similarity"] = positive_class_probs
-	#return(df)
 
 
 
