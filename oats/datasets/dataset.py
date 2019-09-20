@@ -36,6 +36,8 @@ class Dataset:
 		self.col_names_without_id.remove("id")
 		self.df = pd.DataFrame(columns=self.col_names)
 
+
+
 	def _reset_ids(self):
 		"""
 		This method is called after every preprocessing, subsampling, sorting, or merging step
@@ -45,7 +47,7 @@ class Dataset:
 		will always be a ID value to access where the IDs are always unique integers.
 		"""
 		self.df.reset_index(drop=True,inplace=True)
-		self.df.id = [str(i) for i in self.df.index.values]
+		self.df.id = [int(i) for i in self.df.index.values]
 		self.df = self.df[["id", "species", "gene_names", "description", "term_ids", "pmid"]]
 
 
