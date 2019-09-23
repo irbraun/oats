@@ -25,6 +25,7 @@ import networkx as nx
 
 
 from oats.nlp.search import binary_search_rabin_karp
+from oats.utils.utils import flatten
 
 
 
@@ -63,6 +64,223 @@ def strings_to_binary_vectors(*strs):
 
 
 
+
+
+
+
+
+def adjacency_matrix_to_edgelist(matrix, indices_to_ids):
+	"""
+	Convert the matrix to a dataframe that specifies the nodes and edges of a graph.
+	Additionally a dictionary mapping indices in the array to node names (integers) 
+	is passed in because the integers that refer to the position in the array do not
+	necessarily have to be the integers that are used as the node IDs in the graph
+	that is specified by the resulting edgelist.
+
+	Args:
+	    matrix (numpy array): A square array which is considered an adjacency matrix.
+	    indices_to_ids (TYPE): Mapping between indices of the array and node names.
+	
+	Returns:
+	    TYPE: Description
+	"""
+
+	df_of_matrix = pd.DataFrame(matrix)									# Convert the numpy array to a pandas dataframe.
+	boolean_triu = np.triu(np.ones(df_of_matrix.shape)).astype(np.bool)	# Create a boolean array of same shape where upper triangle is true.
+	df_of_matrix = df_of_matrix.where(boolean_triu)						# Make everything but the upper triangle NA so it is ignored by stack.
+	melted_matrix = df_of_matrix.stack().reset_index()					# Melt (stack) the array so the first two columns are matrix indices.
+	melted_matrix.columns = ["from", "to", "value"]						# Rename the columns to indicate this specifies a graph.
+	melted_matrix["from"] = pd.to_numeric(melted_matrix["from"])		# Make sure node names are integers because IDs have to be integers.
+	melted_matrix["to"] = pd.to_numeric(melted_matrix["to"])			# Make sure node names are integers because IDs have to be integers.
+	melted_matrix["from"].map(indices_to_ids)							# Rename the node names to be IDs from the dataset not matrix indices.
+	melted_matrix["to"].map(indices_to_ids)								# Rename the node names to be IDS from the dataset not matrix indices.
+	return(melted_matrix)												# Return the melted matrix that looks like an edge list.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def get_edgelist_with_doc2vec(model, object_dict):
+	"""
+	Method for creating a pandas dataframe of similarity values between all passed in object IDs
+	using vector embeddings inferred for each natural language description using the passed in 
+	Doc2Vec model, which could have been newly trained on relevant data or taken as a pretrained
+	model. No assumptions are made about the format of the natural language descriptions, so any
+	preprocessing or cleaning of the text should be done prior to being provied in the dictionary
+	here.
+	
+	Args:
+	    model (gensim.models.doc2vec): An already loaded DocVec model from a file or training.
+ 	    object_dict (dict): Mapping between object IDs and the natural language descriptions. 
+	
+	Returns:
+	    pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
+	"""
+	
+
+	# Infer a vector for each unique description, and make the vectors map to indices in a matrix.
+	# Remember a mapping between the ID for each object and the positition of the vector for its 
+	# description in the matrix so that the similarity values can be recovered later given a pair 
+	# of IDs for two objects.
+	vectors = []
+	index_in_matrix_to_id = {}
+	for identifier,description in object_dict.items():
+		inferred_vector = model.infer_vector(description.lower().split())
+		index_in_matrix = len(vectors)
+		vectors.append(inferred_vector)
+		index_in_matrix_to_id[index_in_matrix] = identifier
+
+
+	# Apply some similarity metric over the vectors to yield a matrix.
+	matrix = squareform(pdist(vectors,"cosine"))
+	edgelist = adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	return(edgelist)
+
+
+
+
+
+
+
+
+
+
+def get_edgelist_with_bagofwords(object_dict):
+	"""
+	Method for creating a pandas dataframe of similarity values between all passed in object IDs
+	using vectors to represent each of the natural language descriptions as a bag-of-words. No 
+	assumptions are made about the format of the natural language descriptions, so any cleaning
+	or preprocessing of the text should be done prior to being provied in the dictionary here.
+	
+	Args:
+	    object_dict (dict): Mapping between object IDs and the natural language descriptions. 
+	    duration (bool, optional): Set to true to return the runtime for this method in seconds.
+	
+	Returns:
+	    pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
+	"""
+
+
+	# Map descriptions to coordinates in a matrix.
+	descriptions = []
+	index_in_matrix_to_id = {}
+	for identifier,description in object_dict.items():
+		index_in_matrix = len(descriptions)
+		descriptions.append(description)
+		index_in_matrix_to_id[index_in_matrix] = identifier
+
+
+	# Find all the pairwise values for the similiarity matrix.
+	vectors = strings_to_count_vectors(*descriptions)
+	matrix = squareform(pdist(vectors,"cosine"))
+	edgelist = adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	return(edgelist)
+
+
+
+
+
+
+
+
+
+def get_edgelist_with_setofwords(object_dict):
+	"""
+	Method for creating a pandas dataframe of similarity values between all passed in object IDs
+	using vectors to represent each of the natural language descriptions as a set-of-words. No 
+	assumptions are made about the format of the natural language descriptions, so any cleaning
+	or preprocessing of the text should be done prior to being provied in the dictionary here.
+	
+	Args:
+	    object_dict (dict): Mapping between object IDs and the natural language descriptions. 
+	    duration (bool, optional): Set to true to return the runtime for this method in seconds.
+	
+	Returns:
+	    pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
+	"""
+
+	# Map descriptions to coordinates in a matrix.
+	descriptions = []
+	index_in_matrix_to_id = {}
+	for identifier,description in object_dict.items():
+		index_in_matrix = len(descriptions)
+		descriptions.append(description)
+		index_in_matrix_to_id[index_in_matrix] = identifier
+
+
+	# Find all the pairwise values for the similiarity matrix.
+	vectors = strings_to_count_vectors(*descriptions)
+	matrix = squareform(pdist(vectors,"jaccard"))
+	edgelist = adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	return(edgelist)
+
+
+
+
+
+
+
+
+
+
+def get_edgelist_with_annotations(annotations_dict, ontology):
+	"""
+	Method for creating a pandas dataframe of similarity values between all passed in object IDs
+	based on the annotations of ontology terms to to all the natural language descriptions that
+	those object IDs represent. The individually terms found in the intersection and union between
+	two objects are all weighted equally. This function does not make assumptions about whether 
+	the annotations include only leaf terms or not, subclass and superclass relationships are 
+	accounted for here in either case.
+	
+	Args:
+	    annotations_dict (dict): Mapping from object IDs to lists of ontology term IDs.
+	    ontology (Ontology): Ontology object with all necessary fields.
+
+	Returns:
+	    pandas.Dataframe: Each row in the dataframe is [first ID, second ID, similarity].
+	"""
+
+	# Relevant page for why itertools.chain.from_iterable() can't be used here to flatten the nested string list.
+	# https://stackoverflow.com/questions/17864466/flatten-a-list-of-strings-and-lists-of-strings-and-lists-in-python
+
+	joined_term_strings = []
+	index_in_matrix_to_id = {}
+	for identifier,term_list in annotations_dict.items():
+		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
+		term_list = flatten(term_list)
+		joined_term_string = " ".join(term_list).strip()
+		index_in_matrix = len(joined_term_strings)
+		joined_term_strings.append(joined_term_string)
+		index_in_matrix_to_id[index_in_matrix] = identifier
+
+
+	# Find all the pairwise values for the similiarity matrix.
+	vectors = strings_to_count_vectors(*joined_term_strings)
+	matrix = squareform(pdist(vectors,"jaccard"))
+	edgelist = adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	return(edgelist)
+
+
+
+
+
+
+'''
 def get_edgelist_with_fastsemsim(ontology_obo_file, annotated_corpus_tsv_file, object_dict):
 	"""
 	Method for creating a pandas dataframe of similarity values between all passed in object IDs
@@ -130,6 +348,7 @@ def get_edgelist_with_fastsemsim(ontology_obo_file, annotated_corpus_tsv_file, o
 	result["to"] = pd.to_numeric(result["to"])			
 	return(result)
 
+'''
 
 
 
@@ -139,242 +358,16 @@ def get_edgelist_with_fastsemsim(ontology_obo_file, annotated_corpus_tsv_file, o
 
 
 
-
-
-def get_edgelist_with_doc2vec(model, object_dict):
-	"""
-	Method for creating a pandas dataframe of similarity values between all passed in object IDs
-	using vector embeddings inferred for each natural language description using the passed in 
-	Doc2Vec model, which could have been newly trained on relevant data or taken as a pretrained
-	model. No assumptions are made about the format of the natural language descriptions, so any
-	preprocessing or cleaning of the text should be done prior to being provied in the dictionary
-	here.
+def merge_edgelists(dfs_dict, default_value=None):	
+	"""Summary
 	
 	Args:
-	    model (gensim.models.doc2vec): An already loaded DocVec model from a file or training.
- 	    object_dict (dict): Mapping between object IDs and the natural language descriptions. 
+	    dfs_dict (TYPE): Description
+	    default_value (None, optional): Description
 	
 	Returns:
-	    pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
+	    TYPE: Description
 	"""
-	
-
-	# Infer a vector for each unique description, and make the vectors map to indices in a matrix.
-	# Remember a mapping between the ID for each object and the positition of the vector for its 
-	# description in the matrix so that the similarity values can be recovered later given a pair 
-	# of IDs for two objects.
-	vectors = []
-	index_in_matrix_to_id = {}
-	for identifier,description in object_dict.items():
-		inferred_vector = model.infer_vector(description.lower().split())
-		index_in_matrix = len(vectors)
-		vectors.append(inferred_vector)
-		index_in_matrix_to_id[index_in_matrix] = identifier
-
-
-	# Apply some similarity metric over the vectors to yield a matrix.
-	matrix = squareform(pdist(vectors,"cosine"))
-
-
-	# Convert the matrix to a dataframe that specifies the nodes and edges of the graph.
-	df_of_matrix = pd.DataFrame(matrix)								# Convert numpy array to pandas dataframe.
-	df_of_matrix.reset_index(level=0, inplace=True) 				# Add the row indices as their own column.
-	melted_matrix = pd.melt(df_of_matrix,id_vars="index")			# Melt the adjacency matrix to get {from,to,value} form.
-	melted_matrix.columns = ["from", "to", "value"]					# Rename the columns to indicate this specifies a graph.
-	melted_matrix["from"] = pd.to_numeric(melted_matrix["from"])	# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["to"] = pd.to_numeric(melted_matrix["to"])			# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["from"].map(index_in_matrix_to_id)				# Rename the node names to be IDs from the dataset not matrix indices.
-	melted_matrix["to"].map(index_in_matrix_to_id)					# Rename the node names to be IDS from the dataset not matrix indices.
-	return(melted_matrix)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def get_edgelist_with_bagofwords(object_dict):
-	"""
-	Method for creating a pandas dataframe of similarity values between all passed in object IDs
-	using vectors to represent each of the natural language descriptions as a bag-of-words. No 
-	assumptions are made about the format of the natural language descriptions, so any cleaning
-	or preprocessing of the text should be done prior to being provied in the dictionary here.
-	
-	Args:
-	    object_dict (dict): Mapping between object IDs and the natural language descriptions. 
-	    duration (bool, optional): Set to true to return the runtime for this method in seconds.
-	
-	Returns:
-	    pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
-	"""
-
-
-	# Map descriptions to coordinates in a matrix.
-	descriptions = []
-	index_in_matrix_to_id = {}
-	for identifier,description in object_dict.items():
-		index_in_matrix = len(descriptions)
-		descriptions.append(description)
-		index_in_matrix_to_id[index_in_matrix] = identifier
-
-
-	# Find all the pairwise values for the similiarity matrix.
-	vectors = strings_to_count_vectors(*descriptions)
-	matrix = squareform(pdist(vectors,"cosine"))
-
-
-	# Convert the matrix to a dataframe that specifies the nodes and edges of the graph.
-	df_of_matrix = pd.DataFrame(matrix)								# Convert numpy array to pandas dataframe.
-	df_of_matrix.reset_index(level=0, inplace=True) 				# Add the row indices as their own column.
-	melted_matrix = pd.melt(df_of_matrix,id_vars="index")			# Melt the adjacency matrix to get {from,to,value} form.
-	melted_matrix.columns = ["from", "to", "value"]					# Rename the columns to indicate this specifies a graph.
-	melted_matrix["from"] = pd.to_numeric(melted_matrix["from"])	# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["to"] = pd.to_numeric(melted_matrix["to"])			# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["from"].map(index_in_matrix_to_id)				# Rename the node names to be IDs from the dataset not matrix indices.
-	melted_matrix["to"].map(index_in_matrix_to_id)					# Rename the node names to be IDS from the dataset not matrix indices.
-	return(melted_matrix)
-
-
-
-
-
-
-
-
-
-def get_edgelist_with_setofwords(object_dict):
-	"""
-	Method for creating a pandas dataframe of similarity values between all passed in object IDs
-	using vectors to represent each of the natural language descriptions as a set-of-words. No 
-	assumptions are made about the format of the natural language descriptions, so any cleaning
-	or preprocessing of the text should be done prior to being provied in the dictionary here.
-	
-	Args:
-	    object_dict (dict): Mapping between object IDs and the natural language descriptions. 
-	    duration (bool, optional): Set to true to return the runtime for this method in seconds.
-	
-	Returns:
-	    pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
-	"""
-
-	# Map descriptions to coordinates in a matrix.
-	descriptions = []
-	index_in_matrix_to_id = {}
-	for identifier,description in object_dict.items():
-		index_in_matrix = len(descriptions)
-		descriptions.append(description)
-		index_in_matrix_to_id[index_in_matrix] = identifier
-
-
-	# Find all the pairwise values for the similiarity matrix.
-	vectors = strings_to_count_vectors(*descriptions)
-	matrix = squareform(pdist(vectors,"jaccard"))
-
-
-	# Convert the matrix to a dataframe that specifies the nodes and edges of the graph.
-	df_of_matrix = pd.DataFrame(matrix)								# Convert numpy array to pandas dataframe.
-	df_of_matrix.reset_index(level=0, inplace=True) 				# Add the row indices as their own column.
-	melted_matrix = pd.melt(df_of_matrix,id_vars="index")			# Melt the adjacency matrix to get {from,to,value} form.
-	melted_matrix.columns = ["from", "to", "value"]					# Rename the columns to indicate this specifies a graph.
-	melted_matrix["from"] = pd.to_numeric(melted_matrix["from"])	# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["to"] = pd.to_numeric(melted_matrix["to"])			# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["from"].map(index_in_matrix_to_id)				# Rename the node names to be IDs from the dataset not matrix indices.
-	melted_matrix["to"].map(index_in_matrix_to_id)					# Rename the node names to be IDS from the dataset not matrix indices.
-	return(melted_matrix)
-
-
-
-
-
-
-
-
-
-
-
-
-def get_edgelist_with_annotations(annotations_dict, ontology):
-	"""
-	Method for creating a pandas dataframe of similarity values between all passed in object IDs
-	based on the annotations of ontology terms to to all the natural language descriptions that
-	those object IDs represent. The individually terms found in the intersection and union between
-	two objects are all weighted equally. This function does not make assumptions about whether 
-	the annotations include only leaf terms or not, subclass and superclass relationships are 
-	accounted for here in either case.
-	
-	Args:
-	    annotations_dict (dict): Mapping from object IDs to lists of ontology term IDs.
-	    ontology (Ontology): Ontology object with all necessary fields.
-
-	Returns:
-	    pandas.Dataframe: Each row in the dataframe is [first ID, second ID, similarity].
-	"""
-
-	joined_term_strings = []
-	index_in_matrix_to_id = {}
-	for identifier,term_list in annotations_dict.items():
-		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
-		term_list = list(itertools.chain.from_iterable(term_list))
-		joined_term_string = " ".join(term_list).strip()
-		index_in_matrix = len(joined_term_strings)
-		joined_term_strings.append(joined_term_string)
-		index_in_matrix_to_id[index_in_matrix] = identifier
-
-
-	# Find all the pairwise values for the similiarity matrix.
-	vectors = strings_to_count_vectors(*joined_term_string)
-	matrix = squareform(pdist(vectors,"jaccard"))
-
-
-	# Convert the matrix to a dataframe that specifies the nodes and edges of the graph.
-	df_of_matrix = pd.DataFrame(matrix)								# Convert numpy array to pandas dataframe.
-	df_of_matrix.reset_index(level=0, inplace=True) 				# Add the row indices as their own column.
-	melted_matrix = pd.melt(df_of_matrix,id_vars="index")			# Melt the adjacency matrix to get {from,to,value} form.
-	melted_matrix.columns = ["from", "to", "value"]					# Rename the columns to indicate this specifies a graph.
-	melted_matrix["from"] = pd.to_numeric(melted_matrix["from"])	# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["to"] = pd.to_numeric(melted_matrix["to"])			# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["from"].map(index_in_matrix_to_id)				# Rename the node names to be IDs from the dataset not matrix indices.
-	melted_matrix["to"].map(index_in_matrix_to_id)					# Rename the node names to be IDS from the dataset not matrix indices.
-	return(melted_matrix)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def merge_edgelists(dfs_dict):	
 
 	# Very slow verification step to standardize the dataframes that specify the edge lists.
 	# This should only be run if not sure whether or not the methods that generate the edge
@@ -384,9 +377,9 @@ def merge_edgelists(dfs_dict):
 
 	for name,df in dfs_dict.items():
 		df.rename(columns={"value":name}, inplace=True)
-
 	merged_df = functools.reduce(lambda left,right: pd.merge(left,right,on=["from","to"], how="outer"), dfs_dict.values())
-	merged_df.fillna(0.000, inplace=True)
+	if not default_value == None:
+		merged_df.fillna(default_value, inplace=True)
 	return(merged_df)
 
 
@@ -482,6 +475,10 @@ def _verify_dfs_are_consistent(*similarity_dfs):
 	for (s1, s2) in list(itertools.combinations_with_replacement(id_sets, 2)):	
 		if not len(s1.difference(s2)) == 0:
 			raise ValueError("dataframes specifying networks are not consisent")
+
+
+
+
 
 
 
