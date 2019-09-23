@@ -78,6 +78,20 @@ def remove_duplicates_retain_order(seq):
 
 
 
+# https://stackoverflow.com/questions/5286541/how-can-i-flatten-lists-without-splitting-strings
+# Using itertools.chain.from_iterable() doesn't work for strings because it splits on characters.
+# Need to use this function instead when the nested lists contain strings.
+def flatten(foo):
+    for x in foo:
+        if hasattr(x, '__iter__') and not isinstance(x, str):
+            for y in flatten(x):
+                yield y
+        else:
+            yield x
+
+
+
+
 
 
 
