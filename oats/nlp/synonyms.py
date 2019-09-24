@@ -1,9 +1,3 @@
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import HashingVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.neighbors import DistanceMetric
-from itertools import product
-from scipy import spatial
 from nltk.corpus import wordnet
 import gensim
 import numpy as np
@@ -16,8 +10,7 @@ from collections import defaultdict
 from pywsd.lesk import cosine_lesk
 
 
-
-from phenolog.nlp import get_clean_token_list
+from oats.nlp.preprocess import get_clean_token_list
 
 
 

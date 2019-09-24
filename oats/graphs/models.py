@@ -1,25 +1,9 @@
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import HashingVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.neighbors import DistanceMetric
-from itertools import product
-from scipy import spatial
-from nltk.corpus import wordnet
-from functools import reduce
-import gensim
 import numpy as np
 import pandas as pd
-import fastsemsim as fss
-import string
-import itertools
-import pronto
 from collections import defaultdict
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-
-
-
 
 
 

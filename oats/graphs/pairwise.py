@@ -20,9 +20,6 @@ import sys
 import glob
 import math
 import re
-import time
-import networkx as nx
-
 
 from oats.nlp.search import binary_search_rabin_karp
 from oats.utils.utils import flatten

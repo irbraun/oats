@@ -1,7 +1,3 @@
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import HashingVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.neighbors import DistanceMetric
 from itertools import product
 from scipy import spatial
 from nltk.corpus import wordnet
@@ -14,8 +10,6 @@ import itertools
 import pronto
 import re
 from collections import defaultdict
-from fuzzywuzzy import fuzz
-from fuzzywuzzy import process
 
 from oats.utils.utils import remove_duplicates_retain_order
 
