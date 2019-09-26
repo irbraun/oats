@@ -107,6 +107,11 @@ class Dataset:
 		self.df = self.df[self.df["id"].isin(ids)]
 		self._reset_ids()
 
+	def filter_by_species(self, species):
+		"""Retain only points that are for species in this list.
+		"""
+		self.df = self.df[self.df["species"].isin(species)]
+		self._reset_ids()
 
 
 

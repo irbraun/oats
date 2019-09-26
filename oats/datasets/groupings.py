@@ -8,7 +8,7 @@ import itertools
 from oats.nlp.preprocess import concatenate_with_bar_delim
 from oats.nlp.preprocess import add_prefix
 from oats.utils.constants import REFGEN_V3_TAG, REFGEN_V4_TAG, NCBI_TAG, UNIPROT_TAG
-
+from oats.utils.utils import remove_duplicates_retain_order
 
 
 
@@ -89,6 +89,7 @@ class Groupings:
         membership_dict = {}
         for gene_id, gene_obj in gene_dict.items():
             membership_dict[gene_id] = self.get_group_ids_from_gene_obj(gene_obj)
+        membership_dict = {k:remove_duplicates_retain_order(v) for k,v in membership_dict.items()}
         return(membership_dict)
 
 
@@ -99,6 +100,7 @@ class Groupings:
             group_ids = self.get_group_ids_from_gene_obj(gene_obj)
             for group_id in group_ids:
                 reverse_membership_dict[group_id].append(gene_id)
+        reverse_membership_dict = {k:remove_duplicates_retain_order(v) for k,v in reverse_membership_dict.items()}      
         return(reverse_membership_dict)
 
 

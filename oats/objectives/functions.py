@@ -43,7 +43,15 @@ def classification(graph, id_to_labels):
 	y_true = []
 	y_scores = []
 
+
+	print("starting the main loop")
+
+	
+
 	for identifier, label in itertools.product(ids,labels):
+
+
+
 		y_true.append(int(label in id_to_labels[identifier])) 									# What is the expected response, positive (1) or negative (0)?
 		other_ids_with_this_label = [x for x in label_to_ids[label] if x is not identifier] 	# What's the probability assigned to this classification based on the graph?
 		if len(other_ids_with_this_label)>0:
