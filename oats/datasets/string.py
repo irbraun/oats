@@ -49,7 +49,7 @@ def get_string_protein_links_df(filename, genes):
 	df.dropna(axis=0, inplace=True)
 
 	# Only interested in keeping a subset of these columsn, and put them in a more logical order.
-	columns = ["from","to", "neighborhood", "combined_score"]
+	columns = ["from","to", "combined_score"]
 	df = df[columns]
 	return(df)
 

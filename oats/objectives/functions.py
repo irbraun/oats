@@ -1,6 +1,7 @@
 from sklearn.metrics import precision_recall_curve
 from collections import defaultdict
 import itertools
+import math
 import numpy as np
 
 
@@ -20,10 +21,10 @@ def classification(graph, id_to_labels):
 	that label. Assumes a similarity of 0 to a label group if no other nodes are 
 	found to compare a given node to within that label group.
 	Args:
-	    graph (Graph): Object specifying similarites between all the nodes.
-	    id_to_labels (dict): Mapping from node IDs to lists of labels nodes can have.
+		graph (Graph): Object specifying similarites between all the nodes.
+		id_to_labels (dict): Mapping from node IDs to lists of labels nodes can have.
 	Returns:
-	    (list,list): List of binary values 0,1 and list of probabilities, same length.
+		(list,list): List of binary values 0,1 and list of probabilities, same length.
 	"""
 
 
@@ -86,10 +87,10 @@ def consistency_index(graph, id_to_labels):
 	0 if there are no within or between label group similarities to evaluate for a 
 	given label group.
 	Args:
-	    graph (Graph): Object specifying similarites between all the nodes.
-	    id_to_labels (dict): Mapping from node IDs to lists of labels nodes can have.
+		graph (Graph): Object specifying similarites between all the nodes.
+		id_to_labels (dict): Mapping from node IDs to lists of labels nodes can have.
 	Returns:
-	    dict: Mapping between labels and consistency index value as a float.
+		dict: Mapping between labels and consistency index value as a float.
 
 	"""
 
@@ -129,6 +130,39 @@ def consistency_index(graph, id_to_labels):
 
 
 
+
+
+def balance_classes(y_true, y_scores, ratio):
+	""" Add documention
+
+	Assumes classes are 0 and 1.
+	Assumes ratio refers to 0:1 ratio.
+	"""
+	pos_tuples = [(t,s) for t,s in zip(y_true,y_scores) if t==1]
+	neg_tuples = [(t,s) for t,s in zip(y_true,y_scores) if t==0]
+
+	# Figure out which class has fewer values, that one will retain all its samples.
+	if len(pos_tuples) <= len(neg_tuples):
+		num_pos_tuples = len(pos_tuples)
+		num_neg_tuples = min(math.floor(len(pos_tuples)*ratio), len(neg_tuples))
+	else:
+		num_neg_tuples = len(neg_tuples)
+		num_pos_tuples = min(math.foor(len(pos_tuples)*(1.00/ratio)) , len(pos_tuples))
+
+	# Will raise ValueError if trying to pick more samples than are there (no replacement).
+	# But that should never happen given the above because the max to retain is always the 
+	# number of samples from that class that are available.
+	pos_indices_to_retain = np.random.choice(np.arange(num_pos_tuples), size=num_pos_tuples, replace=False)
+	neg_indices_to_retain = np.random.choice(np.arange(num_neg_tuples), size=num_neg_tuples, replace=False)
+	pos_tuples = [pos_tuples[i] for i in pos_indices_to_retain]
+	neg_tuples = [neg_tuples[i] for i in neg_indices_to_retain]
+
+	# Recombine into the true and predicted lists and return to maintain consistent format.
+	pos_tuples.extend(neg_tuples)
+	all_tuples = pos_tuples
+	y_true = [x[0] for x in all_tuples]
+	y_scores = [x[1] for x in all_tuples]
+	return(y_true,y_scores)
 
 
 
