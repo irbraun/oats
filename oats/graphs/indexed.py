@@ -42,6 +42,16 @@ class IndexedGraph:
 
 
 
+	def get_values(self, id_pairs):
+		values = self.indexed_df[self.indexed_df.index.isin(id_pairs)]["value"].values
+		return(values)
+
+
+
+
+
+
+
 
 
 	def _get_ids_in_graph(self, df):
