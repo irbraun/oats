@@ -18,7 +18,7 @@ class Groupings:
 
 
 
-    def __init__(self, species_dict, source):
+    def __init__(self, species_dict, source, case_sensitive=False):
 
 
 
@@ -37,6 +37,10 @@ class Groupings:
         column is assumed to be group IDs (bar delimited if there are more than one mentioned on a line), and the
         second column is assumed to be gene names (bar delimited if there are more than one mentioned on a line).
         For a given row, all gene names are assumed to be members of all group IDs mentioned.
+
+        If case sensitive is false, then the internal dictionaries will only hold lowercase versions of all gene
+        names, and when generating dictionaries from outside lists of gene names, they will be converted to lower
+        case befor any matching to the interanl gene names is done.
         """
 
 
@@ -45,6 +49,7 @@ class Groupings:
         self.species_to_df_dict = {}
         self.species_to_fwd_gene_mappings = {}
         self.species_to_rev_gene_mappings = {}
+        self.case_sensitive = case_sensitive
         for species,path in species_dict.items():
             
             # Use the PlantCyc files from PMN as the source of the groupings.
@@ -118,12 +123,20 @@ class Groupings:
         group_ids = []
         species = gene_obj.species
         gene_names = gene_obj.names
-        group_ids.extend(list(itertools.chain.from_iterable([self.species_to_rev_gene_mappings.get(species,{}).get(name,[]) for name in gene_names])))
+        if not self.case_sensitive:
+            group_ids.extend(list(itertools.chain.from_iterable([self.species_to_rev_gene_mappings.get(species,{}).get(name.lower(),[]) for name in gene_names])))
+        else:
+            group_ids.extend(list(itertools.chain.from_iterable([self.species_to_rev_gene_mappings.get(species,{}).get(name,[]) for name in gene_names])))
         return(group_ids)
+
+
 
     # Returns a list of group IDs.
     def get_group_ids_from_gene_name(self, species, gene_name):
-        return(self.species_to_rev_gene_mappings[species][name])
+        if not self.case_sensitive:
+            return(self.species_to_rev_gene_mappings[species][name.lower()])
+        else:
+            return(self.species_to_rev_gene_mappings[species][name])
 
     # Returns a list of gene names.
     def get_gene_names_from_group_id(self, species, group_id):
@@ -157,6 +170,8 @@ class Groupings:
         df.replace(to_replace="unknown", value="", inplace=True)
         
         df["gene_names"] = np.vectorize(concatenate_with_bar_delim)(df["protein_id"], df["protein_name"], df["gene_id"], df["gene_name"])
+        if not self.case_sensitive:
+            df["gene_names"] = df["gene_names"].map(str.lower)
         df["species"] = species_code
         df = df[["species", "pathway_id", "pathway_name", "gene_names", "ec_number"]]
         return(df)
@@ -324,6 +339,8 @@ class Groupings:
         df.columns = ["group_id","gene_names"]
         df["species"] = species_code
         df = df[["species","group_id","gene_names"]]
+        if not self.case_sensitive:
+            df["gene_names"] = df["gene_names"].map(str.lower)
         return(df)
 
     def _get_gene_mappings_from_csv(self, species_code, df):
