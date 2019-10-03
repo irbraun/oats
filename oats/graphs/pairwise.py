@@ -104,8 +104,8 @@ def square_adjacency_matrix_to_edgelist(matrix, indices_to_ids):
 	melted_matrix.columns = ["from", "to", "value"]						# Rename the columns to indicate this specifies a graph.
 	melted_matrix["from"] = pd.to_numeric(melted_matrix["from"])		# Make sure node names are integers because IDs have to be integers.
 	melted_matrix["to"] = pd.to_numeric(melted_matrix["to"])			# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["from"].map(indices_to_ids)							# Rename the node names to be IDs from the dataset not matrix indices.
-	melted_matrix["to"].map(indices_to_ids)								# Rename the node names to be IDS from the dataset not matrix indices.
+	melted_matrix["from"] = melted_matrix["from"].map(indices_to_ids)	# Rename the node names to be IDs from the dataset not matrix indices.
+	melted_matrix["to"] = melted_matrix["to"].map(indices_to_ids)		# Rename the node names to be IDS from the dataset not matrix indices.
 	return(melted_matrix)												# Return the melted matrix that looks like an edge list.
 
 
@@ -130,14 +130,14 @@ def rectangular_adjacency_matrix_to_edgelist(matrix, row_indices_to_ids, col_ind
 	Returns:
 	    pandas.Dataframe: Dataframe where each row specifies an edge in a graph.
 	"""
-	df_of_matrix = pd.DataFrame(matrix)									# Convert the numpy array to a pandas dataframe.
-	melted_matrix = df_of_matrix.stack().reset_index()					# Melt (stack) the array so the first two columns are matrix indices.
-	melted_matrix.columns = ["from", "to", "value"]						# Rename the columns to indicate this specifies a graph.
-	melted_matrix["from"] = pd.to_numeric(melted_matrix["from"])		# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["to"] = pd.to_numeric(melted_matrix["to"])			# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["from"].map(row_indices_to_ids)						# Rename the node names to be IDs from the dataset not matrix indices.
-	melted_matrix["to"].map(col_indices_to_ids)							# Rename the node names to be IDS from the dataset not matrix indices.
-	return(melted_matrix)												# Return the melted matrix that looks like an edge list.
+	df_of_matrix = pd.DataFrame(matrix)										# Convert the numpy array to a pandas dataframe.
+	melted_matrix = df_of_matrix.stack().reset_index()						# Melt (stack) the array so the first two columns are matrix indices.
+	melted_matrix.columns = ["from", "to", "value"]							# Rename the columns to indicate this specifies a graph.
+	melted_matrix["from"] = pd.to_numeric(melted_matrix["from"])			# Make sure node names are integers because IDs have to be integers.
+	melted_matrix["to"] = pd.to_numeric(melted_matrix["to"])				# Make sure node names are integers because IDs have to be integers.
+	melted_matrix["from"] = melted_matrix["from"].map(row_indices_to_ids)	# Rename the node names to be IDs from the dataset not matrix indices.
+	melted_matrix["to"] = melted_matrix["to"].map(col_indices_to_ids)		# Rename the node names to be IDS from the dataset not matrix indices.
+	return(melted_matrix)													# Return the melted matrix that looks like an edge list.
 
 
 
