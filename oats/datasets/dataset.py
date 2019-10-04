@@ -78,7 +78,7 @@ class Dataset:
 
 
 
-	def filter_random_k(self, k, seed):
+	def filter_random_k(self, k, seed=7919):
 		"""Remove all but k randomly sampled points from the dataset.
 		Args:
 			k (int): The number of datapoints or rows to retain.
@@ -88,7 +88,7 @@ class Dataset:
 		#self._reset_ids()
 
 
-	def filter_by_species(self, species):
+	def filter_by_species(self, *species):
 		"""Retain only points that are for species in this list.
 		"""
 		self.df = self.df[self.df["species"].isin(species)]

@@ -518,6 +518,14 @@ def merge_edgelists(dfs_dict, default_value=None):
 
 
 
+def remove_self_loops(df):
+	return(df[df["from"] != df["to"]])
+
+
+
+
+
+
 
 
 
