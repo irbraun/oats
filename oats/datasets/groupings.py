@@ -18,7 +18,7 @@ class Groupings:
 
 
 
-    def __init__(self, species_dict, source, case_sensitive=False):
+    def __init__(self, species_dict, source, name_mapping=None, case_sensitive=False):
 
 
 
@@ -49,6 +49,7 @@ class Groupings:
         self.species_to_df_dict = {}
         self.species_to_fwd_gene_mappings = {}
         self.species_to_rev_gene_mappings = {}
+        self.readable_name_mappings = {}
         self.case_sensitive = case_sensitive
         for species,path in species_dict.items():
             
@@ -56,16 +57,19 @@ class Groupings:
             if source.lower() == "plantcyc" or source.lower() == "pmn":
                 df = self._get_plantcyc_pathway_dataframe(species,path)
                 fwd_mapping, rev_mapping = self._get_plantcyc_pathway_gene_mappings(species, df)
+                self.readable_name_mappings.update(self._get_plantcyc_id_to_readable_name_mapping(df))
             
             # Use the KEGG REST API to obtain the groupings.
             elif source.lower() == "kegg":
                 df = self._get_kegg_pathway_dataframe(species)
                 fwd_mapping, rev_mapping = self._get_kegg_pathway_gene_mappings(species, df)
+                self.readable_name_mappings.update(self._get_kegg_id_to_readable_name_mapping(df))
 
             # Use any arbitrary CSV file that is provided as the soure for the groupings.
             elif source.lower() == "csv":
                 df = self._get_dataframe_from_csv(species,path)
                 fwd_mapping, rev_mapping = self._get_gene_mappings_from_csv(species, df)
+                self.readable_name_mappings.update(name_mapping)
 
             # Not supporting whatever type of source string was provided yet.
             else:
@@ -74,6 +78,7 @@ class Groupings:
             self.species_to_df_dict[species] = df            
             self.species_to_fwd_gene_mappings[species] = fwd_mapping
             self.species_to_rev_gene_mappings[species] = rev_mapping
+
 
 
 
@@ -108,9 +113,8 @@ class Groupings:
         reverse_membership_dict = {k:remove_duplicates_retain_order(v) for k,v in reverse_membership_dict.items()}      
         return(reverse_membership_dict)
 
-
-
-
+    def get_long_name(self, group_id):
+        return(self.readable_name_mappings[group_id])
 
 
 
@@ -130,13 +134,13 @@ class Groupings:
         return(group_ids)
 
 
-
     # Returns a list of group IDs.
     def get_group_ids_from_gene_name(self, species, gene_name):
         if not self.case_sensitive:
             return(self.species_to_rev_gene_mappings[species][name.lower()])
         else:
             return(self.species_to_rev_gene_mappings[species][name])
+
 
     # Returns a list of gene names.
     def get_gene_names_from_group_id(self, species, group_id):
@@ -176,6 +180,7 @@ class Groupings:
         df = df[["species", "pathway_id", "pathway_name", "gene_names", "ec_number"]]
         return(df)
 
+
     def _get_plantcyc_pathway_gene_mappings(self, species_code, pathways_df):
         pathway_dict_fwd = defaultdict(list)
         pathway_dict_rev = defaultdict(list)
@@ -187,6 +192,11 @@ class Groupings:
                 pathway_dict_rev[gene_name].append(row.pathway_id)
         return(pathway_dict_fwd, pathway_dict_rev)
 
+
+    def _get_plantcyc_id_to_readable_name_mapping(self, pathways_df):
+        df_reduced = pathways_df.drop_duplicates(subset="pathway_id",keep="first", inplace=False)
+        id_to_pathway_name = {row.pathway_id:row.pathway_name for row in df_reduced.itertuples()}
+        return(id_to_pathway_name)
 
 
 
@@ -322,6 +332,12 @@ class Groupings:
         return(pathway_dict_fwd, pathway_dict_rev)
 
 
+    def _get_kegg_id_to_readable_name_mapping(self, pathways_df):
+        df_reduced = pathways_df.drop_duplicates(subset="pathway_id",keep="first", inplace=False)
+        id_to_pathway_name = {row.pathway_id:row.pathway_name for row in df_reduced.itertuples()}
+        return(id_to_pathway_name)
+
+
 
 
 
@@ -355,7 +371,6 @@ class Groupings:
                     group_dict_fwd[group_id].append(gene_name)
                     group_dict_rev[gene_name].append(group_id)
         return(group_dict_fwd, group_dict_rev)
-
 
 
 
