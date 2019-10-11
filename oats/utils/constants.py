@@ -8,6 +8,8 @@ NCBI_TAG = "ncbi="
 UNIPROT_TAG = "uniprot="
 
 
+
+
 # Mapping between full names and their abbreviations/codes.
 ABBREVIATIONS_MAP = {
 	"Zea mays ssp mays":"zma",
@@ -18,8 +20,12 @@ ABBREVIATIONS_MAP = {
 	"Solanum lycopersicum":"sly"
 }
 
+
+
+
+
 EVIDENCE_CODES = {
-	"EXP":"experimental",		# Experimental evidence codes.
+	"EXP":"experimental",			# Experimental evidence codes.
 	"IDA":"experimental",
 	"IPI":"experimental",
 	"IMP":"experimental",

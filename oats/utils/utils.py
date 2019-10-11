@@ -1,10 +1,5 @@
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import HashingVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.neighbors import DistanceMetric
 from itertools import product
 from scipy import spatial
-from nltk.corpus import wordnet
 import gensim
 import numpy as np
 import pandas as pd
@@ -23,6 +18,11 @@ from oats.utils import constants
 
 
 
+
+
+
+
+
 ######### Random functions specific to this package #########
 
 def to_abbreviation(name, mapping=None):
@@ -30,7 +30,6 @@ def to_abbreviation(name, mapping=None):
 		return(mapping[name])
 	else:
 		return(constants.ABBREVIATIONS_MAP[name])
-
 
 
 
@@ -66,9 +65,9 @@ def merge_list_dicts(*dicts):
 def remove_duplicates_retain_order(seq):
     """Code credited to https://stackoverflow.com/a/480227.
     Args:
-        seq (list): Description
+        seq (list): Any list of any datatype.
     Returns:
-        list: Description
+        list: The list in same order but only first occurence of all duplicates retained.
     """
     seen = set()
     seen_add = seen.add
@@ -76,12 +75,12 @@ def remove_duplicates_retain_order(seq):
 
 
 
-
-
-# https://stackoverflow.com/questions/5286541/how-can-i-flatten-lists-without-splitting-strings
-# Using itertools.chain.from_iterable() doesn't work for strings because it splits on characters.
-# Need to use this function instead when the nested lists contain strings.
 def flatten(foo):
+	"""
+	https://stackoverflow.com/questions/5286541/how-can-i-flatten-lists-without-splitting-strings
+	Using itertools.chain.from_iterable() doesn't work for strings because it splits on characters.
+	Need to use this function instead when the nested lists contain strings.
+	"""
     for x in foo:
         if hasattr(x, '__iter__') and not isinstance(x, str):
             for y in flatten(x):
@@ -130,7 +129,6 @@ def function_wrapper_with_duration(function, args):
 
 
 
-
 ######### Reading and writing python objects #########
 
 def save_to_pickle(obj, path):
@@ -139,6 +137,14 @@ def save_to_pickle(obj, path):
 def load_from_pickle(path):
 	obj = pickle.load(open(path,"rb"))
 	return(obj)
+
+
+
+
+
+
+
+
 
 
 
