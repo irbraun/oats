@@ -49,9 +49,9 @@ def merge_list_dicts(*dicts):
 	of the items that were in the two lists.
 	
 	Args:
-	    *dicts: Any number of dictionaries to be merged.
+		*dicts: Any number of dictionaries to be merged.
 	Returns:
-	    dict: A single dict merged from the input ones.
+		dict: A single dict merged from the input ones.
 	"""
 	merged_dict = defaultdict(list)
 	all_tuples = list(chain.from_iterable([d.items() for d in dicts]))
@@ -63,15 +63,15 @@ def merge_list_dicts(*dicts):
 
 
 def remove_duplicates_retain_order(seq):
-    """Code credited to https://stackoverflow.com/a/480227.
-    Args:
-        seq (list): Any list of any datatype.
-    Returns:
-        list: The list in same order but only first occurence of all duplicates retained.
-    """
-    seen = set()
-    seen_add = seen.add
-    return([x for x in seq if not (x in seen or seen_add(x))])
+	"""Code credited to https://stackoverflow.com/a/480227.
+	Args:
+		seq (list): Any list of any datatype.
+	Returns:
+		list: The list in same order but only first occurence of all duplicates retained.
+	"""
+	seen = set()
+	seen_add = seen.add
+	return([x for x in seq if not (x in seen or seen_add(x))])
 
 
 
@@ -81,12 +81,12 @@ def flatten(foo):
 	Using itertools.chain.from_iterable() doesn't work for strings because it splits on characters.
 	Need to use this function instead when the nested lists contain strings.
 	"""
-    for x in foo:
-        if hasattr(x, '__iter__') and not isinstance(x, str):
-            for y in flatten(x):
-                yield y
-        else:
-            yield x
+	for x in foo:
+		if hasattr(x, '__iter__') and not isinstance(x, str):
+			for y in flatten(x):
+				yield y
+		else:
+			yield x
 
 
 
@@ -111,10 +111,10 @@ def function_wrapper(function, args):
 def function_wrapper_with_duration(function, args):
 	""" Call a function and return the result plus duration in seconds.
 	Args:
-	    function (function): Any arbitrary method.
-	    args (list): The arguments to be sent to the function.
+		function (function): Any arbitrary method.
+		args (list): The arguments to be sent to the function.
 	Returns:
-	    tuple: The output of the function and runtime in seconds.
+		tuple: The output of the function and runtime in seconds.
 	"""
 	start_time = time.perf_counter()
 	return_value = function(*args)

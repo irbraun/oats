@@ -6,10 +6,6 @@ import sys
 
 
 
-from oats.graphs.pairwise import pairwise_edgelist_setofwords_twogroup
-
-
-
 def get_stringdb_information(filename, name_to_id_dict):
 
 
