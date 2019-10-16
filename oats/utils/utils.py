@@ -122,6 +122,19 @@ def function_wrapper_with_duration(function, args):
 	return(return_value,total_time)
 
 
+def print_nested_dict(d, indent=0):
+	"""Credited to comment at https://stackoverflow.com/a/3229493.
+	Args:
+		d (dict): Any nested dictionary.
+		indent (int, optional): Number of tabs in the indent.
+	"""
+	for key,value in d.items():
+		print('\t' * indent + str(key))
+		if isinstance(value, dict):
+			print_nested_dict(value, indent+1)
+		else:
+			print('\t' * (indent+1) + str(value))
+
 
 
 
