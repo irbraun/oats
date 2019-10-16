@@ -18,6 +18,7 @@ import sys
 import glob
 import math
 import re
+from nltk.tokenize import word_tokenize
 
 from oats.nlp.search import binary_search_rabin_karp
 
@@ -43,6 +44,7 @@ class Ontology:
 
 
 
+
 	def _get_subclass_dict(self):
 		"""
 		Produces a mapping between ontology term IDs and a list of other IDs which include
@@ -60,10 +62,6 @@ class Ontology:
 			all_terms.add(term.id)
 			subclass_dict[term.id] = list(all_terms)
 		return(subclass_dict)
-
-
-
-
 
 
 
@@ -183,11 +181,23 @@ class Ontology:
 
 
 
+
+	def get_all_tokens(self):
+		labels_and_synonyms = list(itertools.chain.from_iterable(list(self.forward_term_dict.values())))
+		tokens = set(list(itertools.chain.from_iterable([word_tokenize(x) for x in labels_and_synonyms])))
+		return(list(tokens))
+
+	def get_all_tokens_as_ordered_vocabulary(self):
+		labels_and_synonyms = list(itertools.chain.from_iterable(list(self.forward_term_dict.values())))
+		tokens = set(list(itertools.chain.from_iterable([word_tokenize(x) for x in labels_and_synonyms])))
+		vocabulary = {token:i for i,token in enumerate(list(tokens))}
+		return(vocabulary)
+
 	def get_label_from_id(self, term_id):
 		try:
 			return(self.pronto_ontology_obj[term_id].name)
 		except:
-			raise KeyError("term ID matches no terms in the ontology")
+			raise KeyError("this identifier matches no terms in the ontology")
 
 
 
