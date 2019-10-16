@@ -308,7 +308,7 @@ def pairwise_edgelist_annotations(annotations_dict, ontology, metric, **kwargs):
 
 
 
-def pairwise_edgelist_doc2vec_twogroup(object_dict_1, object_dict_2, metric):
+def pairwise_edgelist_doc2vec_twogroup(model, object_dict_1, object_dict_2, metric):
 	"""
 	docstring
 
