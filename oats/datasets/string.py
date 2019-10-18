@@ -20,6 +20,7 @@ def get_stringdb_information(filename, name_to_id_dict):
 	df["to"] = df["protein2"].map(name_to_id_dict)
 
 
+
 	# The previous step introduces NaN's into the ID columns because there could be proteins mentioned
 	# in the STRING database file that are not present at all in the dataset being worked with. We want
 	# to remove the lines that have NaN's in them in order to return a table where the rows correspond
@@ -31,7 +32,19 @@ def get_stringdb_information(filename, name_to_id_dict):
 	ids_mentioned_in_string = pd.unique(df[["from","to"]].dropna().values.ravel('K'))
 	df.dropna(axis=0, inplace=True)
 	df = df[["from","to", "combined_score"]]
-	
+
+	# The dataframe right now is specifying directed edges rather than undirected edges.
+	# We need to introduce redundancy to enforce undirected nature, so including i,j and
+	# j,i edges specifically in the dataframe. This ensures that this dataframe can be 
+	# merged with edgelists from elsewhere in the package without worrying about the order
+	# of the genes mentioned. Drop duplicates after doing this in case both directions of
+	# particular edge were already specified in the STRING dataset anyway.
+	df_flipped = df[["to","from","combined_score"]]
+	df_flipped.columns = ["from","to","combined_score"]
+	df = pd.concat([df, df_flipped])
+	df.drop_duplicates(keep="first", inplace=True)
+
+
 	return(df, ids_mentioned_in_string)
 
 
