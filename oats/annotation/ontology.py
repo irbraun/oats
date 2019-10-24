@@ -182,12 +182,26 @@ class Ontology:
 
 
 
-	def get_all_tokens(self):
+	def get_tokens(self):
+		"""
+		Returns a list of tokens that appear in the labels and synonym strings of this ontology.
+		Returns:
+		    TYPE: Description
+		"""
 		labels_and_synonyms = list(itertools.chain.from_iterable(list(self.forward_term_dict.values())))
 		tokens = set(list(itertools.chain.from_iterable([word_tokenize(x) for x in labels_and_synonyms])))
 		return(list(tokens))
 
-	def get_all_tokens_as_ordered_vocabulary(self):
+	def get_vocabulary(self):
+		""" 
+		Returns a dictionary mapping tokens to integers that can be used as a vocabulary. The reason
+		this is useful is because the integers (values) are always from 0 to n so that they can be 
+		used to map each token to a particular position within a vector, which is these vocabulary
+		dictionaries can be used when speciyfing what the token-based vector of some text should be
+		formatted like.
+		Returns:
+		    TYPE: Description
+		"""
 		labels_and_synonyms = list(itertools.chain.from_iterable(list(self.forward_term_dict.values())))
 		tokens = set(list(itertools.chain.from_iterable([word_tokenize(x) for x in labels_and_synonyms])))
 		vocabulary = {token:i for i,token in enumerate(list(tokens))}

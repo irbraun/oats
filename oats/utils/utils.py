@@ -64,6 +64,7 @@ def merge_list_dicts(*dicts):
 
 def remove_duplicates_retain_order(seq):
 	"""Code credited to https://stackoverflow.com/a/480227.
+	
 	Args:
 		seq (list): Any list of any datatype.
 	Returns:
@@ -75,19 +76,20 @@ def remove_duplicates_retain_order(seq):
 
 
 
-def flatten(foo):
+def flatten(l):
+	return(list(_recursive_flatten(l)))
+def _recursive_flatten(l):
 	"""
 	https://stackoverflow.com/questions/5286541/how-can-i-flatten-lists-without-splitting-strings
 	Using itertools.chain.from_iterable() doesn't work for strings because it splits on characters.
 	Need to use this function instead when the nested lists contain strings.
 	"""
-	for x in foo:
+	for x in l:
 		if hasattr(x, '__iter__') and not isinstance(x, str):
 			for y in flatten(x):
 				yield y
 		else:
 			yield x
-
 
 
 
@@ -107,7 +109,6 @@ def function_wrapper(function, args):
 	result = function(*args)
 	return(result)
 
-
 def function_wrapper_with_duration(function, args):
 	""" Call a function and return the result plus duration in seconds.
 	Args:
@@ -120,7 +121,6 @@ def function_wrapper_with_duration(function, args):
 	return_value = function(*args)
 	total_time = time.perf_counter()-start_time
 	return(return_value,total_time)
-
 
 def print_nested_dict(d, indent=0):
 	"""Credited to comment at https://stackoverflow.com/a/3229493.
