@@ -177,6 +177,11 @@ class Dataset:
 		guaranteed to not overwrite the values for any keys (no two names refer to different
 		IDs) provided that the collapse by all gene names method has been run on this data,
 		but this is not guaranteed if that method has not been run.
+
+		TODO even if that method has been run, that doesn't account for when two different
+		species have genes that have the same name, in which case they might be overwritten
+		across species. Should use the species code as a part of the name or something to 
+		guarantee that this works.
 		"""
 		name_to_id_dict = {}
 		for row in self.df.itertuples():
