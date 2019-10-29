@@ -29,7 +29,13 @@ class String:
 		# set. Do this by iterating through the IDs used and checking for appropriate match between the 
 		# names associated with those genes for that species and something from the file of all names 
 		# associated with any protein in the STRING database.
-		species_name_to_ncbi_taxid_mapping = {"ath":3702, "zma":4577} # Update this line when adding new species.
+		species_name_to_ncbi_taxid_mapping = {
+			"ath":3702, 
+			"zma":4577,
+			"sly":4081,
+			"mtr":3880,
+			"osa":4530,
+			"gmx":3847} # Update this line when adding new species.
 		self.name_map = self.name_map.loc[list(species_name_to_ncbi_taxid_mapping.values())]
 		string_name_to_id_dict = {}
 		for identifier,gene in gene_to_id_dict.items():
