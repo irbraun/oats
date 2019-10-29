@@ -32,6 +32,7 @@ class Ontology:
 
 	def __init__(self, ontology_obo_file):
 
+
 		self.pronto_ontology_obj = pronto.Ontology(ontology_obo_file)
 		self.subclass_dict = self._get_subclass_dict()
 		self.ic_dict = self._get_graph_based_ic_dictionary()
@@ -142,7 +143,6 @@ class Ontology:
 		ic_dict = {}	
 
 		# TODO go from counts to ic.
-
 		return(ic_dict)
 
 
