@@ -20,6 +20,7 @@ import sys
 import glob
 import math
 import re
+import random
 
 from oats.nlp.search import binary_search_rabin_karp
 from oats.utils.utils import flatten
@@ -30,18 +31,12 @@ from oats.utils.utils import flatten
 
 
 
-
-
-
-
-
 def strings_to_count_vectors(*strs, **kwargs):
-
 	"""
 	https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
 	What are the important keyword arguments that can be passed to the count vectorizer to specify how the 
 	features to be counted are selected, and specify how each of them is counted as well? Included here for 
-	quick reference.
+	quick reference for what araguments can be passed in.
 
 	lowercase : boolean, True by default
 	analyzer : string, {‘word’, ‘char’, ‘char_wb’} or callable
@@ -54,6 +49,10 @@ def strings_to_count_vectors(*strs, **kwargs):
 	max_features : int or None, default=None
 	vocabulary : Mapping or iterable, optional
 	binary : boolean, default=False
+
+	# Attributes
+	vocabulary_: mapping between terms and feature indices
+	stop_words_: set of terms that were considered stop words
 	"""
 	text = [t for t in strs]
 	vectorizer = CountVectorizer(text, **kwargs)
@@ -63,19 +62,36 @@ def strings_to_count_vectors(*strs, **kwargs):
 
 
 
-
-
-
-
 def strings_to_tfidf_vectors(*strs, **kwargs):
+	"""
+	https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html
+	What are the important keyword arguments that can be passed to the TFIDF (term-frequency inverse-
+	document-frequency) vectorizer to specify how the features to be quantified are selected, and how each
+	of them is quantified as well? Incluced here for quick reference for what arguments can be passed in.
+
+	# Arguments
+	lowercase : boolean, True by default
+	analyzer : string, {‘word’, ‘char’, ‘char_wb’} or callable
+	stop_words : string {‘english’}, list, or None (default)
+	token_pattern : string
+	ngram_range : tuple (min_n, max_n)
+	analyzer : string, {‘word’, ‘char’, ‘char_wb’} or callable
+	max_df : float in range [0.0, 1.0] or int, default=1.0
+	min_df : float in range [0.0, 1.0] or int, default=1
+	max_features : int or None, default=None
+	vocabulary : Mapping or iterable, optional
+	binary : boolean, default=False
+
+	# Attributes
+	vocabulary_: mapping between terms and feature indices
+	idf_: the inverse document frequency vector used in weighting
+	stop_words_: set of terms that were considered stop words
+	"""
 	text = [t for t in strs]
 	vectorizer = TfidfVectorizer(text, **kwargs)
 	vectorizer.fit(text)
 	vectors = vectorizer.transform(text).toarray()
 	return(vectors)
-
-
-
 
 
 
@@ -164,10 +180,6 @@ def rectangular_adjacency_matrix_to_edgelist(matrix, row_indices_to_ids, col_ind
 
 
 
-
-
-
-
 def pairwise_edgelist_doc2vec(model, object_dict, metric):
 	"""
 	Method for creating a pandas dataframe of similarity values between all passed in object IDs
@@ -203,6 +215,55 @@ def pairwise_edgelist_doc2vec(model, object_dict, metric):
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	return(edgelist)
+
+
+
+
+
+def pairwise_edgelist_word2vec(model, object_dict, metric, method="mean"):
+	"""	
+	Method for creating a pandas dataframe of similarity values between all passed in object IDs
+	using vector embeddings inferred for each natural language description using the passed in 
+	Word2Vec model, which could have been newly trained on relevant data or taken as a pretrained
+	model. No assumptions are made about the format of the natural language descriptions, so any
+	preprocessing or cleaning of the text should be done prior to being provied in the dictionary
+	here. Note that if no words in a description are in the model vocabulary, then a random word 
+	will be selected to represent the text. This avoids using one default value which will force 
+	all these descriptions to cluster, and prevents error being raised due to no vector appearing. 
+	This should rarely or never happen as long as the text has been preprocessed into reasonable
+	tokens.
+
+	Args:
+	    model (TYPE): Description
+	    object_dict (TYPE): Description
+	    metric (TYPE): Description
+	    method (str, optional): Should the word embeddings be combined with mean or max.
+	
+	Returns:
+	    pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
+	"""
+	vectors = []
+	index_in_matrix_to_id = {}
+	for identifier,description in object_dict.items():
+		words = description.split()
+		words_in_model_vocab = [word for word in words if word in model.wv.vocab]
+		if len(words_in_model_vocab) == 0:
+			words_in_model_vocab.append(random.choice(list(model.wv.vocab)))
+		stacked_vectors = np.array([model.wv[word] for word in words_in_model_vocab])
+		index_in_matrix = len(vectors)
+		if method == "mean":
+			vectors.append(stacked_vectors.mean(axis=0))
+		elif method == "max":
+			vectors.append(stacked_vectors.max(axis=0))
+		else:
+			raise Error("method argument is invalid")
+		index_in_matrix_to_id[index_in_matrix] = identifier
+
+	# Apply some similarity metric over the vectors to yield a matrix.
+	matrix = squareform(pdist(vectors,metric))
+	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	return(edgelist)
+
 
 
 
@@ -246,6 +307,9 @@ def pairwise_edgelist_counting(object_dict, metric, **kwargs):
 
 
 
+
+
+
 def pairwise_edgelist_annotations(annotations_dict, ontology, metric, **kwargs):
 	"""
 	Method for creating a pandas dataframe of similarity values between all passed in object IDs
@@ -283,15 +347,6 @@ def pairwise_edgelist_annotations(annotations_dict, ontology, metric, **kwargs):
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	return(edgelist)
-
-
-
-
-
-
-
-
-
 
 
 
@@ -472,16 +527,25 @@ def merge_edgelists(dfs_dict, default_value=None):
 
 
 
+
+
+
+
+
+
+
+
+
+############## Methods for manipulating, combining, and checking edgelists ################
+
+
+
+
+
+
+
 def remove_self_loops(df):
 	return(df[df["from"] != df["to"]])
-
-
-
-
-
-
-
-
 
 
 def standardize_edgelist(df):
@@ -517,11 +581,8 @@ def standardize_edgelist(df):
 	# non-redudant instead of redundant.
 	# See https://stackoverflow.com/a/45505141
 	#cond = df["from"] > df["to"]
-	#df.loc[cond, ["from","to"]] = df.loc[cond, ["to","from"]].values
-	
+	#df.loc[cond, ["from","to"]] = df.loc[cond, ["to","from"]].values	
 	return(df)
-
-
 
 
 def subset_edgelist_with_ids(df, ids):
@@ -541,8 +602,6 @@ def subset_edgelist_with_ids(df, ids):
 
 
 
-
-
 def _verify_dfs_are_consistent(*similarity_dfs):
 	"""Check that each dataframe specifies the same set of edges.
 	Args:
@@ -558,84 +617,6 @@ def _verify_dfs_are_consistent(*similarity_dfs):
 		if not len(s1.difference(s2)) == 0:
 			raise ValueError("dataframes specifying networks are not consisent")
 
-
-
-
-
-
-
-
-
-
-'''
-def get_edgelist_with_fastsemsim(ontology_obo_file, annotated_corpus_tsv_file, object_dict):
-	"""
-	Method for creating a pandas dataframe of similarity values between all passed in object IDs
-	based on the annotations of ontology terms to to all the natural language descriptions that
-	those object IDs represent. The ontology files used have to be in the obo format currently and
-	any terms that are annotated to the natural language (included in the annnotated corpus file)
-	but are not found in the ontology are ignored when calculating similarity. This method also
-	assumes that there is a single root to the DAG specified in the obo file which has ID "Thing".
-	
-	Args:
-	    ontology_obo_file (str): File specifying the ontology that was used during annotation.
-	    annotated_corpus_tsv_file (str): File specifying the annotations that were made.
-	    object_dict (dict): Mapping between object IDs and the natural language descriptions. 
-	
-	Returns:
-	    pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
-	"""
-
-
-	#  - Notes on problems working with PO and fastsemsim package - 
-	# There is some problem with how PO is treated by the fastsemsim utilities, not reproducible with GO or PATO.
-	# The [SemSim Object].util.lineage dictionary should map each node (string ID) in the ontology to it's root in
-	# the graph. It looks like the methods are set up so that there should only be one root (node without parents)
-	# for each node in the graph. I think those nodes are allowable in DAGs so I'm not sure why that is. But even 
-	# when editing the .obo ontology file add "is_a: Thing" edges to each term and creating the "Thing" root term 
-	# to provide a single root for the whole graph, the problem still persists and that dictionary only contains
-	# only a few terms. This is with version 1.0.0 of fastsemsim and po.obo file released on 6/5/2019.
-
-
-	# Intended values for loading the ontology from a generic obo file. Load the ontology.
-	start_time = time.perf_counter()
-	ontology_file_type = "obo"
-	ontology_type = "Ontology"
-	ignore_parameters = {}
-	ontology = fss.load_ontology(source_file=ontology_obo_file, ontology_type=ontology_type, file_type=ontology_file_type)
-
-	# Parameters for annotation corpus file with descriptions from fastsemsim documentation.
-	ac_source_file_type = "plain"
-	ac_params = {}
-	ac_params['multiple'] = True 	# Set to True if there are many associations per line (the object in the first field is associated to all the objects in the other fields within the same line).
-	ac_params['term first'] = False # Set to True if the first field of each row is a term. Set to False if the first field represents an object.
-	ac_params['separator'] = "\t" 	# Select the separtor used to divide fields.
-	ac = fss.load_ac(ontology, source_file=annotated_corpus_tsv_file, file_type=ac_source_file_type, species=None, ac_descriptor=None, params = ac_params)
-
-	# Create the object for calculating semantic similarity.
-	semsim_type='obj'
-	semsim_measure='Jaccard'
-	mixing_strategy='max'
-	ss_util=None
-	semsim_do_log=False
-	semsim_params={}
-	ss = fss.init_semsim(ontology=ontology, ac=ac, semsim_type=semsim_type, semsim_measure=semsim_measure, mixing_strategy=mixing_strategy, ss_util=ss_util, do_log=semsim_do_log, params=semsim_params)
-	
-	# Fix issue with lineage object in fastsemsim methods.
-	ss.util.lineage = {}
-	for node in ontology.nodes:
-		ss.util.lineage[node] = "Thing"
-	
-	# Get the batch pairwise semantic similarities for all these objects.
-	ssbatch = fss.init_batchsemsim(ontology = ontology, ac = ac, semsim=ss)
-	object_list = list(object_dict.keys())
-	result = ssbatch.SemSim(query=object_list, query_type="pairwise")
-	result.columns = ["from", "to", "value"]
-	result["from"] = pd.to_numeric(result["from"])
-	result["to"] = pd.to_numeric(result["to"])			
-	return(result)
-
-'''
 
 
 
