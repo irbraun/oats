@@ -7,7 +7,7 @@ import itertools
 
 from oats.nlp.preprocess import concatenate_with_bar_delim
 from oats.nlp.preprocess import add_prefix
-from oats.utils.constants import REFGEN_V3_TAG, REFGEN_V4_TAG, NCBI_TAG, UNIPROT_TAG
+from oats.utils.constants import NCBI_TAG, UNIPROT_TAG
 from oats.utils.utils import remove_duplicates_retain_order
 
 
@@ -26,12 +26,13 @@ class Groupings:
         The dataframe for each species is only for viewing the input data, should not be used for anything else
         because the columns names are not meant to be consisent between different types of input data, such as 
         searching for pathway information from a database or providing your own CSV file of gene to group mappings.
-        Only then number of rows should be allowed to be used as a value to be obtained from these dataframes,
-        because it's not dependent on column name and always indicates the number of records look at generally.
+        Only the number of rows should be allowed to be used as a value to be obtained from these dataframes,
+        because it's not dependent on column name and always indicates the number of records looked at generally.
 
         The pair of dictionaries for each species is always the same however. There is forward mapping between 
         group IDs (no matter what the groups are) and gene names, and a reverse mapping between gene names and 
-        group IDs.
+        group IDs. Those are the structures that should primarily be accessed when using an object of this type,
+        however some additional methods are provided as well.
 
         When providing a CSV, the first two columns are always used, and no header should be included. The first
         column is assumed to be group IDs (bar delimited if there are more than one mentioned on a line), and the
@@ -40,7 +41,7 @@ class Groupings:
 
         If case sensitive is false, then the internal dictionaries will only hold lowercase versions of all gene
         names, and when generating dictionaries from outside lists of gene names, they will be converted to lower
-        case befor any matching to the interanl gene names is done.
+        case before any matching to the internal gene names is done.
         """
 
 
@@ -90,12 +91,17 @@ class Groupings:
 
 
 
+    ##############  The primary methods that should be used from outside this class  ##############
 
 
 
-
-    # Returns a mapping from (object) IDs to lists of group IDs.
-    def get_forward_dict(self, gene_dict):
+    def get_id_to_group_ids_dict(self, gene_dict):
+        """Returns a mapping from object IDs to lists of group IDs.
+        Args:
+            gene_dict (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
         membership_dict = {}
         for gene_id, gene_obj in gene_dict.items():
             membership_dict[gene_id] = self.get_group_ids_from_gene_obj(gene_obj)
@@ -103,8 +109,13 @@ class Groupings:
         return(membership_dict)
 
 
-    # Returns a mapping from group IDs to lists of (object) IDs.
-    def get_reverse_dict(self, gene_dict):
+    def get_group_id_to_ids_dict(self, gene_dict):
+        """Returns a mapping from group IDs to lists of object IDs.      
+        Args:
+            gene_dict (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
         reverse_membership_dict = defaultdict(list)
         for gene_id, gene_obj in gene_dict.items():
             group_ids = self.get_group_ids_from_gene_obj(gene_obj)
@@ -113,7 +124,15 @@ class Groupings:
         reverse_membership_dict = {k:remove_duplicates_retain_order(v) for k,v in reverse_membership_dict.items()}      
         return(reverse_membership_dict)
 
+
+
     def get_long_name(self, group_id):
+        """Returns a string which is the long and readable namea for this group ID.
+        Args:
+            group_id (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
         return(self.readable_name_mappings[group_id])
 
 
@@ -122,8 +141,21 @@ class Groupings:
 
 
 
-    # Returns a list of group IDs.
+
+
+
+
+    ##############  Some secondary methods that might also be useful from outside this class  ##############
+
+
+
     def get_group_ids_from_gene_obj(self, gene_obj):
+        """Given a gene object, return a list of group IDs it belongs in.
+        Args:
+            gene_obj (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
         group_ids = []
         species = gene_obj.species
         gene_names = gene_obj.names
@@ -134,17 +166,43 @@ class Groupings:
         return(group_ids)
 
 
-    # Returns a list of group IDs.
+
     def get_group_ids_from_gene_name(self, species, gene_name):
+        """
+        Given a species code (three letters) and a gene name, return a list of group IDs that
+        the gene might belong to.
+        Args:
+            species (TYPE): Description
+            gene_name (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
         if not self.case_sensitive:
             return(self.species_to_rev_gene_mappings[species][name.lower()])
         else:
             return(self.species_to_rev_gene_mappings[species][name])
 
 
-    # Returns a list of gene names.
+
     def get_gene_names_from_group_id(self, species, group_id):
+        """
+        Given a group ID and species code (three letters), return a list of all the gene names 
+        which are associated with that ID in this instance of this class.
+        Args:
+            species (TYPE): Description
+            group_id (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
         return(self.species_to_fwd_gene_mappings[species][group_id])
+
+
+
+
+
+
+
+
 
 
 
@@ -211,8 +269,10 @@ class Groupings:
 
 
 
-    #################### Methods specific to using KEGG through the REST API ####################
 
+
+
+    #################### Methods specific to using KEGG through the REST API ####################
 
     def _get_kegg_pathway_dataframe(self, kegg_species_abbreviation):
         """
@@ -348,6 +408,11 @@ class Groupings:
 
 
 
+
+
+
+
+
     #################### Methods for using an arbitrary CSV to define pathways (or pathway-like groups) ####################
 
     def _get_dataframe_from_csv(self, species_code, filepath):
@@ -388,6 +453,13 @@ class Groupings:
 
 
 
+
+    ####################  Methods that are useful for interrogating the contents of an instance of this class  ####################
+
+
+
+
+
     def write_to_csv(self, path):
         """
         Write the contents of the combined dataframe for all the pathway inforomation
@@ -401,7 +473,7 @@ class Groupings:
 
 
 
-    
+
     def get_df(self):
         """
         Returns a df with the contents of the combined dataframe for all the pathway
@@ -416,39 +488,11 @@ class Groupings:
 
 
 
-    '''
-    def get_representation_df_by_species(self):
-        """
-        Get a dataframe with pathways as rows and species as columns. The values in the 
-        dataframe correspond to the number of genes from each species that are mapped to
-        that pathway in the dataset.
-        Returns:
-            pandas.DataFrame: The resulting dataframe object.
-        """
-        col_names = ["pathway_id"]
-        col_names.extend(self.species_list)
-        df_summary = pd.DataFrame(columns=col_names)
-        df_all_data = pd.concat(self.species_to_df_dict.values(), ignore_index=True) 
-        pathway_ids = pd.unique(df_all_data["pathway_id"])
-        for pathway_id in pathway_ids:
-            row = {"pathway_id":pathway_id}
-            for species in self.species_list:
-                row[species] = len(self.species_to_fwd_gene_mappings[species][pathway_id])
-            df_summary = df_summary.append(row, ignore_index=True, sort=False)
-        return(df_summary)
-    '''
-
-
-
-
-    
-
-
-
-
-
 
     def describe(self):
+        """
+        Write out information about what is contained within this groupings object.
+        """
         print("Number of groups present for each species")
         for species in self.species_list:
             print("  {}: {}".format(species, len(self.species_to_fwd_gene_mappings[species].keys())))
