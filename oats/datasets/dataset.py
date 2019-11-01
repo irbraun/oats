@@ -85,35 +85,30 @@ class Dataset:
 			seed (int): Seed value for reproducibility of random process.
 		"""
 		self.df = self.df.sample(n=k, random_state=seed)
-		#self._reset_ids()
 
 
 	def filter_by_species(self, *species):
 		"""Retain only points that are for species in this list.
 		"""
 		self.df = self.df[self.df["species"].isin(species)]
-		#self._reset_ids()
 
 
 	def filter_has_description(self):
 		"""Remove points that don't have a text description.
 		"""
 		self.df = self.df[self.df["description"] != ""] 
-		#self._reset_ids()
 
 
 	def filter_has_annotation(self):
 		"""Remove points that don't have atleast one ontology term annotation.
 		"""
 		self.df = self.df[self.df["term_ids"] != ""]
-		#self._reset_ids()
 
 
 	def filter_with_ids(self, ids):
 		"""Retain only points that have IDs in the list. 
 		"""
 		self.df = self.df[self.df["id"].isin(ids)]
-		#self._reset_ids()
 
 
 
@@ -161,6 +156,28 @@ class Dataset:
 		"""
 		description_dict = {identifier:description for (identifier,description) in zip(self.df.id, self.df.description)}
 		return(description_dict)
+
+
+	def get_species_dictionary(self):
+		"""Get a mapping from IDs to species strings.
+		Returns:
+			TYPE: Description
+		"""
+		species_dict = {identifier:species for (identifier,species) in zip(self.df.id, self.df.species)}
+		return(species_dict)
+
+	
+
+
+
+	def get_ids(self):
+		return(list(self.df.id.values))
+
+
+
+
+
+
 
 
 
