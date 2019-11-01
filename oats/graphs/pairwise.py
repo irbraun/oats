@@ -24,6 +24,7 @@ import random
 
 from oats.nlp.search import binary_search_rabin_karp
 from oats.utils.utils import flatten
+from oats.graphs.pwgraph import PairwiseGraph
 
 
 
@@ -58,7 +59,7 @@ def strings_to_count_vectors(*strs, **kwargs):
 	vectorizer = CountVectorizer(text, **kwargs)
 	vectorizer.fit(text)
 	vectors = vectorizer.transform(text).toarray()
-	return(vectors)
+	return(vectors, vectorizer)
 
 
 
@@ -91,7 +92,7 @@ def strings_to_tfidf_vectors(*strs, **kwargs):
 	vectorizer = TfidfVectorizer(text, **kwargs)
 	vectorizer.fit(text)
 	vectors = vectorizer.transform(text).toarray()
-	return(vectors)
+	return(vectors, vectorizer)
 
 
 
@@ -180,7 +181,7 @@ def rectangular_adjacency_matrix_to_edgelist(matrix, row_indices_to_ids, col_ind
 
 
 
-def pairwise_edgelist_doc2vec(model, object_dict, metric):
+def pairwise_doc2vec_onegroup(model, object_dict, metric):
 	"""
 	Method for creating a pandas dataframe of similarity values between all passed in object IDs
 	using vector embeddings inferred for each natural language description using the passed in 
@@ -209,18 +210,19 @@ def pairwise_edgelist_doc2vec(model, object_dict, metric):
 		index_in_matrix = len(vectors)
 		vectors.append(inferred_vector)
 		index_in_matrix_to_id[index_in_matrix] = identifier
-
+	
 
 	# Apply some similarity metric over the vectors to yield a matrix.
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
-	return(edgelist)
+	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
+	return(PairwiseGraph(edgelist, id_to_vector_dict, None))
 
 
 
 
 
-def pairwise_edgelist_word2vec(model, object_dict, metric, method="mean"):
+def pairwise_word2vec_onegroup(model, object_dict, metric, method="mean"):
 	"""	
 	Method for creating a pandas dataframe of similarity values between all passed in object IDs
 	using vector embeddings inferred for each natural language description using the passed in 
@@ -262,7 +264,8 @@ def pairwise_edgelist_word2vec(model, object_dict, metric, method="mean"):
 	# Apply some similarity metric over the vectors to yield a matrix.
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
-	return(edgelist)
+	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
+	return(PairwiseGraph(edgelist, id_to_vector_dict, None))
 
 
 
@@ -274,7 +277,7 @@ def pairwise_edgelist_word2vec(model, object_dict, metric, method="mean"):
 
 
 
-def pairwise_edgelist_counting(object_dict, metric, **kwargs):
+def pairwise_counting_onegroup(object_dict, metric, **kwargs):
 	"""
 	Method for creating a pandas dataframe of similarity values between all passed in object IDs
 	using vectors to represent each of the natural language descriptions as a set-of-words. No 
@@ -299,10 +302,11 @@ def pairwise_edgelist_counting(object_dict, metric, **kwargs):
 
 
 	# Find all the pairwise values for the similiarity matrix.
-	vectors = strings_to_count_vectors(*descriptions, **kwargs)
+	vectors,vectorizer = strings_to_count_vectors(*descriptions, **kwargs)
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
-	return(edgelist)
+	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
+	return(PairwiseGraph(edgelist, id_to_vector_dict, vectorizer))
 
 
 
@@ -310,7 +314,7 @@ def pairwise_edgelist_counting(object_dict, metric, **kwargs):
 
 
 
-def pairwise_edgelist_annotations(annotations_dict, ontology, metric, **kwargs):
+def pairwise_annotations_onegroup(annotations_dict, ontology, metric, **kwargs):
 	"""
 	Method for creating a pandas dataframe of similarity values between all passed in object IDs
 	based on the annotations of ontology terms to to all the natural language descriptions that
@@ -343,10 +347,11 @@ def pairwise_edgelist_annotations(annotations_dict, ontology, metric, **kwargs):
 
 
 	# Find all the pairwise values for the similiarity matrix.
-	vectors = strings_to_count_vectors(*joined_term_strings, **kwargs)
+	vectors,vectorizer = strings_to_count_vectors(*joined_term_strings, **kwargs)
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
-	return(edgelist)
+	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
+	return(PairwiseGraph(edgelist, id_to_vector_dict, None))
 
 
 
@@ -363,12 +368,12 @@ def pairwise_edgelist_annotations(annotations_dict, ontology, metric, **kwargs):
 
 
 
-def pairwise_edgelist_doc2vec_twogroup(model, object_dict_1, object_dict_2, metric):
+
+
+
+def pairwise_doc2vec_twogroup(model, object_dict_1, object_dict_2, metric):
 	"""
 	docstring
-
-
-
 	"""
 	vectors = []
 	row_index_in_matrix_to_id = {}
@@ -393,14 +398,14 @@ def pairwise_edgelist_doc2vec_twogroup(model, object_dict_1, object_dict_2, metr
 	col_vectors = all_vectors[len(object_dict_1):]
 	matrix = cdist(row_vectors, col_vectors, metric)
 	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(edgelist)
+	return(PairwiseGraph(edgelist, None, None))
 
 
 
 
 
 
-def pairwise_edgelist_counting_twogroup(object_dict_1, object_dict_2, metric, **kwargs):
+def pairwise_counting_twogroup(object_dict_1, object_dict_2, metric, **kwargs):
 	"""
 	Generate a dataframe that specifies a list of all pairwise edges between nodes
 	in the first group and nodes in the second group, based on the similarity 
@@ -436,16 +441,15 @@ def pairwise_edgelist_counting_twogroup(object_dict_1, object_dict_2, metric, **
 	col_vectors = all_vectors[len(object_dict_1):]
 	matrix = cdist(row_vectors, col_vectors, metric)
 	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(edgelist)
+	return(PairwiseGraph(edgelist, None, None))
 
 
 
 
 
-def pairwise_edgelist_annotations_twogroup(annotations_dict_1, annotations_dict_2, metric):
+def pairwise_annotations_twogroup(annotations_dict_1, annotations_dict_2, metric):
 	"""
 	docstring
-	
 	"""
 	joined_term_strings = []
 	row_index_in_matrix_to_id = {}
@@ -476,7 +480,7 @@ def pairwise_edgelist_annotations_twogroup(annotations_dict_1, annotations_dict_
 	col_vectors = all_vectors[len(object_dict_1):]
 	matrix = cdist(vectors,metric)
 	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(edgelist)
+	return(PairwiseGraph(edgelist, None, None))
 
 
 
