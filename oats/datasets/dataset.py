@@ -52,8 +52,6 @@ class Dataset:
 		self.df = self.df[["id", "species", "gene_names", "description", "term_ids", "pmid"]]
 
 
-
-
 	def add_data(self, df_newlines):
 		"""
 		Add a dataframe containing information to this dataset. The dataframe provided has to 
@@ -166,12 +164,13 @@ class Dataset:
 		species_dict = {identifier:species for (identifier,species) in zip(self.df.id, self.df.species)}
 		return(species_dict)
 
-	
-
 
 
 	def get_ids(self):
 		return(list(self.df.id.values))
+
+	def get_species(self):
+		return(list(pd.unique(self.df.species.values)))
 
 
 
