@@ -91,12 +91,15 @@ class Groupings:
 
 
 
+
+
+
     ##############  The primary methods that should be used from outside this class  ##############
 
 
 
     def get_id_to_group_ids_dict(self, gene_dict):
-        """Returns a mapping from object IDs to lists of group IDs.
+        """ Returns a mapping from object IDs to lists of group IDs. Note that this retains as keys even IDs that don't map to any groups.
         Args:
             gene_dict (TYPE): Description
         Returns:
@@ -110,7 +113,7 @@ class Groupings:
 
 
     def get_group_id_to_ids_dict(self, gene_dict):
-        """Returns a mapping from group IDs to lists of object IDs.      
+        """Returns a mapping from group IDs to lists of object IDs. Note that groups are only keys if they are mapped to atleast one ID.
         Args:
             gene_dict (TYPE): Description
         Returns:
@@ -496,13 +499,9 @@ class Groupings:
         print("Number of groups present for each species")
         for species in self.species_list:
             print("  {}: {}".format(species, len(self.species_to_fwd_gene_mappings[species].keys())))
-        print("Number of entries present in the input data for each species")
-        for species in self.species_list:
-            print("  {}: {}".format(species, len(self.species_to_df_dict[species])))
-        print("Number of genes names found mapped to pathways by species")
+        print("Number of genes names found mapped to groups by species")
         for species in self.species_list:
             print("  {}: {}".format(species, len(self.species_to_rev_gene_mappings[species].keys())))
-
 
 
 
