@@ -4,12 +4,14 @@ import itertools
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 
+from oats.utils.utils import remove_duplicates_retain_order
 
 
 
 
 
-def binary_search_rabin_karp(pat, txt, q): 
+
+def binary_search_rabin_karp(pat, txt, q=1193): 
 	"""
 	Searches for exact matches to a pattern in a longer string (fast). 
 	Adapted from implementation by Bhavya Jain found at
@@ -59,20 +61,31 @@ def binary_search_rabin_karp(pat, txt, q):
 
 
 
-def occurences_search_rabin_karp(patterns, txt, q):
-	"""Searches for occurences of any of the patterns in the longer string.
-	Args:
-	    patterns (list): The list of shorter text strings to search for.
-	    txt (str): The larger text string to search in.
-	    q (int): A prime number that is used for hashing.
-	Returns:
-	    list: A sublist of the patterns argument containing only the found strings.
-	"""
-	patterns_found = []
-	for pat in patterns:
-		if binary_search_rabin_karp(pat, txt, q):
-			patterns_found.append(pat)
-	return(patterns_found)
+def check_text_for_patterns_rabin_karp(patterns, text, q=1193):
+	for pattern in patterns:
+		if binary_search_rabin_karp(pattern, text, q):
+			return(True)
+	return(False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -118,7 +131,7 @@ def binary_search_fuzzy(pat, txt, threshold, local=1):
 
 
 
-def occurences_search_fuzzy(patterns, txt, threshold, local=1):
+def occurences_of_patterns_in_text_fuzzy(patterns, txt, threshold, local=1):
 	"""
 	Searches for occurences of any of the patterns in the longer string (slow).
 	The method process.extractBests() returns a list of tuples where the first
@@ -143,6 +156,25 @@ def occurences_search_fuzzy(patterns, txt, threshold, local=1):
 	patterns_found = [match[0] for match in best_matches]
 	return(patterns_found)
 
+
+
+
+
+def occurences_of_pattern_in_texts_fuzzy(pattern, texts, threshold, local=1):
+	"""Searches for occurences of a pattern in any of the longer strings.
+	Args:
+	    pattern (TYPE): Description
+	    texts (TYPE): Description
+	    threshold (TYPE): Description
+	    local (int, optional): Description
+	Returns:
+	    TYPE: Description
+	"""
+	matching_texts = []
+	for txt in texts:
+		if binary_search_fuzzy(pattern, txt, threshold, local=local):
+			matching_texts.append(txt)
+	return(matchin_texts)
 
 
 

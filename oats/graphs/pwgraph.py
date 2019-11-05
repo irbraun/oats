@@ -13,9 +13,9 @@ class PairwiseGraph:
 		be placed within the context of this graph without rebuilding the entire graph.
 		
 		Args:
-		    edgelist (TYPE): Description
-		    vector_dictionary (None, optional): Description
-		    vectorizer_object (None, optional): Description
+		    edgelist (pandas.DataFrame): Each row is an edge in the graph with format {from,to,value}.
+		    vector_dictionary (None, optional): A mapping between node IDs and vector representation.
+		    vectorizer_object (None, optional): The vectorizer (scipy) object used for embedding each node.
 		"""
 		self.edgelist = edgelist
 		self.vector_dictionary = vector_dictionary

@@ -499,7 +499,7 @@ class Groupings:
         print("Number of groups present for each species")
         for species in self.species_list:
             print("  {}: {}".format(species, len(self.species_to_fwd_gene_mappings[species].keys())))
-        print("Number of genes names found mapped to groups by species")
+        print("Number of genes names mapped to any group for each species")
         for species in self.species_list:
             print("  {}: {}".format(species, len(self.species_to_rev_gene_mappings[species].keys())))
 

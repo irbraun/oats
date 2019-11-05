@@ -45,10 +45,6 @@ def classification(graph, id_to_labels):
 	y_scores = []
 
 
-	print("starting the main loop")
-
-	
-
 	for identifier, label in itertools.product(ids,labels):
 
 
