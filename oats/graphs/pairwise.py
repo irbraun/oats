@@ -502,34 +502,6 @@ def pairwise_annotations_twogroup(annotations_dict_1, annotations_dict_2, metric
 
 
 
-def merge_edgelists(dfs_dict, default_value=None):	
-	"""Summary
-	
-	Args:
-	    dfs_dict (TYPE): Description
-	    default_value (None, optional): Description
-	
-	Returns:
-	    TYPE: Description
-	"""
-
-	# Very slow verification step to standardize the dataframes that specify the edge lists.
-	# This should only be run if not sure whether or not the methods that generate the edge
-	# lists are returning the edges in the exact same format (both i,j and j,i pairs present).
-	#dfs_dict = {name:_standardize_edgelist(df) for name,df in dfs_dict.items()}
-	#_verify_dfs_are_consistent(*dfs_dict.values())
-
-	for name,df in dfs_dict.items():
-		df.rename(columns={"value":name}, inplace=True)
-	merged_df = functools.reduce(lambda left,right: pd.merge(left,right,on=["from","to"], how="outer"), dfs_dict.values())
-	if not default_value == None:
-		merged_df.fillna(default_value, inplace=True)
-	return(merged_df)
-
-
-
-
-
 
 
 
@@ -547,9 +519,59 @@ def merge_edgelists(dfs_dict, default_value=None):
 
 
 
+def merge_edgelists(dfs_dict, default_value=None):	
+	""" 
+	Takes a dictionary mapping between names and {from,to,value} formatted dataframes and
+	returns a single dataframe with the same nodes listed but where there is now one value
+	column for each dataframe provided, with the name of the column being the corresponding
+	name.
+
+	Args:
+	    dfs_dict (dict): Mapping between strings (names) and pandas.DataFrame objects.
+	    default_value (None, optional): A value to be inserted where none is present. 
+	
+	Returns:
+	    TYPE: Description
+	"""
+
+	# Very slow verification step to standardize the dataframes that specify the edge lists.
+	# This should only be run if not sure whether or not the methods that generate the edge
+	# lists are returning the edges in the exact same format (both i,j and j,i pairs present).
+	# dfs_dict = {name:_standardize_edgelist(df) for name,df in dfs_dict.items()}
+	# _verify_dfs_are_consistent(*dfs_dict.values())
+
+	for name,df in dfs_dict.items():
+		df.rename(columns={"value":name}, inplace=True)
+	merged_df = functools.reduce(lambda left,right: pd.merge(left,right,on=["from","to"], how="outer"), dfs_dict.values())
+	if not default_value == None:
+		merged_df.fillna(default_value, inplace=True)
+	return(merged_df)
+
+
+
+
+def make_undirected(df):
+	# The dataframe passed in must be in the form {from, to, [other...]}.
+	# Convert the undirected edgelist where an edge (j,i) is always implied by an edge (i,j) to a directed edgelist where
+	# both the (i,j) and (j,i) edges are explicity present in the dataframe. This is done so that we can make us of the
+	# groupby function to obtain all groups that contain all edges between some given node and everything its mapped to 
+	# by just grouping base on one of the columns specifying a node. This is easier than using a multi-indexed dataframe.
+	other_columns = df.columns[2:]
+	flipped_edges = df[flatten(["to","from",other_columns])]      # Create the flipped duplicate dataframe.
+	flipped_edges.columns = flatten(["from","to",other_columns])  # Rename the columns so it will stack correctly
+	df = pd.concat([df, flipped_edges])
+	df.drop_duplicates(keep="first", inplace=True)
+	return(df)
+	
+
+
 
 def remove_self_loops(df):
 	return(df[df["from"] != df["to"]])
+
+
+
+
 
 
 def standardize_edgelist(df):
