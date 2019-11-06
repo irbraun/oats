@@ -32,7 +32,7 @@ from oats.nlp.search import binary_search_rabin_karp
 
 
 def annotate_using_rabin_karp(object_dict, ontology, fixcase=1):
-	"""Build a dictionary of annotations using Rabin Karp search.
+	"""Build a dictionary of annotations using the Rabin Karp algorithm.
 
 	Args:
 	    object_dict (dict): Mapping from IDs to natural language descriptions.
@@ -65,7 +65,7 @@ def annotate_using_rabin_karp(object_dict, ontology, fixcase=1):
 
 
 def annotate_using_noble_coder(object_dict, path_to_jarfile, ontology_names, precise=1):
-	"""Build a dictionary of annotations using external tool NOBLE Coder.
+	"""Build a dictionary of annotations using the external tool NOBLE Coder.
 
 	Args:
 	    object_dict (dict): Mapping from object IDs to natural language descriptions.
@@ -79,6 +79,8 @@ def annotate_using_noble_coder(object_dict, path_to_jarfile, ontology_names, pre
 	Raises:
 	    FileNotFoundError: NOBLE Coder will check for a terminology file matching this ontology.
 	"""
+
+
 
 	# Configuration for running the NOBLE Coder script.
 	tempfiles_directory = "temp_textfiles"
@@ -102,7 +104,8 @@ def annotate_using_noble_coder(object_dict, path_to_jarfile, ontology_names, pre
 			file.write(description)
 
 
-	# Use all specified ontologies to annotate each text file.
+
+	# Use all specified ontologies to annotate each text file. 
 	# Also NOBLE Coder will check for a terminology file matching this ontology, check it's there.
 	for ontology_name in ontology_names:
 		expected_terminology_file = os.path.expanduser(os.path.join("~",".noble", "terminologies", f"{ontology_name}.term"))

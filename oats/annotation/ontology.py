@@ -32,14 +32,54 @@ class Ontology:
 
 	def __init__(self, ontology_obo_file):
 
-
+		# Generate all the data structures that are accessible from instances of the ontology class.
 		self.pronto_ontology_obj = pronto.Ontology(ontology_obo_file)
 		self.subclass_dict = self._get_subclass_dict()
 		self.ic_dict = self._get_graph_based_ic_dictionary()
-
 		forward_term_dict, reverse_term_dict = self._get_term_dictionaries()
 		self.forward_term_dict = forward_term_dict
 		self.reverse_term_dict = reverse_term_dict
+
+
+
+
+
+
+
+	def get_tokens(self):
+		"""
+		Returns a list of tokens that appear in the labels and synonym strings of this ontology.
+		This could be useful for generating a custom vocabulary based on which words are present
+		in descriptions, labels, and synonyms for terms that are in this ontology. Note that this
+		is different than finding the complete set of terms from the vocabulary or their labels,
+		because this splits labels and synonyms that contain multiple words into seperate tokens 
+		at the description of the tokenizer function. Additional processing might be needed to turn
+		this set of tokens into a useful vocabulary. 
+		Returns:
+		    TYPE: Description
+		"""
+		labels_and_synonyms = list(itertools.chain.from_iterable(list(self.forward_term_dict.values())))
+		tokens = set(list(itertools.chain.from_iterable([word_tokenize(x) for x in labels_and_synonyms])))
+		return(list(tokens))
+
+
+
+
+	def get_label_from_id(self, term_id):
+		"""Finds the label that belongs to the term this ID is referencing in this ontology.
+		Args:
+		    term_id (str): The ID string for some term.
+		Returns:
+		    str: The label corresponding to that term ID.
+		Raises:
+		    KeyError: This ID does not refer to a term in the ontology.
+		"""
+		try:
+			return(self.pronto_ontology_obj[term_id].name)
+		except:
+			raise KeyError("this identifier matches no terms in the ontology")
+
+
 
 
 
@@ -182,36 +222,6 @@ class Ontology:
 
 
 
-	def get_tokens(self):
-		"""
-		Returns a list of tokens that appear in the labels and synonym strings of this ontology.
-		Returns:
-		    TYPE: Description
-		"""
-		labels_and_synonyms = list(itertools.chain.from_iterable(list(self.forward_term_dict.values())))
-		tokens = set(list(itertools.chain.from_iterable([word_tokenize(x) for x in labels_and_synonyms])))
-		return(list(tokens))
-
-	def get_vocabulary(self):
-		""" 
-		Returns a dictionary mapping tokens to integers that can be used as a vocabulary. The reason
-		this is useful is because the integers (values) are always from 0 to n so that they can be 
-		used to map each token to a particular position within a vector, which is these vocabulary
-		dictionaries can be used when speciyfing what the token-based vector of some text should be
-		formatted like.
-		Returns:
-		    TYPE: Description
-		"""
-		labels_and_synonyms = list(itertools.chain.from_iterable(list(self.forward_term_dict.values())))
-		tokens = set(list(itertools.chain.from_iterable([word_tokenize(x) for x in labels_and_synonyms])))
-		vocabulary = {token:i for i,token in enumerate(list(tokens))}
-		return(vocabulary)
-
-	def get_label_from_id(self, term_id):
-		try:
-			return(self.pronto_ontology_obj[term_id].name)
-		except:
-			raise KeyError("this identifier matches no terms in the ontology")
 
 
 
