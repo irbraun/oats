@@ -1,15 +1,9 @@
-from itertools import product
-from scipy import spatial
-import gensim
 import numpy as np
 import pandas as pd
-import fastsemsim as fss
 import string
 import itertools
-import pronto
 import _pickle as pickle
 import time
-import json
 from collections import defaultdict
 from itertools import  chain
 
@@ -118,7 +112,7 @@ def function_wrapper_with_duration(function, args):
 		tuple: The output of the function and runtime in seconds.
 	"""
 	start_time = time.perf_counter()
-	return_value = function(*args)
+	return_value = function(**args)
 	total_time = time.perf_counter()-start_time
 	return(return_value,total_time)
 
