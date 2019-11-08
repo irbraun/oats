@@ -64,8 +64,8 @@ def annotate_using_rabin_karp(object_dict, ontology, fixcase=1):
 
 
 
-def annotate_using_noble_coder(object_dict, path_to_jarfile, ontology_names, precise=1):
-	"""Build a dictionary of annotations using the external tool NOBLE Coder.
+def annotate_using_noble_coder(object_dict, path_to_jarfile, *ontology_names, precise=1):
+	"""Build a dictionary of annotations using NOBLE Coder.
 
 	Args:
 	    object_dict (dict): Mapping from object IDs to natural language descriptions.
@@ -77,7 +77,7 @@ def annotate_using_noble_coder(object_dict, path_to_jarfile, ontology_names, pre
 	    dict: Mapping from object (phenotype) IDs to ontology term IDs.
 
 	Raises:
-	    FileNotFoundError: NOBLE Coder will check for a terminology file matching this ontology.
+	    FileNotFoundError: NOBLE Coder can't find the terminology file matching this ontology.
 	"""
 
 
@@ -97,16 +97,14 @@ def annotate_using_noble_coder(object_dict, path_to_jarfile, ontology_names, pre
 
 	# Generate temporary text files for each of the text descriptions.
 	# Identifiers for descriptions are encoded into the filenames themselves.
-	annotations = defaultdict(list)
+	annotations = {identifier:[] for identifier in object_dict.keys()}
 	for identifier,description in object_dict.items():
 		tempfile_path = os.path.join(tempfiles_directory, f"{identifier}.txt")
 		with open(tempfile_path, "w") as file:
 			file.write(description)
 
-
-
 	# Use all specified ontologies to annotate each text file. 
-	# Also NOBLE Coder will check for a terminology file matching this ontology, check it's there.
+	# Also NOBLE Coder will check for a terminology file matching this ontology, make sure it's there.
 	for ontology_name in ontology_names:
 		expected_terminology_file = os.path.expanduser(os.path.join("~",".noble", "terminologies", f"{ontology_name}.term"))
 		if not os.path.exists(expected_terminology_file):
@@ -114,7 +112,12 @@ def annotate_using_noble_coder(object_dict, path_to_jarfile, ontology_names, pre
 		os.system(f"java -jar {path_to_jarfile} -terminology {ontology_name} -input {tempfiles_directory} -output {output_directory} -search '{specificity}' -score.concepts")
 		default_results_filename = "RESULTS.tsv"		
 		for identifier,term_list in _parse_noble_coder_results(default_results_path).items():
+			# Need to convert identifier back to an integer because it's being read from a file name.
+			# NOBLE Coder finds every occurance of a matching, reduce this to form a set.
+			identifier = int(identifier)
+			term_list = list(set(term_list))
 			annotations[identifier].extend(term_list)
+
 
 
 	# Cleanup and return the annotation dictionary.
