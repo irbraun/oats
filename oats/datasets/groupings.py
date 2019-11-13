@@ -366,8 +366,14 @@ class Groupings:
                     pathway_ids_dict[pathway] = pathway_id
 
 
+        # Convert the gene names and identifiers to lowercase if case sensitive not set.
+        if not self.case_sensitive:
+            df["gene_names"] = df["gene_names"].map(str.lower)
+            df["ncbi_id"] = df["ncbi_id"].map(str.lower)
+
         # Update the pathway ID fields using the dictionary.
         df.replace({"pathway_id":pathway_ids_dict}, inplace=True)
+
         return(df)
 
 
@@ -387,6 +393,7 @@ class Groupings:
             gene_names = row.gene_names.strip().split(delim)
             if not row.ncbi_id == "":
                 gene_names.append(add_prefix(row.ncbi_id, NCBI_TAG))
+                gene_names.append(row.ncbi_id)
             if not row.uniprot_id == "":
                 gene_names.append(add_prefix(row.uniprot_id, UNIPROT_TAG))
             for gene_name in gene_names:
