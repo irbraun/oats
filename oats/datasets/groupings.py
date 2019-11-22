@@ -279,7 +279,7 @@ class Groupings:
 
 
 
-    def write_to_csv(self, path):
+    def to_csv(self, path):
         """
         Write the contents of the combined dataframe for all the pathway inforomation
         out to a csv file. 
@@ -290,10 +290,7 @@ class Groupings:
         df.to_csv(path, index=False)
 
 
-
-
-
-    def get_df(self):
+    def to_pandas(self):
         """
         Returns a df with the contents of the combined dataframe for all the pathway
         information that is used for this dataset. This the same dataframe that is
@@ -303,9 +300,6 @@ class Groupings:
         """
         df = pd.concat(self.species_to_df_dict.values(), ignore_index=True) 
         return(df)
-
-
-
 
 
     def describe(self):

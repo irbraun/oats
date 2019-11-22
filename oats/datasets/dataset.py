@@ -31,6 +31,9 @@ from oats.nlp.preprocess import concatenate_with_bar_delim
 class Dataset:
 
 
+
+
+
 	def __init__(self):
 		self.col_names = ["id", "species", "gene_names", "description", "term_ids", "pmid"]
 		self.col_names_without_id = self.col_names
@@ -39,17 +42,8 @@ class Dataset:
 
 
 
-	def _reset_ids(self):
-		"""
-		This method is called after every preprocessing, subsampling, sorting, or merging step
-		done during the preprocessing and creation of a given dataset. It resets the actual row
-		indices of the internal dataframe object, forgets the old ones, and uses the new ones 
-		to populate a column to use as IDs for entries in the dataset. This ensures that there
-		will always be a ID value to access where the IDs are always unique integers.
-		"""
-		self.df.reset_index(drop=True,inplace=True)
-		self.df.id = [int(i) for i in self.df.index.values]
-		self.df = self.df[["id", "species", "gene_names", "description", "term_ids", "pmid"]]
+
+
 
 
 	def add_data(self, df_newlines):
@@ -75,12 +69,34 @@ class Dataset:
 
 
 
+	def _reset_ids(self):
+		"""
+		This method is called after every preprocessing, subsampling, sorting, or merging step
+		done during the preprocessing and creation of a given dataset. It resets the actual row
+		indices of the internal dataframe object, forgets the old ones, and uses the new ones 
+		to populate a column to use as IDs for entries in the dataset. This ensures that there
+		will always be a ID value to access where the IDs are always unique integers.
+		"""
+		self.df.reset_index(drop=True,inplace=True)
+		self.df.id = [int(i) for i in self.df.index.values]
+		self.df = self.df[["id", "species", "gene_names", "description", "term_ids", "pmid"]]
+
+
+
+
+
+
+
+
+
+
+
+	####### Filtering the dataset destsructively ##########
+
+
 
 	def filter_random_k(self, k, seed=7919):
 		"""Remove all but k randomly sampled points from the dataset.
-		Args:
-			k (int): The number of datapoints or rows to retain.
-			seed (int): Seed value for reproducibility of random process.
 		"""
 		self.df = self.df.sample(n=k, random_state=seed)
 
@@ -117,13 +133,14 @@ class Dataset:
 
 
 
-	######## Getting dictionaries that map IDs to fields in the dataset #########
+
+
+
+	####### Accessing information from the dataset ##########
 
 
 	def get_gene_dictionary(self):
 		"""Get a mapping from IDs to gene objects.
-		Returns:
-			TYPE: Description
 		"""
 		gene_dict = {}
 		for row in self.df.itertuples():
@@ -136,8 +153,6 @@ class Dataset:
 
 	def get_annotations_dictionary(self):
 		"""Get a mapping from IDs to lists of ontology term IDs.
-		Returns:
-			TYPE: Description
 		"""
 		annotations_dict = {}
 		for row in self.df.itertuples():
@@ -149,8 +164,6 @@ class Dataset:
 
 	def get_description_dictionary(self):
 		"""Get a mapping from IDs to text descriptions.
-		Returns:
-			TYPE: Description
 		"""
 		description_dict = {identifier:description for (identifier,description) in zip(self.df.id, self.df.description)}
 		return(description_dict)
@@ -158,8 +171,6 @@ class Dataset:
 
 	def get_species_dictionary(self):
 		"""Get a mapping from IDs to species strings.
-		Returns:
-			TYPE: Description
 		"""
 		species_dict = {identifier:species for (identifier,species) in zip(self.df.id, self.df.species)}
 		return(species_dict)
@@ -167,11 +178,15 @@ class Dataset:
 
 
 	def get_ids(self):
+		"""Get a list of the IDs for all entries in this dataset.
+		"""
 		return(list(self.df.id.values))
 
 
 
 	def get_species(self):
+		"""Get a list of all the species that are represented in this dataset.
+		"""
 		return(list(pd.unique(self.df.species.values)))
 
 
@@ -186,7 +201,6 @@ class Dataset:
 
 
 
-	######### Reverse mappings (where the ID is the value) which might be useful #########
 
 
 	def get_name_to_id_dictionary(self):
@@ -220,10 +234,7 @@ class Dataset:
 
 
 
-	######## Merging entries in the dataset based on overlaps in gene names #########
-
-
-
+	######## Merging rows in the dataset based on overlaps in gene names #########
 
 
 	def collapse_by_first_gene_name(self):
@@ -253,10 +264,6 @@ class Dataset:
 		self._reset_ids()
 
 
-
-
-
-	
 	@staticmethod
 	def generate_edges(row):
 		"""
@@ -366,19 +373,19 @@ class Dataset:
 
 
 
-	######## Methods for looking at or summarizing the whole dataset  #########
+	######## Summarizing, saving, or converting the whole dataset #########
 
-
-
-	def sort_by_species(self):
+	def _sort_by_species(self):
 		self.df.sort_values(by=["species"], inplace=True)
 		self._reset_ids()
 
-
-	def write_to_csv(self, path):
-		self.sort_by_species()
+	def to_csv(self, path):
+		self._sort_by_species()
 		self.df.to_csv(path, index=False)
 
+	def to_pandas(self):
+		self._sort_by_species()
+		return(self.df)
 
 	def describe(self):
 		print("Number of rows in the dataframe: {}".format(len(self.df)))

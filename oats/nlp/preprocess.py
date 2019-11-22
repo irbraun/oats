@@ -26,24 +26,20 @@ def get_clean_description(description):
 	description = description.lower()
 	return(description)
 
-
 def get_clean_token_list(description):
 	description = remove_punctuation(description)
 	token_list = description.lower().split()
 	return(token_list)
 
-
 def remove_punctuation(text):
 	translator = str.maketrans('', '', string.punctuation)
 	return(text.translate(translator))
-
 
 def remove_newlines(text):
 	text = text.replace("\n", " ")
 	text = text.replace("\t", " ")
 	text = text.replace("\r", " ")
 	return(text)
-
 
 def add_end_tokens(description):
 	if len(description) > 0:
@@ -171,7 +167,6 @@ def remove_short_tokens(tokens, min_length=2):
 
 
 
-
 def add_prefix(token, prefix):
 	"""
 	Attaches the passed in prefix argument to the front of the token,
@@ -202,7 +197,6 @@ def add_prefix(token, prefix):
 
 
 ############### Methods useful for manipulating text descriptions ################
-
 
 
 
@@ -251,7 +245,7 @@ def concatenate_descriptions(*descriptions):
 
 
 
-############### Other useful methods for looking at source data ################
+############### Other useful methods for looking at sources of text ################
 
 
 def get_ontology_ids(string):
