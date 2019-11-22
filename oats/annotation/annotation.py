@@ -19,7 +19,7 @@ import glob
 import math
 import re
 
-from oats.nlp.search import binary_search_rabin_karp
+from oats.nlp.search import binary_search_rabin_karp, binary_search_fuzzy
 
 
 
@@ -37,8 +37,7 @@ def annotate_using_rabin_karp(object_dict, ontology, fixcase=1):
 	Args:
 	    object_dict (dict): Mapping from IDs to natural language descriptions.
 	    ontology (Ontology): Ontology object with specified terms.
-	    fixcase (int, optional): Set to 1 to make words from ontologies and 
-	    the searched text both lowercase, set to 0 else.
+	    fixcase (int, optional): Set to 1 to make words from ontologies and the searched text both lowercase, set to 0 else.
 
 	Returns:
 	    dict: Mapping from object (phenotype) IDs to ontology term IDs.
@@ -55,6 +54,37 @@ def annotate_using_rabin_karp(object_dict, ontology, fixcase=1):
 				annotations[identifer].extend(term_list)
 	return(annotations)
 
+
+
+
+
+
+
+
+
+def annotate_using_fuzzy_matching(object_dict, ontology, threshold=0.90, fixcase=1, local=1):
+    """Build a dictionary of annotations using the fuzzy string matching method.
+    
+    Args:
+        object_dict (dict): Mapping from IDs to natural language descriptions.
+        ontology (Ontology): Ontology object with specified terms.
+        threshold (float, optional): Value between 0 and 1 at which matches are considered real.
+        fixcase (int, optional): Set to 1 to make words from ontologies and the searched text both lowercase, set to 0 else.
+        local (int, optional): Set the alignment method, 0 for global and 1 for local. Should always be local for annotating long text.
+    
+    Returns:
+        dict: Mapping from object (phenotype) IDs to ontology term IDs.
+    """
+    annotations = defaultdict(list)
+    for identifier,description in object_dict.items():
+    	annotations[identifier].extend([])
+    	for word, term_list in ontology.reverse_term_dict.items():
+    		if fixcase==1:
+    			word = word.lower()
+    			description = description.lower()
+    		if binary_search_fuzzy(word, description, threshold, local):
+    			annotations[identifier].extend(term_list)
+    return(annotations)
 
 
 
@@ -156,11 +186,6 @@ def _parse_noble_coder_results(results_filename):
 
 
 
-
-
-
-
-
 def _cleanup_noble_coder_results(output_directory, textfiles_directory):
 	"""
 	Removes all directories and files created and used by running NOBLE Coder.
@@ -200,6 +225,15 @@ def _cleanup_noble_coder_results(output_directory, textfiles_directory):
 
 
 
+
+
+
+
+
+
+
+
+
 def write_annotations_to_tsv_file(annotations_dict, annotations_output_path):
 	"""Create a tsv file of annotations that is compatable with fastsemsim.
 	
@@ -213,9 +247,6 @@ def write_annotations_to_tsv_file(annotations_dict, annotations_output_path):
 		row_values.extend(term_list)
 		outfile.write("\t".join(row_values).strip()+"\n")
 	outfile.close()
-
-
-
 
 
 
