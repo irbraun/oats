@@ -1,7 +1,6 @@
 # OATS: Ontology Annotation and Text Similarity
 
-### Description
-This is a python package created to provide functions for generating and working with networks constructed from natural language descriptions. Specifically, this package was designed for datasets of text descriptions associated with genes, for the purposes of predicting gene function or membership in pathways and regulatory networks through constructing similarity networks with genes and their associated descripitions as nodes. However, many of the functions provided here can generalize to any problem requiring constructing similarity networks based on natural language datasets.
+This is a python package created to provide functions for generating and working with networks constructed from natural language descriptions. Specifically, this package was designed for datasets of text descriptions associated with genes, for the purposes of predicting gene function or membership in pathways and regulatory networks through constructing similarity networks with genes and their associated descriptions as nodes. However, many of the functions provided here can generalize to any problem requiring constructing similarity networks based on natural language datasets.
 
 #### Functions specific to biological datasets
 1. Preprocessing, cleaning, and organizing datasets of gene names and accessions.
@@ -14,6 +13,10 @@ This is a python package created to provide functions for generating and working
 3. Applying NLP methods such as bag-of-words and document embedding to datasets of text descriptions.
 4. Constructing similarity networks for text descriptions using the above methods.
 5. Training and testing machine learning models for combining methods to join networks.
+
+#### Jupyter Notebook
+A sample Jupyter notebook which uses some of the methods available in this package is provided, with an explaination of the workflow to used to answer some simple question about a dataset of natural language phenotype descriptions. The notebook includes sections for loading datasets, filtering and manipulating datasets, generating ontology term annotations, calculating text similarity with a variety of methods, and merging this data with additional biological datasets such as information on biochemical pathway membership. This notebook is intended as a small overview of the functions provided in this package.
+
 
 ### Feedback
 This package is a work in progress. Send any feedback, questions, or suggestions to irbraun at iastate dot edu.
