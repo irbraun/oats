@@ -82,6 +82,23 @@ class Ontology:
 
 
 
+	def get_inherited_term_ids(self, term_id):
+		"""Finds the terms which are inherited by the term referenced by the provided ID.
+		Args:
+		    term_id (TYPE): The ID string for some term.
+		Returns:
+		    TYPE: A list of additional term IDs which are inherited by this term.
+		Raises:
+		    KeyError: This ID does not refer to a term in the ontology.
+		"""
+		try:
+			term = self.pronto_ontology_obj[term_id]
+		except:
+			raise KeyError("this identifier matches no terms in the ontology")
+		inherited_terms = [x.id for x in term.rparents()]
+		return(inherited_terms)
+
+
 
 
 
@@ -103,6 +120,9 @@ class Ontology:
 			all_terms.add(term.id)
 			subclass_dict[term.id] = list(all_terms)
 		return(subclass_dict)
+
+
+
 
 
 
