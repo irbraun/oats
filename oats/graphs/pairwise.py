@@ -6,6 +6,7 @@ from scipy.spatial.distance import pdist, cdist, squareform
 from sklearn.neighbors import DistanceMetric
 from itertools import product
 from nltk.corpus import wordnet
+from nltk.tokenize import sent_tokenize
 from collections import defaultdict
 import gensim
 import numpy as np
@@ -21,10 +22,13 @@ import glob
 import math
 import re
 import random
+import torch
+from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM
 
 from oats.nlp.search import binary_search_rabin_karp
 from oats.utils.utils import flatten
 from oats.graphs.pwgraph import PairwiseGraph
+
 
 
 
@@ -62,7 +66,6 @@ def strings_to_count_vectors(*strs, **kwargs):
 	return(vectors, vectorizer)
 
 
-
 def strings_to_tfidf_vectors(*strs, **kwargs):
 	"""
 	https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html
@@ -95,7 +98,11 @@ def strings_to_tfidf_vectors(*strs, **kwargs):
 	return(vectors, vectorizer)
 
 
-
+def strings_to_vectors(*strs, tfidf=False, **kwargs):
+	if tfidf:
+		return(strings_to_tfidf_vectors(*strs, **kwargs))
+	else:
+		return(strings_to_count_vectors(*strs, **kwargs))
 
 
 
@@ -115,11 +122,11 @@ def square_adjacency_matrix_to_edgelist(matrix, indices_to_ids):
 	nodes.
 
 	Args:
-	    matrix (numpy array): A square array which is considered an adjacency matrix.
-	    indices_to_ids (dict): Mapping between indices of the array and node names.
+		matrix (numpy array): A square array which is considered an adjacency matrix.
+		indices_to_ids (dict): Mapping between indices of the array and node names.
 	
 	Returns:
-	    pandas.Dataframe: Dataframe where each row specifies an edge in a graph.
+		pandas.Dataframe: Dataframe where each row specifies an edge in a graph.
 	"""
 
 	df_of_matrix = pd.DataFrame(matrix)									# Convert the numpy array to a pandas dataframe.
@@ -148,12 +155,12 @@ def rectangular_adjacency_matrix_to_edgelist(matrix, row_indices_to_ids, col_ind
 	by each row. 
 
 	Args:
-	    matrix (numpy array): A rectangular array which is considered an adjacency matrix.
-	    row_indices_to_ids (dict): Mapping between indices of the array and node names.
-	    col_indices_to_ids (dict): Mapping between indices of the array and node names.
+		matrix (numpy array): A rectangular array which is considered an adjacency matrix.
+		row_indices_to_ids (dict): Mapping between indices of the array and node names.
+		col_indices_to_ids (dict): Mapping between indices of the array and node names.
 	
 	Returns:
-	    pandas.Dataframe: Dataframe where each row specifies an edge in a graph.
+		pandas.Dataframe: Dataframe where each row specifies an edge in a graph.
 	"""
 	df_of_matrix = pd.DataFrame(matrix)										# Convert the numpy array to a pandas dataframe.
 	melted_matrix = df_of_matrix.stack().reset_index()						# Melt (stack) the array so the first two columns are matrix indices.
@@ -191,11 +198,11 @@ def pairwise_doc2vec_onegroup(model, object_dict, metric):
 	here.
 	
 	Args:
-	    model (gensim.models.doc2vec): An already loaded DocVec model from a file or training.
- 	    object_dict (dict): Mapping between object IDs and the natural language descriptions. 
+		model (gensim.models.doc2vec): An already loaded DocVec model from a file or training.
+		object_dict (dict): Mapping between object IDs and the natural language descriptions. 
 	
 	Returns:
-	    pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
+		pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
 	"""
 	
 
@@ -216,7 +223,115 @@ def pairwise_doc2vec_onegroup(model, object_dict, metric):
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
-	return(PairwiseGraph(edgelist, id_to_vector_dict, None))
+	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, None, None))
+
+
+
+
+def pairwise_bert_onegroup(model, tokenizer, object_dict, metric, method, layers):
+	"""
+	Method for creating a pandas dataframe of similarity values between all passed in object IDs
+	using vector embeddings inferred for each natural language description using the passed in 
+	BERT model, which could have been newly trained on relevant data or taken as a pretrained
+	model. No assumptions are made about the format of the natural language descriptions, so any
+	preprocessing or cleaning of the text should be done prior to being provied in the dictionary
+	here.
+	"""
+
+	# Infer a vector for each unique description, and make the vectors map to indices in a matrix.
+	# Remember a mapping between the ID for each object and the positition of the vector for its 
+	# description in the matrix so that the similarity values can be recovered later given a pair 
+	# of IDs for two objects.
+	vectors = []
+	index_in_matrix_to_id = {}
+	for identifier,description in object_dict.items():
+		inferred_vector = _infer_document_vector_from_bert(model, tokenizer, description, method, layers)
+		index_in_matrix = len(vectors)
+		vectors.append(inferred_vector)
+		index_in_matrix_to_id[index_in_matrix] = identifier
+
+	# Apply some similarity metric over the vectors to yield a matrix.
+	matrix = squareform(pdist(vectors,metric))
+	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
+	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, None, None))
+
+
+
+def _infer_document_vector_from_bert(model, tokenizer, description, method="sum", layers=4):
+	"""
+	This function uses a pretrained BERT model to infer a document level vector for a collection 
+	of one or more sentences. The sentence are defined using the nltk sentence parser. This is 
+	done because the BERT encoder expects either a single sentence or a pair of sentences. The
+	internal representations are drawn from the last n layers as specified by the layers argument, 
+	and represent a particular token but account for the context that it is in because the entire
+	sentence is input simultanously. The vectors for the layers can concatentated or summed 
+	together based on the method argument. The vector obtained for each token then are averaged
+	together to for the document level vector.
+	
+	Args:
+	    model (TYPE): Description
+	    tokenizer (TYPE): Description
+	    description (TYPE): Description
+	    method (TYPE, optional): Description
+	    layers (TYPE, optional): Description
+	
+	Returns:
+	    TYPE: Description
+	
+	Raises:
+	    Error: The method argument has to be either 'concat' or 'sum'.
+	"""
+	sentences = sent_tokenize(description)
+	token_vecs_cat = []
+	token_vecs_sum = []
+
+	# Using the last four layers either concatenated or summed as the embedding.
+	for text in sentences:
+		marked_text = "{} {} {}".format("[CLS]",text,"[SEP]")
+		tokenized_text = tokenizer.tokenize(marked_text)
+		indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
+		segments_ids = [1] * len(tokenized_text)
+		tokens_tensor = torch.tensor([indexed_tokens])
+		segments_tensor = torch.tensor([segments_ids])
+		with torch.no_grad():
+			encoded_layers,_ = model(tokens_tensor,segments_tensor)
+		token_embeddings = torch.stack(encoded_layers, dim=0)
+		token_embeddings = token_embeddings.permute(1,2,0,3)
+		batch = 0
+		for token in token_embeddings[batch]:
+			concatenated_layer_vectors = torch.cat(tuple(token[-layers:]), dim=0)
+			summed_layer_vectors = torch.sum(token[-layers:], dim=0)
+			token_vecs_cat.append(np.array(concatenated_layer_vectors))
+			token_vecs_sum.append(np.array(summed_layer_vectors))
+
+	# Average the vectors obtained for each token across all the sentences.
+	if method == "concat":
+		embedding = np.mean(np.array(token_vecs_cat),axis=0)
+	elif method == "sum":
+		embedding = np.mean(np.array(token_vecs_sum),axis=0)
+	else:
+		raise Error("method argument is invalid")
+	return(embedding)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
 
 
 
@@ -236,13 +351,13 @@ def pairwise_word2vec_onegroup(model, object_dict, metric, method="mean"):
 	tokens.
 
 	Args:
-	    model (TYPE): Description
-	    object_dict (TYPE): Description
-	    metric (TYPE): Description
-	    method (str, optional): Should the word embeddings be combined with mean or max.
+		model (TYPE): Description
+		object_dict (TYPE): Description
+		metric (TYPE): Description
+		method (str, optional): Should the word embeddings be combined with mean or max.
 	
 	Returns:
-	    pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
+		pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
 	"""
 	vectors = []
 	index_in_matrix_to_id = {}
@@ -265,7 +380,7 @@ def pairwise_word2vec_onegroup(model, object_dict, metric, method="mean"):
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
-	return(PairwiseGraph(edgelist, id_to_vector_dict, None))
+	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, None, None))
 
 
 
@@ -277,7 +392,11 @@ def pairwise_word2vec_onegroup(model, object_dict, metric, method="mean"):
 
 
 
-def pairwise_counting_onegroup(object_dict, metric, **kwargs):
+
+
+
+
+def pairwise_ngrams_onegroup(object_dict, metric, tfidf=False, **kwargs):
 	"""
 	Method for creating a pandas dataframe of similarity values between all passed in object IDs
 	using vectors to represent each of the natural language descriptions as a set-of-words. No 
@@ -285,11 +404,11 @@ def pairwise_counting_onegroup(object_dict, metric, **kwargs):
 	or preprocessing of the text should be done prior to being provied in the dictionary here.
 	
 	Args:
-	    object_dict (dict): Mapping between object IDs and the natural language descriptions. 
-	    **kwargs: All the keyword arguments that can be passed to sklearn.feature_extraction.CountVectorizer()
+		object_dict (dict): Mapping between object IDs and the natural language descriptions. 
+		**kwargs: All the keyword arguments that can be passed to sklearn.feature_extraction.CountVectorizer()
 	
 	Returns:
-	    pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
+		pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
 	"""
 
 	# Map descriptions to coordinates in a matrix.
@@ -302,19 +421,17 @@ def pairwise_counting_onegroup(object_dict, metric, **kwargs):
 
 
 	# Find all the pairwise values for the similiarity matrix.
-	vectors,vectorizer = strings_to_count_vectors(*descriptions, **kwargs)
+	vectors,vectorizer = strings_to_vectors(*descriptions, tfidf=tfidf, **kwargs)
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
-	return(PairwiseGraph(edgelist, id_to_vector_dict, vectorizer))
+	return(PairwiseGraph(edgelist, id_to_vector_dict, vectorizer, None, None, None))
 
 
 
 
 
-
-
-def pairwise_annotations_onegroup(annotations_dict, ontology, metric, **kwargs):
+def pairwise_annotations_onegroup(annotations_dict, ontology, metric, tfidf=False, **kwargs):
 	"""
 	Method for creating a pandas dataframe of similarity values between all passed in object IDs
 	based on the annotations of ontology terms to to all the natural language descriptions that
@@ -324,12 +441,12 @@ def pairwise_annotations_onegroup(annotations_dict, ontology, metric, **kwargs):
 	accounted for here in either case.
 	
 	Args:
-	    annotations_dict (dict): Mapping from object IDs to lists of ontology term IDs.
-	    ontology (Ontology): Ontology object with all necessary fields.
-	    **kwargs: All the keyword arguments that can be passed to sklearn.feature_extraction.CountVectorizer()
+		annotations_dict (dict): Mapping from object IDs to lists of ontology term IDs.
+		ontology (Ontology): Ontology object with all necessary fields.
+		**kwargs: All the keyword arguments that can be passed to sklearn.feature_extraction.CountVectorizer()
 	
 	Returns:
-	    pandas.Dataframe: Each row in the dataframe is [first ID, second ID, similarity].
+		pandas.Dataframe: Each row in the dataframe is [first ID, second ID, similarity].
 	"""
 
 	# Relevant page for why itertools.chain.from_iterable() can't be used here to flatten the nested string list.
@@ -347,20 +464,11 @@ def pairwise_annotations_onegroup(annotations_dict, ontology, metric, **kwargs):
 
 
 	# Find all the pairwise values for the similiarity matrix.
-	vectors,vectorizer = strings_to_count_vectors(*joined_term_strings, **kwargs)
+	vectors,vectorizer = strings_to_vectors(*joined_term_strings, tfidf=tfidf, **kwargs)
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
-	return(PairwiseGraph(edgelist, id_to_vector_dict, None))
-
-
-
-
-
-
-
-
-
+	return(PairwiseGraph(edgelist, id_to_vector_dict, vectorizer, None, None, None))
 
 
 
@@ -398,14 +506,18 @@ def pairwise_doc2vec_twogroup(model, object_dict_1, object_dict_2, metric):
 	col_vectors = all_vectors[len(object_dict_1):]
 	matrix = cdist(row_vectors, col_vectors, metric)
 	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(PairwiseGraph(edgelist, None, None))
+	return(PairwiseGraph(edgelist, None, None, None, None, None))
 
 
 
 
 
 
-def pairwise_counting_twogroup(object_dict_1, object_dict_2, metric, **kwargs):
+
+
+
+
+def pairwise_ngrams_twogroup(object_dict_1, object_dict_2, metric, **kwargs):
 	"""
 	Generate a dataframe that specifies a list of all pairwise edges between nodes
 	in the first group and nodes in the second group, based on the similarity 
@@ -413,12 +525,12 @@ def pairwise_counting_twogroup(object_dict_1, object_dict_2, metric, **kwargs):
 	representations.
 	
 	Args:
-	    object_dict_1 (TYPE): Description
-	    object_dict_2 (TYPE): Description
-	    **kwargs: Description
+		object_dict_1 (TYPE): Description
+		object_dict_2 (TYPE): Description
+		**kwargs: Description
 	
 	Returns:
-	    TYPE: Description
+		TYPE: Description
 	"""
 	descriptions = []
 	row_index_in_matrix_to_id = {}
@@ -436,12 +548,50 @@ def pairwise_counting_twogroup(object_dict_1, object_dict_2, metric, **kwargs):
 		col_index_in_matrix_to_id[col_in_matrix] = identifier
 		col_in_matrix = col_in_matrix+1
 
-	all_vectors = strings_to_count_vectors(*descriptions, **kwargs)
+	all_vectors,vectorizer = strings_to_count_vectors(*descriptions, **kwargs)
 	row_vectors = all_vectors[:len(object_dict_1)]
 	col_vectors = all_vectors[len(object_dict_1):]
 	matrix = cdist(row_vectors, col_vectors, metric)
 	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(PairwiseGraph(edgelist, None, None))
+	return(PairwiseGraph(edgelist, None, None, None, None, None))
+
+
+
+
+
+def elemwise_ngrams_twogroup(object_list_1, object_list_2, metric_function, **kwargs):
+	""" Takes two lists, zips them, and returns a list of the element-wise distances.
+		Has to take a distance function like scipy.spatial.distance.jaccard instead of the name.
+	"""
+	descriptions = []
+	descriptions.extend(object_list_1)
+	descriptions.extend(object_list_2)
+	all_vectors,vectorizer = strings_to_vectors(*descriptions, **kwargs)
+	list_1_vectors = all_vectors[:len(object_list_1)]
+	list_2_vectors = all_vectors[len(object_list_1):]
+	vector_pairs = zip(list_1_vectors, list_2_vectors)
+	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
+	return(distances_list)
+
+
+def elemwise_doc2vec_twogroup(model, object_list_1, object_list_2, metric_function):
+	"""docstring
+	"""
+	descriptions = []
+	descriptions.extend(object_list_1)
+	descriptions.extend(object_list_2)
+	all_vectors = [model.infer_vector(description.lower().split()) for description in descriptions]
+	list_1_vectors = all_vectors[:len(object_list_1)]
+	list_2_vectors = all_vectors[len(object_list_1):]
+	vector_pairs = zip(list_1_vectors, list_2_vectors)
+	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
+	return(distances_list)
+
+
+
+
+
+
 
 
 
@@ -480,7 +630,7 @@ def pairwise_annotations_twogroup(annotations_dict_1, annotations_dict_2, metric
 	col_vectors = all_vectors[len(object_dict_1):]
 	matrix = cdist(vectors,metric)
 	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(PairwiseGraph(edgelist, None, None))
+	return(PairwiseGraph(edgelist, None, None, None, None, None))
 
 
 
@@ -527,11 +677,11 @@ def merge_edgelists(dfs_dict, default_value=None):
 	name.
 
 	Args:
-	    dfs_dict (dict): Mapping between strings (names) and pandas.DataFrame objects.
-	    default_value (None, optional): A value to be inserted where none is present. 
+		dfs_dict (dict): Mapping between strings (names) and pandas.DataFrame objects.
+		default_value (None, optional): A value to be inserted where none is present. 
 	
 	Returns:
-	    TYPE: Description
+		TYPE: Description
 	"""
 
 	# Very slow verification step to standardize the dataframes that specify the edge lists.
@@ -591,10 +741,10 @@ def standardize_edgelist(df):
 	introducing incorrectly placed NAs.
 
 	Args:
-	    df (TYPE): Description
+		df (TYPE): Description
 	
 	Returns:
-	    TYPE: Description
+		TYPE: Description
 	"""
 
 	# Make the edgelist undirected.
@@ -618,10 +768,10 @@ def subset_edgelist_with_ids(df, ids):
 	edge list that specifies a subgraph of the one specified by the original edgelist.
 
 	Args:
-	    df (pandas.DataFrame): The edge list before subsetting.
-	    ids (list): A list of the node IDs that are the only ones left after subsetting.
+		df (pandas.DataFrame): The edge list before subsetting.
+		ids (list): A list of the node IDs that are the only ones left after subsetting.
 	Returns:
-	    pandas.DataFrame: The edge list after subsetting.
+		pandas.DataFrame: The edge list after subsetting.
 	"""
 	df = df[df["from"].isin(ids) & df["to"].isin(ids)]
 	return(df)
@@ -631,9 +781,9 @@ def subset_edgelist_with_ids(df, ids):
 def _verify_dfs_are_consistent(*similarity_dfs):
 	"""Check that each dataframe specifies the same set of edges.
 	Args:
-	    *similarity_dfs: Any number of dataframe arguments.
+		*similarity_dfs: Any number of dataframe arguments.
 	Raises:
-	    Error: The dataframes were found to not all be describing the same graph.
+		Error: The dataframes were found to not all be describing the same graph.
 	"""
 	id_sets = [set() for i in range(0,len(similarity_dfs))]
 	for i in range(0,len(similarity_dfs)):

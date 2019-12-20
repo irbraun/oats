@@ -93,6 +93,7 @@ def other_delim_to_bar_delim(string, delim):
 		raise ValueError("delimiter {} is not a single character".format(delim))
 	tokens = string.split(delim)
 	tokens = [token.strip() for token in tokens]
+	tokens = [token for token in tokens if not token==""]
 	joined = "|".join(tokens)
 	joined = remove_newlines(joined)
 	return(joined)

@@ -106,7 +106,7 @@ class Ontology:
 	def _get_subclass_dict(self):
 		"""
 		Produces a mapping between ontology term IDs and a list of other IDs which include
-		the key ID and all the IDs of every ontology term that that term is a subcless of.
+		the key ID and all the IDs of every ontology term that that term is a subclass of.
 		This means that this can be used to obtain the explicity list of terms that a single
 		term has the "is-a" or "part-of" relationship to, for example, in order to calculate
 		similarity between ontology terms or sets of them in annotations made.

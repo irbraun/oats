@@ -191,36 +191,30 @@ class Dataset:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-	def get_name_to_id_dictionary(self):
+	def get_name_to_id_dictionary(self, unambiguous=True):
 		"""
-		Get a mapping between gene names and the object ID they refer to. Note that this is 
-		guaranteed to not overwrite the values for any keys (no two names refer to different
-		IDs) provided that the collapse by all gene names method has been run on this data,
-		but this is not guaranteed if that method has not been run.
+		Get a mapping between gene names and the object ID they refer to. When the unambiguous
+		parameter is True then the only keys that are present in the dictionary are names that
+		map to a single gene from the dataset, so this excludes names that map to genes from
+		multiple species. This is because this method is useful for mapping gene names (with
+		no species information) in other files to IDs from this dataset. So those files should
+		only be used when they contain unambiguous names or accessions that encode the species
+		information. 
 
-		TODO even if that method has been run, that doesn't account for when two different
-		species have genes that have the same name, in which case they might be overwritten
-		across species. Should use the species code as a part of the name or something to 
-		guarantee that this works.
+		TODO create version of this that uses both the species string or number and the gene
+		names as the key to the generated dictionary, so that unambiguous parameter can be 
+		False and genes with the same name from two species can be mapped to the correct IDs.
+
 		"""
 		name_to_id_dict = {}
 		for row in self.df.itertuples():
 			delim = "|"
 			names = row.gene_names.split(delim)
 			for name in names:
-				name_to_id_dict[name] = row.id
+				if unambiguous and name not in name_to_id_dict:
+					name_to_id_dict[name] = row.id
+				else:
+					name_to_id_dict[name] = row.id
 		return(name_to_id_dict) 
 
 
@@ -278,8 +272,6 @@ class Dataset:
 		names = row["gene_names"].split("|")
 		edges = [(row["id"],"{}.{}".format(row["species"],name)) for name in names]
 		return(edges)
-
-
 
 
 

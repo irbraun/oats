@@ -4,7 +4,7 @@ import sys
 
 
 
-class Known:
+class Edges:
 
 	"""
 	Attributes
@@ -17,11 +17,11 @@ class Known:
 
 	def __init__(self, name_to_id_dictionary, filename):		
 
-		self.df,self.ids = self._get_known_similarities(name_to_id_dictionary, filename)
+		self.df,self.ids = self._get_edge_values_from_file(name_to_id_dictionary, filename)
 
 
 
-	def _get_known_similarities(self, name_to_id_dictionary, filename):
+	def _get_edge_values_from_file(self, name_to_id_dictionary, filename):
 		"""
 		This method is for producing a dataframe of known similarity values that can be merged
 		with a dataframe representing an edgelist created from some dataset. The input is a 
