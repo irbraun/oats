@@ -231,6 +231,7 @@ def concatenate_descriptions(*descriptions):
 	Returns:
 	    TYPE: Description
 	"""
+	descriptions = remove_duplicates_retain_order(descriptions)
 	descriptions = [add_end_tokens(description) for description in descriptions]
 	description = " ".join(descriptions).strip()
 	description = remove_newlines(description)

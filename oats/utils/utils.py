@@ -145,10 +145,14 @@ def print_nested_dict(d, indent=0):
 ######### Reading and writing python objects #########
 
 def save_to_pickle(obj, path):
-	pickle.dump(obj, open(path,"wb"))
+	f = open(path,"wb")
+	pickle.dump(obj, f)
+	f.close()
 
 def load_from_pickle(path):
-	obj = pickle.load(open(path,"rb"))
+	f = open(path,"rb")
+	obj = pickle.load(f)
+	f.close()
 	return(obj)
 
 

@@ -35,7 +35,7 @@ class Dataset:
 
 
 	def __init__(self):
-		self.col_names = ["id", "species", "gene_names", "description", "term_ids", "pmid"]
+		self.col_names = ["id", "species", "gene_names", "description", "term_ids"]
 		self.col_names_without_id = self.col_names
 		self.col_names_without_id.remove("id")
 		self.df = pd.DataFrame(columns=self.col_names)
@@ -59,7 +59,6 @@ class Dataset:
 		df_newlines = df_newlines[self.col_names_without_id]
 		df_newlines.loc[:,"id"] = None
 		df_newlines.fillna("", inplace=True)
-		df_newlines.loc[:,"pmid"] = str(df_newlines["pmid"])
 		self.df = self.df.append(df_newlines, ignore_index=True, sort=False)
 		self.df = self.df.drop_duplicates(keep="first", inplace=False)
 		self._reset_ids()
@@ -79,7 +78,7 @@ class Dataset:
 		"""
 		self.df.reset_index(drop=True,inplace=True)
 		self.df.id = [int(i) for i in self.df.index.values]
-		self.df = self.df[["id", "species", "gene_names", "description", "term_ids", "pmid"]]
+		self.df = self.df[["id", "species", "gene_names", "description", "term_ids"]]
 
 
 
@@ -113,13 +112,19 @@ class Dataset:
 		self.df = self.df[self.df["description"] != ""] 
 
 
-	def filter_has_annotation(self):
-		"""Remove points that don't have atleast one ontology term annotation.
+	def filter_has_annotation(self, ontology_name=None):
 		"""
-		self.df = self.df[self.df["term_ids"] != ""]
-
+		Remove points that don't have atleast one ontology term annotation,
+		or atleast one term annotation from the provided ontology if that 
+		argument is used.
+		"""
+		if ontology_name is not None:
+			self.df = self.df[self.df["term_ids"].str.contains(ontology_name)]
+		else:
+			self.df = self.df[self.df["term_ids"] != ""]
 
 	def filter_with_ids(self, ids):
+
 		"""Retain only points that have IDs in the list. 
 		"""
 		self.df = self.df[self.df["id"].isin(ids)]
@@ -251,8 +256,7 @@ class Dataset:
 		collapsed_df = self.df.groupby("first_gene_name").agg({"species": lambda x: x.values[0],
 																"gene_names": lambda x: concatenate_with_bar_delim(*x),
 																"description":lambda x: concatenate_descriptions(*x),
-																"term_ids":lambda x: concatenate_with_bar_delim(*x),
-																"pmid":lambda x: concatenate_with_bar_delim(*x)})
+																"term_ids":lambda x: concatenate_with_bar_delim(*x)})
 		collapsed_df["id"] = None
 		self.df = collapsed_df
 		self._reset_ids()
@@ -346,8 +350,7 @@ class Dataset:
 		self.df = self.df.groupby("component").agg({"species": lambda x: x.values[0],
 															"gene_names": lambda x: concatenate_with_bar_delim(*x),
 															"description":lambda x: concatenate_descriptions(*x),
-															"term_ids":lambda x: concatenate_with_bar_delim(*x),
-															"pmid":lambda x: concatenate_with_bar_delim(*x)})
+															"term_ids":lambda x: concatenate_with_bar_delim(*x)})
 		
 		# Reset the ID values in the dataset to reflect this change.
 		self.df["id"] = None

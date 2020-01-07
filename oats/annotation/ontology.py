@@ -116,9 +116,7 @@ class Ontology:
 		"""
 		subclass_dict = {}
 		for term in self.pronto_ontology_obj:
-			all_terms = set([x.id for x in term.rparents()])
-			all_terms.add(term.id)
-			subclass_dict[term.id] = list(all_terms)
+			subclass_dict[term.id] = self.get_inherited_term_ids(term.id)
 		return(subclass_dict)
 
 
