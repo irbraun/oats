@@ -457,6 +457,7 @@ def pairwise_annotations_onegroup(annotations_dict, ontology, metric, tfidf=Fals
 	for identifier,term_list in annotations_dict.items():
 		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
 		term_list = flatten(term_list)
+		term_list = list(set(term_list))
 		joined_term_string = " ".join(term_list).strip()
 		index_in_matrix = len(joined_term_strings)
 		joined_term_strings.append(joined_term_string)
@@ -514,9 +515,6 @@ def pairwise_doc2vec_twogroup(model, object_dict_1, object_dict_2, metric):
 
 
 
-
-
-
 def pairwise_ngrams_twogroup(object_dict_1, object_dict_2, metric, **kwargs):
 	"""
 	Generate a dataframe that specifies a list of all pairwise edges between nodes
@@ -559,6 +557,71 @@ def pairwise_ngrams_twogroup(object_dict_1, object_dict_2, metric, **kwargs):
 
 
 
+
+
+def pairwise_annotations_twogroup(annotations_dict_1, annotations_dict_2, metric):
+	"""
+	docstring
+	"""
+	joined_term_strings = []
+	row_index_in_matrix_to_id = {}
+	col_index_in_matrix_to_id = {}
+
+	row_in_matrix = 0
+	for identifier,term_list in annotations_dict.items():
+		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
+		term_list = flatten(term_list)
+		term_list = list(set(term_list))
+		joined_term_string = " ".join(term_list).strip()
+		joined_term_strings.append(joined_term_string)
+		index_in_matrix_to_id[row_in_matrix] = identifier
+		row_in_matrix = row_in_matrix+1
+
+	col_in_matrix = 0
+	for identifier,term_list in annotations_dict.items():
+		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
+		term_list = flatten(term_list)
+		term_list = list(set(term_list))
+		joined_term_string = " ".join(term_list).strip()
+		joined_term_strings.append(joined_term_string)
+		index_in_matrix_to_id[col_in_matrix] = identifier
+		col_in_matrix = col_in_matrix+1
+
+
+	# Find all the pairwise values for the similiarity matrix.
+	all_vectors = strings_to_count_vectors(*joined_term_strings)
+	row_vectors = all_vectors[:len(object_dict_1)]
+	col_vectors = all_vectors[len(object_dict_1):]
+	matrix = cdist(vectors,metric)
+	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
+	return(PairwiseGraph(edgelist, None, None, None, None, None))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def elemwise_ngrams_twogroup(object_list_1, object_list_2, metric_function, **kwargs):
 	""" Takes two lists, zips them, and returns a list of the element-wise distances.
 		Has to take a distance function like scipy.spatial.distance.jaccard instead of the name.
@@ -575,7 +638,8 @@ def elemwise_ngrams_twogroup(object_list_1, object_list_2, metric_function, **kw
 
 
 def elemwise_doc2vec_twogroup(model, object_list_1, object_list_2, metric_function):
-	"""docstring
+	""" Takes two lists, zips them, and returns a list of the element-wise distances.
+		Has to take a distance function like scipy.spatial.distance.jaccard instead of the name.
 	"""
 	descriptions = []
 	descriptions.extend(object_list_1)
@@ -587,6 +651,16 @@ def elemwise_doc2vec_twogroup(model, object_list_1, object_list_2, metric_functi
 	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
 	return(distances_list)
 
+def elemwise_word2vec_twogroup():
+	return(None)
+
+
+def elemwise_bert_twogroup():
+	return(None)
+
+
+def elemwise_annotations_twogroup():
+	return(None)
 
 
 
@@ -597,40 +671,7 @@ def elemwise_doc2vec_twogroup(model, object_list_1, object_list_2, metric_functi
 
 
 
-def pairwise_annotations_twogroup(annotations_dict_1, annotations_dict_2, metric):
-	"""
-	docstring
-	"""
-	joined_term_strings = []
-	row_index_in_matrix_to_id = {}
-	col_index_in_matrix_to_id = {}
 
-	row_in_matrix = 0
-	for identifier,term_list in annotations_dict.items():
-		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
-		term_list = flatten(term_list)
-		joined_term_string = " ".join(term_list).strip()
-		joined_term_strings.append(joined_term_string)
-		index_in_matrix_to_id[row_in_matrix] = identifier
-		row_in_matrix = row_in_matrix+1
-
-	col_in_matrix = 0
-	for identifier,term_list in annotations_dict.items():
-		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
-		term_list = flatten(term_list)
-		joined_term_string = " ".join(term_list).strip()
-		joined_term_strings.append(joined_term_string)
-		index_in_matrix_to_id[col_in_matrix] = identifier
-		col_in_matrix = col_in_matrix+1
-
-
-	# Find all the pairwise values for the similiarity matrix.
-	all_vectors = strings_to_count_vectors(*joined_term_strings)
-	row_vectors = all_vectors[:len(object_dict_1)]
-	col_vectors = all_vectors[len(object_dict_1):]
-	matrix = cdist(vectors,metric)
-	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(PairwiseGraph(edgelist, None, None, None, None, None))
 
 
 
