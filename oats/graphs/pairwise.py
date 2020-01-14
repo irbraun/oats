@@ -34,6 +34,34 @@ from oats.graphs.pwgraph import PairwiseGraph
 
 
 
+""" Description of the distance functions provided here. 
+
+Category 1: pairwise_square_[method](...)
+These functions take a single dictionary mapping IDs to text or similar objects and finds 
+the pairwise distances between all of elements in that dictionary using whatever the method
+is that is specific to that function. This produces a square matrix of distances that is 
+symmetrical along the diagonal.
+
+Category 2: pairwise_rectangular_[method](...)
+These functions take two different dicitonaries mappings IDs to text or similar objects and 
+finds the pairwise distances between all combinations of an element from one group and an
+element from the other group, making the calculation in a way specific whatever the method 
+or approach for that function is. This produces a rectangular matrix of distances. The rows
+of that matrix correspond to the elements form the first dictionary, and the columns to the
+elements from the second dictionary. In edgelist form, the "from" column refers to IDs from
+the first dictionary, and the "to" column refers to IDs from the second dictionary. 
+
+Categery 3: elemwise_list_[method](...)
+These functions take two lists of text or similar objects that are of the exact same length
+and returns a list of distance values calculated based on the method or approach for that 
+particular function. The distance value in position i of the returned list is the distance 
+found between the element at position i in the first list and the element at position i in 
+the second list.
+"""
+
+
+
+
 
 
 def strings_to_count_vectors(*strs, **kwargs):
@@ -111,6 +139,19 @@ def strings_to_vectors(*strs, tfidf=False, **kwargs):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 def square_adjacency_matrix_to_edgelist(matrix, indices_to_ids):
 	"""
 	Convert the matrix to a dataframe that specifies the nodes and edges of a graph.
@@ -139,8 +180,6 @@ def square_adjacency_matrix_to_edgelist(matrix, indices_to_ids):
 	melted_matrix["from"] = melted_matrix["from"].map(indices_to_ids)	# Rename the node names to be IDs from the dataset not matrix indices.
 	melted_matrix["to"] = melted_matrix["to"].map(indices_to_ids)		# Rename the node names to be IDS from the dataset not matrix indices.
 	return(melted_matrix)												# Return the melted matrix that looks like an edge list.
-
-
 
 
 
@@ -188,75 +227,176 @@ def rectangular_adjacency_matrix_to_edgelist(matrix, row_indices_to_ids, col_ind
 
 
 
-def pairwise_doc2vec_onegroup(model, object_dict, metric):
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def pairwise_square_doc2vec(model, ids_to_texts, metric):
 	"""
-	Method for creating a pandas dataframe of similarity values between all passed in object IDs
-	using vector embeddings inferred for each natural language description using the passed in 
-	Doc2Vec model, which could have been newly trained on relevant data or taken as a pretrained
-	model. No assumptions are made about the format of the natural language descriptions, so any
-	preprocessing or cleaning of the text should be done prior to being provied in the dictionary
-	here.
+	Find distance between strings of text in some input data using Doc2Vec. Note that only 
+	very simple preprocessing is done here (case normalizing and splitting on whitespace)
+	so any preprocessing steps on the text strings should be done prior to passing them in
+	a dictionary to this function.
 	
 	Args:
-		model (gensim.models.doc2vec): An already loaded DocVec model from a file or training.
-		object_dict (dict): Mapping between object IDs and the natural language descriptions. 
+	    model (gensim.models.doc2vec): An already loaded Doc2Vec model from a file or training.
+	    ids_to_texts (dict): A mapping between IDs and strings of text.
+	    metric (str): A string indicating which distance metric should be used (e.g., cosine). 
 	
 	Returns:
-		pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
+	   	oats.pairwise.PairwiseGraph: Distance matrix and accompanying information.
 	"""
-	
 
-	# Infer a vector for each unique description, and make the vectors map to indices in a matrix.
-	# Remember a mapping between the ID for each object and the positition of the vector for its 
-	# description in the matrix so that the similarity values can be recovered later given a pair 
-	# of IDs for two objects.
+	# Infer vectors for each string of text and remember mapping to the IDs.
 	vectors = []
 	index_in_matrix_to_id = {}
-	for identifier,description in object_dict.items():
+	id_to_index_in_matrix = {}
+	for identifier,description in ids_to_texts.items():
 		inferred_vector = model.infer_vector(description.lower().split())
 		index_in_matrix = len(vectors)
 		vectors.append(inferred_vector)
 		index_in_matrix_to_id[index_in_matrix] = identifier
+		id_to_index_in_matrix[identifier] = index_in_matrix
 	
-
-	# Apply some similarity metric over the vectors to yield a matrix.
+	# Apply distance metric over all the vectors to yield a matrix.
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
-	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, None, None))
+	
+	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
+	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, None, 
+		id_to_index_in_matrix, 
+		id_to_index_in_matrix, 
+		index_in_matrix_to_id,
+		index_in_matrix_to_id,
+		matrix))
 
 
 
 
-def pairwise_bert_onegroup(model, tokenizer, object_dict, metric, method, layers):
+def pairwise_square_word2vec(model, ids_to_texts, metric, method="mean"):
+	"""	
+	Find distance between strings of text in some input data using Word2Vec. Note that only 
+	very simple preprocessing is done here (case normalizing and splitting on whitespace)
+	so any preprocessing steps on the text strings should be done prior to passing them in
+	a dictionary to this function. Note that if no words in a description are in the model 
+	vocabulary, then a random word will be selected to represent the text. This avoids using 
+	one default value which will force all these descriptions to cluster, and prevents an 
+	error being raised due to no vector appearing. This should rarely or never happen as 
+	long as the text has been preprocessed into reasonable tokens and the model is large.
+	
+	Args:
+	    model (gensim.models.word2vec): An already loaded Word2Vec model from a file or training.
+	    ids_to_texts (dict): A mapping between IDs and strings of text.
+	    metric (str): A string indicating which distance metric should be used (e.g., cosine). 
+	    method (str, optional): Should the word embeddings be combined with mean or max.
+	
+	Returns:
+	   	oats.pairwise.PairwiseGraph: Distance matrix and accompanying information.
+	
+	Raises:
+	    Error: The 'method' argument has to be one of "mean" or "max".
 	"""
-	Method for creating a pandas dataframe of similarity values between all passed in object IDs
-	using vector embeddings inferred for each natural language description using the passed in 
-	BERT model, which could have been newly trained on relevant data or taken as a pretrained
-	model. No assumptions are made about the format of the natural language descriptions, so any
-	preprocessing or cleaning of the text should be done prior to being provied in the dictionary
-	here.
-	"""
-
-	# Infer a vector for each unique description, and make the vectors map to indices in a matrix.
-	# Remember a mapping between the ID for each object and the positition of the vector for its 
-	# description in the matrix so that the similarity values can be recovered later given a pair 
-	# of IDs for two objects.
+	
+	# Infer vectors for each string of text and remember mapping to the IDs.
 	vectors = []
 	index_in_matrix_to_id = {}
-	for identifier,description in object_dict.items():
+	id_to_index_in_matrix = {}
+	for identifier,description in ids_to_texts.items():
+		words = description.lower().split()
+		words_in_model_vocab = [word for word in words if word in model.wv.vocab]
+		if len(words_in_model_vocab) == 0:
+			words_in_model_vocab.append(random.choice(list(model.wv.vocab)))
+		stacked_vectors = np.array([model.wv[word] for word in words_in_model_vocab])
+		index_in_matrix = len(vectors)
+		if method == "mean":
+			vectors.append(stacked_vectors.mean(axis=0))
+		elif method == "max":
+			vectors.append(stacked_vectors.max(axis=0))
+		else:
+			raise Error("method argument is invalid")
+		index_in_matrix_to_id[index_in_matrix] = identifier
+		id_to_index_in_matrix[identifier] = index_in_matrix
+
+	# Apply distance metric over all the vectors to yield a matrix.
+	matrix = squareform(pdist(vectors,metric))
+	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
+	
+	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaires.
+	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, None, 
+		id_to_index_in_matrix, 
+		id_to_index_in_matrix, 
+		index_in_matrix_to_id,
+		index_in_matrix_to_id,
+		matrix))
+
+
+
+
+
+def pairwise_square_bert(model, tokenizer, ids_to_texts, metric, method, layers):
+	"""
+	Find distance between strings of text in some input data using Doc2Vec. The preprocessing
+	done to the text strings here is complex, and uses the passed in tokenizer object as well.
+	For this reason, in most cases the text passed in to this method should be the raw
+	relatively unprocessed sentence of interest. Splitting up of multiple sentences is handled
+	in the helper function for this function.
+	
+	Args:
+	    model (pytorch model): An already loaded BERT PyTorch model from a file or other source.
+	    tokenizer (bert tokenizer): Object which handles how tokenization specific to BERT is done. 
+	    ids_to_texts (dict): A mapping between IDs and strings of text.
+	    metric (str): A string indicating which distance metric should be used (e.g., cosine).
+	    method (str): A string indicating how layers for a token should be combined (concat or sum).
+	    layers (int): An integer saying how many layers should be used for each token.
+	
+	Returns:
+	   	oats.pairwise.PairwiseGraph: Distance matrix and accompanying information.
+
+	"""
+
+	# Infer vectors for each string of text and remember mapping to the IDs.
+	vectors = []
+	index_in_matrix_to_id = {}
+	id_to_index_in_matrix = {}
+	for identifier,description in ids_to_texts.items():
 		inferred_vector = _infer_document_vector_from_bert(model, tokenizer, description, method, layers)
 		index_in_matrix = len(vectors)
 		vectors.append(inferred_vector)
 		index_in_matrix_to_id[index_in_matrix] = identifier
+		id_to_index_in_matrix[identifier] = index_in_matrix
 
-	# Apply some similarity metric over the vectors to yield a matrix.
+	# Apply distance metric over all the vectors to yield a matrix.
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
-	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, None, None))
 
-
+	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaires.
+	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, None, 
+		id_to_index_in_matrix, 
+		id_to_index_in_matrix, 
+		index_in_matrix_to_id,
+		index_in_matrix_to_id,
+		matrix))
 
 def _infer_document_vector_from_bert(model, tokenizer, description, method="sum", layers=4):
 	"""
@@ -270,23 +410,23 @@ def _infer_document_vector_from_bert(model, tokenizer, description, method="sum"
 	together to for the document level vector.
 	
 	Args:
-	    model (TYPE): Description
-	    tokenizer (TYPE): Description
-	    description (TYPE): Description
-	    method (TYPE, optional): Description
-	    layers (TYPE, optional): Description
+	    model (pytorch model): An already loaded BERT PyTorch model from a file or other source.
+	    tokenizer (bert tokenizer): Object which handles how tokenization specific to BERT is done. 
+	    description (str): A string representing the text for a single node of interest.
+	    method (str): A string indicating how layers for a token should be combined (concat or sum).
+	    layers (int): An integer saying how many layers should be used for each token.
 	
 	Returns:
-	    TYPE: Description
-	
+	    numpy.Array: A numpy array which is the vector embedding for the passed in text. 
+
 	Raises:
 	    Error: The method argument has to be either 'concat' or 'sum'.
 	"""
+
 	sentences = sent_tokenize(description)
 	token_vecs_cat = []
 	token_vecs_sum = []
 
-	# Using the last four layers either concatenated or summed as the embedding.
 	for text in sentences:
 		marked_text = "{} {} {}".format("[CLS]",text,"[SEP]")
 		tokenized_text = tokenizer.tokenize(marked_text)
@@ -305,7 +445,7 @@ def _infer_document_vector_from_bert(model, tokenizer, description, method="sum"
 			token_vecs_cat.append(np.array(concatenated_layer_vectors))
 			token_vecs_sum.append(np.array(summed_layer_vectors))
 
-	# Average the vectors obtained for each token across all the sentences.
+	# Average the vectors obtained for each token across all the sentences present in the input text.
 	if method == "concat":
 		embedding = np.mean(np.array(token_vecs_cat),axis=0)
 	elif method == "sum":
@@ -318,143 +458,77 @@ def _infer_document_vector_from_bert(model, tokenizer, description, method="sum"
 
 
 
-
-
-
-
-
-
-
-
-
-
-	
-
-
-
-
-
-
-
-
-def pairwise_word2vec_onegroup(model, object_dict, metric, method="mean"):
-	"""	
-	Method for creating a pandas dataframe of similarity values between all passed in object IDs
-	using vector embeddings inferred for each natural language description using the passed in 
-	Word2Vec model, which could have been newly trained on relevant data or taken as a pretrained
-	model. No assumptions are made about the format of the natural language descriptions, so any
-	preprocessing or cleaning of the text should be done prior to being provied in the dictionary
-	here. Note that if no words in a description are in the model vocabulary, then a random word 
-	will be selected to represent the text. This avoids using one default value which will force 
-	all these descriptions to cluster, and prevents error being raised due to no vector appearing. 
-	This should rarely or never happen as long as the text has been preprocessed into reasonable
-	tokens.
-
-	Args:
-		model (TYPE): Description
-		object_dict (TYPE): Description
-		metric (TYPE): Description
-		method (str, optional): Should the word embeddings be combined with mean or max.
-	
-	Returns:
-		pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
+def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 	"""
-	vectors = []
-	index_in_matrix_to_id = {}
-	for identifier,description in object_dict.items():
-		words = description.split()
-		words_in_model_vocab = [word for word in words if word in model.wv.vocab]
-		if len(words_in_model_vocab) == 0:
-			words_in_model_vocab.append(random.choice(list(model.wv.vocab)))
-		stacked_vectors = np.array([model.wv[word] for word in words_in_model_vocab])
-		index_in_matrix = len(vectors)
-		if method == "mean":
-			vectors.append(stacked_vectors.mean(axis=0))
-		elif method == "max":
-			vectors.append(stacked_vectors.max(axis=0))
-		else:
-			raise Error("method argument is invalid")
-		index_in_matrix_to_id[index_in_matrix] = identifier
-
-	# Apply some similarity metric over the vectors to yield a matrix.
-	matrix = squareform(pdist(vectors,metric))
-	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
-	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
-	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, None, None))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def pairwise_ngrams_onegroup(object_dict, metric, tfidf=False, **kwargs):
-	"""
-	Method for creating a pandas dataframe of similarity values between all passed in object IDs
-	using vectors to represent each of the natural language descriptions as a set-of-words. No 
-	assumptions are made about the format of the natural language descriptions, so any cleaning
-	or preprocessing of the text should be done prior to being provied in the dictionary here.
+	Find distance between strings of text in some input data using n-grams. Note that only 
+	very simple preprocessing is done after this point (splitting on whitespace only) so 
+	all processing of the text necessary should be done prio to passing to this function.
 	
 	Args:
-		object_dict (dict): Mapping between object IDs and the natural language descriptions. 
-		**kwargs: All the keyword arguments that can be passed to sklearn.feature_extraction.CountVectorizer()
+	    ids_to_texts (dict): A mapping between IDs and strings of text.
+	    metric (str): A string indicating which distance metric should be used (e.g., cosine).
+	    tfidf (bool, optional): Whether to use TFIDF weighting or not.
+	    **kwargs: All the keyword arguments that can be passed to sklearn.feature_extraction.CountVectorizer()
 	
 	Returns:
-		pandas.DataFrame: Each row in the dataframe is [first ID, second ID, similarity].
+	    oats.pairwise.PairwiseGraph: Distance matrix and accompanying information.
 	"""
 
-	# Map descriptions to coordinates in a matrix.
+	# Infer vectors for each string of text and remember mapping to the IDs.
 	descriptions = []
 	index_in_matrix_to_id = {}
-	for identifier,description in object_dict.items():
+	id_to_index_in_matrix = {}
+	for identifier,description in ids_to_texts.items():
 		index_in_matrix = len(descriptions)
 		descriptions.append(description)
 		index_in_matrix_to_id[index_in_matrix] = identifier
+		id_to_index_in_matrix[identifier] = index_in_matrix
 
 
-	# Find all the pairwise values for the similiarity matrix.
+	# Apply distance metric over all the vectors to yield a matrix.
 	vectors,vectorizer = strings_to_vectors(*descriptions, tfidf=tfidf, **kwargs)
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
-	return(PairwiseGraph(edgelist, id_to_vector_dict, vectorizer, None, None, None))
+	
+	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaires.
+	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, vectorizer, 
+		id_to_index_in_matrix, 
+		id_to_index_in_matrix, 
+		index_in_matrix_to_id,
+		index_in_matrix_to_id,
+		matrix))
 
 
 
 
-
-def pairwise_annotations_onegroup(annotations_dict, ontology, metric, tfidf=False, **kwargs):
+def pairwise_square_annotations(ids_to_annotations, ontology, metric, tfidf=False, **kwargs):
 	"""
-	Method for creating a pandas dataframe of similarity values between all passed in object IDs
-	based on the annotations of ontology terms to to all the natural language descriptions that
-	those object IDs represent. The individually terms found in the intersection and union between
-	two objects are all weighted equally. This function does not make assumptions about whether 
-	the annotations include only leaf terms or not, subclass and superclass relationships are 
-	accounted for here in either case.
+	Find distance between nodes of interest in the input dictionary based on the overlap in the
+	ontology terms that are mapped to those nodes. The input terms for each ID are in the format
+	of lists of term IDs. All inherited terms by all these terms will be added in this function 
+	using the provided ontology object so that each node will be represented by the union of all 
+	the terms inherited by the terms annotated to it. After that step, the term IDs are simply 
+	treated as words in a vocabulary, and the same approach as with n-grams is used to generate 
+	the distance matrix.
 	
 	Args:
-		annotations_dict (dict): Mapping from object IDs to lists of ontology term IDs.
-		ontology (Ontology): Ontology object with all necessary fields.
-		**kwargs: All the keyword arguments that can be passed to sklearn.feature_extraction.CountVectorizer()
+	    ids_to_annotations (dict): A mapping between IDs and a list of ontology term ID strings.
+	    ontology (Ontology): Ontology object with all necessary fields.
+	    metric (str): A string indicating which distance metric should be used (e.g., cosine).
+	    tfidf (bool, optional): Whether to use TFIDF weighting or not.
+	    **kwargs: All the keyword arguments that can be passed to sklearn.feature_extraction.CountVectorizer()
 	
 	Returns:
-		pandas.Dataframe: Each row in the dataframe is [first ID, second ID, similarity].
+	    oats.pairwise.PairwiseGraph: Distance matrix and accompanying information.
+
 	"""
 
-	# Relevant page for why itertools.chain.from_iterable() can't be used here to flatten the nested string list.
-	# https://stackoverflow.com/questions/17864466/flatten-a-list-of-strings-and-lists-of-strings-and-lists-in-python
-
+	# Infer vectors for each string of text and remember mapping to the IDs.
 	joined_term_strings = []
 	index_in_matrix_to_id = {}
-	for identifier,term_list in annotations_dict.items():
+	id_to_index_in_matrix = {}
+	for identifier,term_list in ids_to_annotations.items():
 		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
 		term_list = flatten(term_list)
 		term_list = list(set(term_list))
@@ -462,14 +536,21 @@ def pairwise_annotations_onegroup(annotations_dict, ontology, metric, tfidf=Fals
 		index_in_matrix = len(joined_term_strings)
 		joined_term_strings.append(joined_term_string)
 		index_in_matrix_to_id[index_in_matrix] = identifier
+		id_to_index_in_matrix[identifier] = index_in_matrix
 
-
-	# Find all the pairwise values for the similiarity matrix.
+	# Apply distance metric over all the vectors to yield a matrix.
 	vectors,vectorizer = strings_to_vectors(*joined_term_strings, tfidf=tfidf, **kwargs)
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
-	return(PairwiseGraph(edgelist, id_to_vector_dict, vectorizer, None, None, None))
+
+	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaires.
+	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, vectorizer, 
+		id_to_index_in_matrix, 
+		id_to_index_in_matrix, 
+		index_in_matrix_to_id,
+		index_in_matrix_to_id,
+		matrix))
 
 
 
@@ -480,119 +561,261 @@ def pairwise_annotations_onegroup(annotations_dict, ontology, metric, tfidf=Fals
 
 
 
-def pairwise_doc2vec_twogroup(model, object_dict_1, object_dict_2, metric):
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def pairwise_rectangular_doc2vec(model, ids_to_text_1, ids_to_text_2, metric):
 	"""
 	docstring
 	"""
 	vectors = []
 	row_index_in_matrix_to_id = {}
 	col_index_in_matrix_to_id = {}
+	id_to_row_index_in_matrix = {}
+	id_to_col_index_in_matrix = {}
 
 	row_in_matrix = 0	
-	for identifier,description in object_dict_1.items():
+	for identifier,description in ids_to_text_1.items():
 		inferred_vector = model.infer_vector(description.lower().split())
 		vectors.append(inferred_vector)
 		row_index_in_matrix_to_id[row_in_matrix] = identifier
+		id_to_row_index_in_matrix[identifier] = row_in_matrix 
 		row_in_matrix = row_in_matrix+1
 
 	col_in_matrix = 0
-	for identifier,description in object_dict_2.items():
+	for identifier,description in ids_to_text_2.items():
 		inferred_vector = model.infer_vector(description.lower().split())
 		vectors.append(inferred_vector)
 		col_index_in_matrix_to_id[col_in_matrix] = identifier
+		id_to_col_index_in_matrix[identifier] = col_in_matrix 
 		col_in_matrix = col_in_matrix+1
 
 	all_vectors = vectors
-	row_vectors = all_vectors[:len(object_dict_1)]
-	col_vectors = all_vectors[len(object_dict_1):]
+	row_vectors = all_vectors[:len(ids_to_text_1)]
+	col_vectors = all_vectors[len(ids_to_text_1):]
 	matrix = cdist(row_vectors, col_vectors, metric)
 	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(PairwiseGraph(edgelist, None, None, None, None, None))
+	return(PairwiseGraph(edgelist, None, None, None, None, 
+		id_to_row_index_in_matrix, 
+		id_to_col_index_in_matrix, 
+		row_index_in_matrix_to_id, 
+		col_index_in_matrix_to_id, 
+		matrix))
 
 
 
-
-
-def pairwise_ngrams_twogroup(object_dict_1, object_dict_2, metric, tfidf=False, **kwargs):
+def pairwise_rectangular_word2vec(model, ids_to_text_1, ids_to_text_2, metric, method="mean"):
 	"""
-	Generate a dataframe that specifies a list of all pairwise edges between nodes
-	in the first group and nodes in the second group, based on the similarity 
-	between them as assessed by the cosine similarity between their bag-of-words
-	representations.
-	
-	Args:
-		object_dict_1 (TYPE): Description
-		object_dict_2 (TYPE): Description
-		**kwargs: Description
-	
-	Returns:
-		TYPE: Description
+	docstring
+	"""
+	vectors = []
+	row_index_in_matrix_to_id = {}
+	col_index_in_matrix_to_id = {}
+	id_to_row_index_in_matrix = {}
+	id_to_col_index_in_matrix = {}
+
+	row_in_matrix = 0	
+	for identifier,description in ids_to_text_1.items():
+		words = description.lower().split()
+		words_in_model_vocab = [word for word in words if word in model.wv.vocab]
+		if len(words_in_model_vocab) == 0:
+			words_in_model_vocab.append(random.choice(list(model.wv.vocab)))
+		stacked_vectors = np.array([model.wv[word] for word in words_in_model_vocab])
+		if method == "mean":
+			vectors.append(stacked_vectors.mean(axis=0))
+		elif method == "max":
+			vectors.append(stacked_vectors.max(axis=0))
+		else:
+			raise Error("method argument is invalid")
+		row_index_in_matrix_to_id[row_in_matrix] = identifier
+		id_to_row_index_in_matrix[identifier] = row_in_matrix 
+		row_in_matrix = row_in_matrix+1
+
+	col_in_matrix = 0
+	for identifier,description in ids_to_text_2.items():
+		words = description.lower().split()
+		words_in_model_vocab = [word for word in words if word in model.wv.vocab]
+		if len(words_in_model_vocab) == 0:
+			words_in_model_vocab.append(random.choice(list(model.wv.vocab)))
+		stacked_vectors = np.array([model.wv[word] for word in words_in_model_vocab])
+		if method == "mean":
+			vectors.append(stacked_vectors.mean(axis=0))
+		elif method == "max":
+			vectors.append(stacked_vectors.max(axis=0))
+		else:
+			raise Error("method argument is invalid")
+		col_index_in_matrix_to_id[col_in_matrix] = identifier
+		id_to_col_index_in_matrix[identifier] = col_in_matrix 
+		col_in_matrix = col_in_matrix+1
+
+	all_vectors = vectors
+	row_vectors = all_vectors[:len(ids_to_text_1)]
+	col_vectors = all_vectors[len(ids_to_text_1):]
+	matrix = cdist(row_vectors, col_vectors, metric)
+	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
+	return(PairwiseGraph(edgelist, None, None, None, None,
+		id_to_row_index_in_matrix, 
+		id_to_col_index_in_matrix, 
+		row_index_in_matrix_to_id, 
+		col_index_in_matrix_to_id, 
+		matrix))
+
+
+
+
+def pairwise_rectangular_bert(model, tokenizer, ids_to_text_1, ids_to_text_2, metric, method, layers):
+	"""
+	docstring
+	"""
+	vectors = []
+	row_index_in_matrix_to_id = {}
+	col_index_in_matrix_to_id = {}
+	id_to_row_index_in_matrix = {}
+	id_to_col_index_in_matrix = {}
+
+	row_in_matrix = 0	
+	for identifier,description in ids_to_text_1.items():
+		inferred_vector = _infer_document_vector_from_bert(model, tokenizer, description, method, layers)
+		vectors.append(inferred_vector)
+		row_index_in_matrix_to_id[row_in_matrix] = identifier
+		id_to_row_index_in_matrix[identifier] = row_in_matrix 
+		row_in_matrix = row_in_matrix+1
+
+	col_in_matrix = 0
+	for identifier,description in ids_to_text_2.items():
+		inferred_vector = _infer_document_vector_from_bert(model, tokenizer, description, method, layers)
+		vectors.append(inferred_vector)
+		col_index_in_matrix_to_id[col_in_matrix] = identifier
+		id_to_col_index_in_matrix[identifier] = col_in_matrix 
+		col_in_matrix = col_in_matrix+1
+
+	all_vectors = vectors
+	row_vectors = all_vectors[:len(ids_to_text_1)]
+	col_vectors = all_vectors[len(ids_to_text_1):]
+	matrix = cdist(row_vectors, col_vectors, metric)
+	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
+	return(PairwiseGraph(edgelist, None, None, None, None, 
+		id_to_row_index_in_matrix, 
+		id_to_col_index_in_matrix, 
+		row_index_in_matrix_to_id, 
+		col_index_in_matrix_to_id, 
+		matrix))
+
+
+
+
+
+
+
+
+def pairwise_rectangular_ngrams(ids_to_text_1, ids_to_text_2, metric, tfidf=False, **kwargs):
+	"""
+	docstring
 	"""
 	descriptions = []
 	row_index_in_matrix_to_id = {}
 	col_index_in_matrix_to_id = {}
+	id_to_row_index_in_matrix = {}
+	id_to_col_index_in_matrix = {}
 
 	row_in_matrix = 0
-	for identifier,description in object_dict_1.items():
+	for identifier,description in ids_to_text_1.items():
 		descriptions.append(description)
 		row_index_in_matrix_to_id[row_in_matrix] = identifier
+		id_to_row_index_in_matrix[identifier] = row_in_matrix 
 		row_in_matrix = row_in_matrix+1
 
 	col_in_matrix = 0
-	for identifier,description in object_dict_2.items():
+	for identifier,description in ids_to_text_2.items():
 		descriptions.append(description)
 		col_index_in_matrix_to_id[col_in_matrix] = identifier
+		id_to_col_index_in_matrix[identifier] = col_in_matrix 
 		col_in_matrix = col_in_matrix+1
 
-
 	all_vectors,vectorizer = strings_to_vectors(*descriptions, tfidf=tfidf, **kwargs)
-	row_vectors = all_vectors[:len(object_dict_1)]
-	col_vectors = all_vectors[len(object_dict_1):]
+	row_vectors = all_vectors[:len(ids_to_text_1)]
+	col_vectors = all_vectors[len(ids_to_text_1):]
+
+	row_id_to_vector_dict = {row_index_in_matrix_to_id[i]:vector for i,vector in enumerate(row_vectors)}
+	col_id_to_vector_dict = {col_index_in_matrix_to_id[i]:vector for i,vector in enumerate(col_vectors)}
 	matrix = cdist(row_vectors, col_vectors, metric)
+
 	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(PairwiseGraph(edgelist, None, None, None, None, None))
+	return(PairwiseGraph(edgelist, None, row_id_to_vector_dict, col_id_to_vector_dict, vectorizer, 
+		id_to_row_index_in_matrix, 
+		id_to_col_index_in_matrix, 
+		row_index_in_matrix_to_id, 
+		col_index_in_matrix_to_id, 
+		matrix))
 
 
 
 
-
-
-
-def pairwise_annotations_twogroup(annotations_dict_1, annotations_dict_2, ontology, metric, tfidf=False, **kwargs):
+def pairwise_rectangular_annotations(ids_to_annotations_1, ids_to_annotations_2, ontology, metric, tfidf=False, **kwargs):
 	"""
 	docstring
 	"""
 	joined_term_strings = []
 	row_index_in_matrix_to_id = {}
 	col_index_in_matrix_to_id = {}
+	id_to_row_index_in_matrix = {}
+	id_to_col_index_in_matrix = {}
 
 	row_in_matrix = 0
-	for identifier,term_list in annotations_dict_1.items():
+	for identifier,term_list in ids_to_annotations_1.items():
 		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
 		term_list = flatten(term_list)
 		term_list = list(set(term_list))
 		joined_term_string = " ".join(term_list).strip()
 		joined_term_strings.append(joined_term_string)
 		row_index_in_matrix_to_id[row_in_matrix] = identifier
+		id_to_row_index_in_matrix[identifier] = row_in_matrix 
 		row_in_matrix = row_in_matrix+1
 
 	col_in_matrix = 0
-	for identifier,term_list in annotations_dict_2.items():
+	for identifier,term_list in ids_to_annotations_2.items():
 		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
 		term_list = flatten(term_list)
 		term_list = list(set(term_list))
 		joined_term_string = " ".join(term_list).strip()
 		joined_term_strings.append(joined_term_string)
 		col_index_in_matrix_to_id[col_in_matrix] = identifier
+		id_to_col_index_in_matrix[identifier] = col_in_matrix 
 		col_in_matrix = col_in_matrix+1
 
-	# Find all the pairwise values for the similiarity matrix.
+	# Find all the pairwise values for the distance matrix.
 	all_vectors,vectorizer = strings_to_vectors(*joined_term_strings, tfidf=tfidf, **kwargs)
-	row_vectors = all_vectors[:len(annotations_dict_1)]
-	col_vectors = all_vectors[len(annotations_dict_1):]
+	row_vectors = all_vectors[:len(ids_to_annotations_1)]
+	col_vectors = all_vectors[len(ids_to_annotations_1):]
+
+	row_id_to_vector_dict = {row_index_in_matrix_to_id[i]:vector for i,vector in enumerate(row_vectors)}
+	col_id_to_vector_dict = {col_index_in_matrix_to_id[i]:vector for i,vector in enumerate(col_vectors)}
 	matrix = cdist(row_vectors, col_vectors, metric)
+	
 	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(PairwiseGraph(edgelist, None, None, None, None, None))
+	return(PairwiseGraph(edgelist, None, row_id_to_vector_dict, col_id_to_vector_dict, vectorizer, 
+		id_to_row_index_in_matrix, 
+		id_to_col_index_in_matrix, 
+		row_index_in_matrix_to_id, 
+		col_index_in_matrix_to_id, 
+		matrix))
 
 
 
@@ -620,45 +843,114 @@ def pairwise_annotations_twogroup(annotations_dict_1, annotations_dict_2, ontolo
 
 
 
-def elemwise_ngrams_twogroup(object_list_1, object_list_2, metric_function, **kwargs):
-	""" Takes two lists, zips them, and returns a list of the element-wise distances.
-		Has to take a distance function like scipy.spatial.distance.jaccard instead of the name.
+
+
+
+
+def elemwise_list_doc2vec(model, text_list_1, text_list_2, metric_function):
+	"""
+	docstring
 	"""
 	descriptions = []
-	descriptions.extend(object_list_1)
-	descriptions.extend(object_list_2)
-	all_vectors,vectorizer = strings_to_vectors(*descriptions, **kwargs)
-	list_1_vectors = all_vectors[:len(object_list_1)]
-	list_2_vectors = all_vectors[len(object_list_1):]
-	vector_pairs = zip(list_1_vectors, list_2_vectors)
-	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
-	return(distances_list)
-
-
-def elemwise_doc2vec_twogroup(model, object_list_1, object_list_2, metric_function):
-	""" Takes two lists, zips them, and returns a list of the element-wise distances.
-		Has to take a distance function like scipy.spatial.distance.jaccard instead of the name.
-	"""
-	descriptions = []
-	descriptions.extend(object_list_1)
-	descriptions.extend(object_list_2)
+	descriptions.extend(text_list_1)
+	descriptions.extend(text_list_2)
 	all_vectors = [model.infer_vector(description.lower().split()) for description in descriptions]
-	list_1_vectors = all_vectors[:len(object_list_1)]
-	list_2_vectors = all_vectors[len(object_list_1):]
+	list_1_vectors = all_vectors[:len(text_list_1)]
+	list_2_vectors = all_vectors[len(text_list_1):]
 	vector_pairs = zip(list_1_vectors, list_2_vectors)
 	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
 	return(distances_list)
 
-def elemwise_word2vec_twogroup():
-	return(None)
 
 
-def elemwise_bert_twogroup():
-	return(None)
+
+def elemwise_list_word2vec(model, text_list_1, text_list_2, metric_function, method="mean"):
+	"""
+	docstring
+	"""
+	descriptions = []
+	descriptions.extend(text_list_1)
+	descriptions.extend(text_list_2)
+	all_vectors = []
+	for description in descriptions:
+		words = description.lower().split()
+		words_in_model_vocab = [word for word in words if word in model.wv.vocab]
+		if len(words_in_model_vocab) == 0:
+			words_in_model_vocab.append(random.choice(list(model.wv.vocab)))
+		stacked_vectors = np.array([model.wv[word] for word in words_in_model_vocab])
+		if method == "mean":
+			all_vectors.append(stacked_vectors.mean(axis=0))
+		elif method == "max":
+			all_vectors.append(stacked_vectors.max(axis=0))
+		else:
+			raise Error("method argument is invalid")
+
+	list_1_vectors = all_vectors[:len(text_list_1)]
+	list_2_vectors = all_vectors[len(text_list_1):]
+	vector_pairs = zip(list_1_vectors, list_2_vectors)
+	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
+	return(distances_list)
 
 
-def elemwise_annotations_twogroup():
-	return(None)
+
+
+
+
+def elemwise_list_bert(model, tokenizer, text_list_1, text_list_2, metric_function, method, layers):
+	"""
+	docstring
+	"""
+	descriptions = []
+	descriptions.extend(text_list_1)
+	descriptions.extend(text_list_2)
+	all_vectors = [_infer_document_vector_from_bert(model, tokenizer, description, method, layers) for description in descriptions]
+	list_1_vectors = all_vectors[:len(text_list_1)]
+	list_2_vectors = all_vectors[len(text_list_1):]
+	vector_pairs = zip(list_1_vectors, list_2_vectors)
+	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
+	return(distances_list)
+
+
+
+
+def elemwise_list_ngrams(text_list_1, text_list_2, metric_function, tfidf=False, **kwargs):
+	"""
+	docstring	
+	"""
+	descriptions = []
+	descriptions.extend(text_list_1)
+	descriptions.extend(text_list_2)
+	all_vectors,vectorizer = strings_to_vectors(*descriptions, **kwargs)
+	list_1_vectors = all_vectors[:len(text_list_1)]
+	list_2_vectors = all_vectors[len(text_list_1):]
+	vector_pairs = zip(list_1_vectors, list_2_vectors)
+	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
+	return(distances_list)
+
+
+
+
+
+def elemwise_list_annotations(annotations_list_1, annotations_list_2, ontology, metric_function, tfidf=False, **kwargs):
+	"""
+	docstring	
+	"""
+	joined_term_strings = []
+	all_annotations_lists = annotations_list_1.extend(annotations_list_2)
+	for term_list in all_annotations_lists:
+		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
+		term_list = flatten(term_list)
+		term_list = list(set(term_list))
+		joined_term_string = " ".join(term_list).strip()
+		joined_term_strings.append(joined_term_string)
+
+	all_vectors,vectorizer = strings_to_vectors(*joined_term_strings, tfidf=tfidf, **kwargs)
+	list_1_vectors = all_vectors[:len(text_list_1)]
+	list_2_vectors = all_vectors[len(text_list_1):]
+	vector_pairs = zip(list_1_vectors, list_2_vectors)
+	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
+	return(distances_list)
+
 
 
 
