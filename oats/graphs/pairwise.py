@@ -418,9 +418,9 @@ def _infer_document_vector_from_bert(model, tokenizer, description, method="sum"
 	
 	Returns:
 	    numpy.Array: A numpy array which is the vector embedding for the passed in text. 
-
+	
 	Raises:
-	    Error: The method argument has to be either 'concat' or 'sum'.
+	    ValueError: The method argument has to be either 'concat' or 'sum'.
 	"""
 
 	sentences = sent_tokenize(description)
@@ -445,13 +445,28 @@ def _infer_document_vector_from_bert(model, tokenizer, description, method="sum"
 			token_vecs_cat.append(np.array(concatenated_layer_vectors))
 			token_vecs_sum.append(np.array(summed_layer_vectors))
 
+	# Check to make sure atleast one token was found with an embedding to use as a the 
+	# vector representation. If there wasn't found, this is because of the combination
+	# of what the passed in description was, and how it was handled by either the sentence
+	# tokenizing step or the BERT tokenizer methods. Handle this by generating a random
+	# vector. This makes the embedding meaningless but prevents multiple instances that
+	# do not have embeddings from clustering together in downstream analysis. An expected
+	# layer size is hardcoded for this section based on the BERT architecture.
+	expected_layer_size = 768
+	if len(token_vecs_cat) == 0:
+		print("no embeddings found for input text '{}', generating random vector".format(description))
+		random_concat_vector = np.random.rand(expected_layer_size*layers)
+		random_summed_vector = np.random.rand(expected_layer_size)
+		token_vecs_cat.append(random_concat_vector)
+		token_vecs_sum.append(random_summed_vector)
+
 	# Average the vectors obtained for each token across all the sentences present in the input text.
 	if method == "concat":
 		embedding = np.mean(np.array(token_vecs_cat),axis=0)
 	elif method == "sum":
 		embedding = np.mean(np.array(token_vecs_sum),axis=0)
 	else:
-		raise Error("method argument is invalid")
+		raise ValueError("method argument is invalid")
 	return(embedding)
 
 
@@ -581,7 +596,7 @@ def pairwise_square_annotations(ids_to_annotations, ontology, metric, tfidf=Fals
 
 
 
-def pairwise_rectangular_doc2vec(model, ids_to_text_1, ids_to_text_2, metric):
+def pairwise_rectangular_doc2vec(model, ids_to_texts_1, ids_to_texts_2, metric):
 	"""
 	docstring
 	"""
@@ -592,7 +607,7 @@ def pairwise_rectangular_doc2vec(model, ids_to_text_1, ids_to_text_2, metric):
 	id_to_col_index_in_matrix = {}
 
 	row_in_matrix = 0	
-	for identifier,description in ids_to_text_1.items():
+	for identifier,description in ids_to_texts_1.items():
 		inferred_vector = model.infer_vector(description.lower().split())
 		vectors.append(inferred_vector)
 		row_index_in_matrix_to_id[row_in_matrix] = identifier
@@ -600,7 +615,7 @@ def pairwise_rectangular_doc2vec(model, ids_to_text_1, ids_to_text_2, metric):
 		row_in_matrix = row_in_matrix+1
 
 	col_in_matrix = 0
-	for identifier,description in ids_to_text_2.items():
+	for identifier,description in ids_to_texts_2.items():
 		inferred_vector = model.infer_vector(description.lower().split())
 		vectors.append(inferred_vector)
 		col_index_in_matrix_to_id[col_in_matrix] = identifier
@@ -608,8 +623,8 @@ def pairwise_rectangular_doc2vec(model, ids_to_text_1, ids_to_text_2, metric):
 		col_in_matrix = col_in_matrix+1
 
 	all_vectors = vectors
-	row_vectors = all_vectors[:len(ids_to_text_1)]
-	col_vectors = all_vectors[len(ids_to_text_1):]
+	row_vectors = all_vectors[:len(ids_to_texts_1)]
+	col_vectors = all_vectors[len(ids_to_texts_1):]
 	matrix = cdist(row_vectors, col_vectors, metric)
 	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
 	return(PairwiseGraph(edgelist, None, None, None, None, 
@@ -621,7 +636,7 @@ def pairwise_rectangular_doc2vec(model, ids_to_text_1, ids_to_text_2, metric):
 
 
 
-def pairwise_rectangular_word2vec(model, ids_to_text_1, ids_to_text_2, metric, method="mean"):
+def pairwise_rectangular_word2vec(model, ids_to_texts_1, ids_to_texts_2, metric, method="mean"):
 	"""
 	docstring
 	"""
@@ -632,7 +647,7 @@ def pairwise_rectangular_word2vec(model, ids_to_text_1, ids_to_text_2, metric, m
 	id_to_col_index_in_matrix = {}
 
 	row_in_matrix = 0	
-	for identifier,description in ids_to_text_1.items():
+	for identifier,description in ids_to_texts_1.items():
 		words = description.lower().split()
 		words_in_model_vocab = [word for word in words if word in model.wv.vocab]
 		if len(words_in_model_vocab) == 0:
@@ -649,7 +664,7 @@ def pairwise_rectangular_word2vec(model, ids_to_text_1, ids_to_text_2, metric, m
 		row_in_matrix = row_in_matrix+1
 
 	col_in_matrix = 0
-	for identifier,description in ids_to_text_2.items():
+	for identifier,description in ids_to_texts_2.items():
 		words = description.lower().split()
 		words_in_model_vocab = [word for word in words if word in model.wv.vocab]
 		if len(words_in_model_vocab) == 0:
@@ -666,8 +681,8 @@ def pairwise_rectangular_word2vec(model, ids_to_text_1, ids_to_text_2, metric, m
 		col_in_matrix = col_in_matrix+1
 
 	all_vectors = vectors
-	row_vectors = all_vectors[:len(ids_to_text_1)]
-	col_vectors = all_vectors[len(ids_to_text_1):]
+	row_vectors = all_vectors[:len(ids_to_texts_1)]
+	col_vectors = all_vectors[len(ids_to_texts_1):]
 	matrix = cdist(row_vectors, col_vectors, metric)
 	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
 	return(PairwiseGraph(edgelist, None, None, None, None,
@@ -680,7 +695,7 @@ def pairwise_rectangular_word2vec(model, ids_to_text_1, ids_to_text_2, metric, m
 
 
 
-def pairwise_rectangular_bert(model, tokenizer, ids_to_text_1, ids_to_text_2, metric, method, layers):
+def pairwise_rectangular_bert(model, tokenizer, ids_to_texts_1, ids_to_texts_2, metric, method, layers):
 	"""
 	docstring
 	"""
@@ -691,7 +706,7 @@ def pairwise_rectangular_bert(model, tokenizer, ids_to_text_1, ids_to_text_2, me
 	id_to_col_index_in_matrix = {}
 
 	row_in_matrix = 0	
-	for identifier,description in ids_to_text_1.items():
+	for identifier,description in ids_to_texts_1.items():
 		inferred_vector = _infer_document_vector_from_bert(model, tokenizer, description, method, layers)
 		vectors.append(inferred_vector)
 		row_index_in_matrix_to_id[row_in_matrix] = identifier
@@ -699,7 +714,7 @@ def pairwise_rectangular_bert(model, tokenizer, ids_to_text_1, ids_to_text_2, me
 		row_in_matrix = row_in_matrix+1
 
 	col_in_matrix = 0
-	for identifier,description in ids_to_text_2.items():
+	for identifier,description in ids_to_texts_2.items():
 		inferred_vector = _infer_document_vector_from_bert(model, tokenizer, description, method, layers)
 		vectors.append(inferred_vector)
 		col_index_in_matrix_to_id[col_in_matrix] = identifier
@@ -707,8 +722,8 @@ def pairwise_rectangular_bert(model, tokenizer, ids_to_text_1, ids_to_text_2, me
 		col_in_matrix = col_in_matrix+1
 
 	all_vectors = vectors
-	row_vectors = all_vectors[:len(ids_to_text_1)]
-	col_vectors = all_vectors[len(ids_to_text_1):]
+	row_vectors = all_vectors[:len(ids_to_texts_1)]
+	col_vectors = all_vectors[len(ids_to_texts_1):]
 	matrix = cdist(row_vectors, col_vectors, metric)
 	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
 	return(PairwiseGraph(edgelist, None, None, None, None, 
@@ -725,7 +740,7 @@ def pairwise_rectangular_bert(model, tokenizer, ids_to_text_1, ids_to_text_2, me
 
 
 
-def pairwise_rectangular_ngrams(ids_to_text_1, ids_to_text_2, metric, tfidf=False, **kwargs):
+def pairwise_rectangular_ngrams(ids_to_texts_1, ids_to_texts_2, metric, tfidf=False, **kwargs):
 	"""
 	docstring
 	"""
@@ -736,22 +751,22 @@ def pairwise_rectangular_ngrams(ids_to_text_1, ids_to_text_2, metric, tfidf=Fals
 	id_to_col_index_in_matrix = {}
 
 	row_in_matrix = 0
-	for identifier,description in ids_to_text_1.items():
+	for identifier,description in ids_to_texts_1.items():
 		descriptions.append(description)
 		row_index_in_matrix_to_id[row_in_matrix] = identifier
 		id_to_row_index_in_matrix[identifier] = row_in_matrix 
 		row_in_matrix = row_in_matrix+1
 
 	col_in_matrix = 0
-	for identifier,description in ids_to_text_2.items():
+	for identifier,description in ids_to_texts_2.items():
 		descriptions.append(description)
 		col_index_in_matrix_to_id[col_in_matrix] = identifier
 		id_to_col_index_in_matrix[identifier] = col_in_matrix 
 		col_in_matrix = col_in_matrix+1
 
 	all_vectors,vectorizer = strings_to_vectors(*descriptions, tfidf=tfidf, **kwargs)
-	row_vectors = all_vectors[:len(ids_to_text_1)]
-	col_vectors = all_vectors[len(ids_to_text_1):]
+	row_vectors = all_vectors[:len(ids_to_texts_1)]
+	col_vectors = all_vectors[len(ids_to_texts_1):]
 
 	row_id_to_vector_dict = {row_index_in_matrix_to_id[i]:vector for i,vector in enumerate(row_vectors)}
 	col_id_to_vector_dict = {col_index_in_matrix_to_id[i]:vector for i,vector in enumerate(col_vectors)}
