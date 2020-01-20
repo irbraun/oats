@@ -4,8 +4,10 @@
 
 class PairwiseGraph:
 
-	def __init__(self, 
-		edgelist, 
+	def __init__(self,
+		vz_function,
+		vz_args, 
+		edgelist,
 		vector_dictionary=None,
 		row_vector_dictionary=None,
 		col_vector_dictionary=None, 
@@ -35,6 +37,8 @@ class PairwiseGraph:
 		    array (None, optional): A numpy array containing all the distance values that were calculated.
 		
 		"""
+		self.vz_function = vz_function
+		self.vz_args = vz_args
 		self.edgelist = edgelist
 		self.vector_dictionary = vector_dictionary
 		self.row_vector_dictionary = row_vector_dictionary,
@@ -44,6 +48,13 @@ class PairwiseGraph:
 		self.id_to_col_index = id_to_col_index
 		self.row_index_to_id = row_index_to_id
 		self.col_index_to_id = col_index_to_id
-		self.array = array
+		self.array = array 
+
+
+	def get_vector(self, text):
+		return(self.vz_function(text, **self.vz_args))
+
+	def get_n_neighbor_ids(self, text):
+		
 
 		

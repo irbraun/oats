@@ -138,6 +138,116 @@ def strings_to_vectors(*strs, tfidf=False, **kwargs):
 
 
 
+# These five methods are all used for storing in PairwiseGraph objects to be able to generate appropriate vectors given new text descriptions.
+
+# These are also used within the context of the other methods to generate vectors given nlp models and parameter choices.
+def _infer_document_vector_from_bert(text, model, tokenizer, method="sum", layers=4):
+	"""
+	This function uses a pretrained BERT model to infer a document level vector for a collection 
+	of one or more sentences. The sentence are defined using the nltk sentence parser. This is 
+	done because the BERT encoder expects either a single sentence or a pair of sentences. The
+	internal representations are drawn from the last n layers as specified by the layers argument, 
+	and represent a particular token but account for the context that it is in because the entire
+	sentence is input simultanously. The vectors for the layers can concatentated or summed 
+	together based on the method argument. The vector obtained for each token then are averaged
+	together to for the document level vector.
+	
+	Args:
+	    text (str):  A string representing the text for a single node of interest.
+	    model (pytorch model): An already loaded BERT PyTorch model from a file or other source.
+	    tokenizer (bert tokenizer): Object which handles how tokenization specific to BERT is done. 
+	    method (str): A string indicating how layers for a token should be combined (concat or sum).
+	    layers (int): An integer saying how many layers should be used for each token.
+	
+	Returns:
+	    numpy.Array: A numpy array which is the vector embedding for the passed in text. 
+	
+	Raises:
+	    ValueError: The method argument has to be either 'concat' or 'sum'.
+	"""
+
+	sentences = sent_tokenize(text)
+	token_vecs_cat = []
+	token_vecs_sum = []
+
+	for text in sentences:
+		marked_text = "{} {} {}".format("[CLS]",text,"[SEP]")
+		tokenized_text = tokenizer.tokenize(marked_text)
+		indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
+		segments_ids = [1] * len(tokenized_text)
+		tokens_tensor = torch.tensor([indexed_tokens])
+		segments_tensor = torch.tensor([segments_ids])
+		with torch.no_grad():
+			encoded_layers,_ = model(tokens_tensor,segments_tensor)
+		token_embeddings = torch.stack(encoded_layers, dim=0)
+		token_embeddings = token_embeddings.permute(1,2,0,3)
+		batch = 0
+		for token in token_embeddings[batch]:
+			concatenated_layer_vectors = torch.cat(tuple(token[-layers:]), dim=0)
+			summed_layer_vectors = torch.sum(token[-layers:], dim=0)
+			token_vecs_cat.append(np.array(concatenated_layer_vectors))
+			token_vecs_sum.append(np.array(summed_layer_vectors))
+
+	# Check to make sure atleast one token was found with an embedding to use as a the 
+	# vector representation. If there wasn't found, this is because of the combination
+	# of what the passed in description was, and how it was handled by either the sentence
+	# tokenizing step or the BERT tokenizer methods. Handle this by generating a random
+	# vector. This makes the embedding meaningless but prevents multiple instances that
+	# do not have embeddings from clustering together in downstream analysis. An expected
+	# layer size is hardcoded for this section based on the BERT architecture.
+	expected_layer_size = 768
+	if len(token_vecs_cat) == 0:
+		print("no embeddings found for input text '{}', generating random vector".format(description))
+		random_concat_vector = np.random.rand(expected_layer_size*layers)
+		random_summed_vector = np.random.rand(expected_layer_size)
+		token_vecs_cat.append(random_concat_vector)
+		token_vecs_sum.append(random_summed_vector)
+
+	# Average the vectors obtained for each token across all the sentences present in the input text.
+	if method == "concat":
+		embedding = np.mean(np.array(token_vecs_cat),axis=0)
+	elif method == "sum":
+		embedding = np.mean(np.array(token_vecs_sum),axis=0)
+	else:
+		raise ValueError("method argument is invalid")
+	return(embedding)
+def _infer_document_vector_from_word2vec(text, model, method):
+	"""docstring
+	"""
+	words = text.lower().split()
+	words_in_model_vocab = [word for word in words if word in model.wv.vocab]
+	if len(words_in_model_vocab) == 0:
+		words_in_model_vocab.append(random.choice(list(model.wv.vocab)))
+	stacked_vectors = np.array([model.wv[word] for word in words_in_model_vocab])
+	if method == "mean":
+		vector = stacked_vectors.mean(axis=0)
+	elif method == "max":
+		vector = stacked_vectors.max(axis=0)
+	else:
+		raise Error("method argument is invalid")
+	return(vector)
+def _infer_document_vector_from_doc2vec(text, model):
+	"""docstring
+	"""
+	vector = model.infer_vector(text.lower().split())
+	return(vector)
+
+# These two are not actually called from the other methods, they are only used for remembering vectorization scheme for future queries.
+def _get_ngrams_vector(text, countvectorizer):
+	"""docstring
+	"""
+	vector = countvectorizer.transform([text]).toarray()[0]
+	return(vector)
+def _get_annotations_vector(term_list, countvectorizer, ontology):
+	"""docstring
+	"""
+	term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
+	term_list = flatten(term_list)
+	term_list = list(set(term_list))
+	joined_term_string = " ".join(term_list).strip()
+	vector = countvectorizer.transform([joined_term_string]).toarray()[0]
+	return(vector)
+
 
 
 
@@ -270,7 +380,7 @@ def pairwise_square_doc2vec(model, ids_to_texts, metric):
 	index_in_matrix_to_id = {}
 	id_to_index_in_matrix = {}
 	for identifier,description in ids_to_texts.items():
-		inferred_vector = model.infer_vector(description.lower().split())
+		inferred_vector = _infer_document_vector_from_doc2vec(description, model)
 		index_in_matrix = len(vectors)
 		vectors.append(inferred_vector)
 		index_in_matrix_to_id[index_in_matrix] = identifier
@@ -288,6 +398,20 @@ def pairwise_square_doc2vec(model, ids_to_texts, metric):
 		index_in_matrix_to_id,
 		index_in_matrix_to_id,
 		matrix))
+
+	return(PairwiseGraph(
+		vectorizing_function = _infer_document_vector_from_doc2vec,		
+		vectorizing_kwargs = {"model":model},			
+		edgelist = edgelist,						
+		vector_dictionary = id_to_vector_dict,
+		row_vector_dictionary = None,
+		col_vector_dictionary = None,
+		vectorizer_object = None,
+		id_to_row_index=id_to_index_in_matrix, 
+		id_to_col_index=id_to_index_in_matrix,
+		row_index_to_id=index_in_matrix_to_id, 
+		col_index_to_id=index_in_matrix_to_id,
+		array=matrix))
 
 
 
@@ -321,18 +445,9 @@ def pairwise_square_word2vec(model, ids_to_texts, metric, method="mean"):
 	index_in_matrix_to_id = {}
 	id_to_index_in_matrix = {}
 	for identifier,description in ids_to_texts.items():
-		words = description.lower().split()
-		words_in_model_vocab = [word for word in words if word in model.wv.vocab]
-		if len(words_in_model_vocab) == 0:
-			words_in_model_vocab.append(random.choice(list(model.wv.vocab)))
-		stacked_vectors = np.array([model.wv[word] for word in words_in_model_vocab])
-		index_in_matrix = len(vectors)
-		if method == "mean":
-			vectors.append(stacked_vectors.mean(axis=0))
-		elif method == "max":
-			vectors.append(stacked_vectors.max(axis=0))
-		else:
-			raise Error("method argument is invalid")
+		vector = _infer_document_vector_from_word2vec(description, model, method)
+		index_in_matrix = len(vectors)		
+		vectors.append(vector)
 		index_in_matrix_to_id[index_in_matrix] = identifier
 		id_to_index_in_matrix[identifier] = index_in_matrix
 
@@ -341,13 +456,24 @@ def pairwise_square_word2vec(model, ids_to_texts, metric, method="mean"):
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
 	
-	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaires.
-	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, None, 
-		id_to_index_in_matrix, 
-		id_to_index_in_matrix, 
-		index_in_matrix_to_id,
-		index_in_matrix_to_id,
-		matrix))
+	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
+	vz_function = get_word2vec_vector
+	vz_args = {"model":model, "method":method}
+
+	return(PairwiseGraph(
+		vectorizing_function = _infer_document_vector_from_word2vec,
+		vectorizing_kwargs = {"model":model, "method":method},
+		edgelist = edgelist,
+		vector_dictionary = id_to_vector_dict,
+		row_vector_dictionary = None,
+		col_vector_dictionary = None,
+		vectorizer_object = None,
+		id_to_row_index=id_to_index_in_matrix, 
+		id_to_col_index=id_to_index_in_matrix,
+		row_index_to_id=index_in_matrix_to_id, 
+		col_index_to_id=index_in_matrix_to_id,
+		array=matrix))
+
 
 
 
@@ -379,7 +505,7 @@ def pairwise_square_bert(model, tokenizer, ids_to_texts, metric, method, layers)
 	index_in_matrix_to_id = {}
 	id_to_index_in_matrix = {}
 	for identifier,description in ids_to_texts.items():
-		inferred_vector = _infer_document_vector_from_bert(model, tokenizer, description, method, layers)
+		inferred_vector = _infer_document_vector_from_bert(description, model, tokenizer, method, layers)
 		index_in_matrix = len(vectors)
 		vectors.append(inferred_vector)
 		index_in_matrix_to_id[index_in_matrix] = identifier
@@ -390,84 +516,20 @@ def pairwise_square_bert(model, tokenizer, ids_to_texts, metric, method, layers)
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
 
-	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaires.
-	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, None, 
-		id_to_index_in_matrix, 
-		id_to_index_in_matrix, 
-		index_in_matrix_to_id,
-		index_in_matrix_to_id,
-		matrix))
-
-def _infer_document_vector_from_bert(model, tokenizer, description, method="sum", layers=4):
-	"""
-	This function uses a pretrained BERT model to infer a document level vector for a collection 
-	of one or more sentences. The sentence are defined using the nltk sentence parser. This is 
-	done because the BERT encoder expects either a single sentence or a pair of sentences. The
-	internal representations are drawn from the last n layers as specified by the layers argument, 
-	and represent a particular token but account for the context that it is in because the entire
-	sentence is input simultanously. The vectors for the layers can concatentated or summed 
-	together based on the method argument. The vector obtained for each token then are averaged
-	together to for the document level vector.
-	
-	Args:
-	    model (pytorch model): An already loaded BERT PyTorch model from a file or other source.
-	    tokenizer (bert tokenizer): Object which handles how tokenization specific to BERT is done. 
-	    description (str): A string representing the text for a single node of interest.
-	    method (str): A string indicating how layers for a token should be combined (concat or sum).
-	    layers (int): An integer saying how many layers should be used for each token.
-	
-	Returns:
-	    numpy.Array: A numpy array which is the vector embedding for the passed in text. 
-	
-	Raises:
-	    ValueError: The method argument has to be either 'concat' or 'sum'.
-	"""
-
-	sentences = sent_tokenize(description)
-	token_vecs_cat = []
-	token_vecs_sum = []
-
-	for text in sentences:
-		marked_text = "{} {} {}".format("[CLS]",text,"[SEP]")
-		tokenized_text = tokenizer.tokenize(marked_text)
-		indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
-		segments_ids = [1] * len(tokenized_text)
-		tokens_tensor = torch.tensor([indexed_tokens])
-		segments_tensor = torch.tensor([segments_ids])
-		with torch.no_grad():
-			encoded_layers,_ = model(tokens_tensor,segments_tensor)
-		token_embeddings = torch.stack(encoded_layers, dim=0)
-		token_embeddings = token_embeddings.permute(1,2,0,3)
-		batch = 0
-		for token in token_embeddings[batch]:
-			concatenated_layer_vectors = torch.cat(tuple(token[-layers:]), dim=0)
-			summed_layer_vectors = torch.sum(token[-layers:], dim=0)
-			token_vecs_cat.append(np.array(concatenated_layer_vectors))
-			token_vecs_sum.append(np.array(summed_layer_vectors))
-
-	# Check to make sure atleast one token was found with an embedding to use as a the 
-	# vector representation. If there wasn't found, this is because of the combination
-	# of what the passed in description was, and how it was handled by either the sentence
-	# tokenizing step or the BERT tokenizer methods. Handle this by generating a random
-	# vector. This makes the embedding meaningless but prevents multiple instances that
-	# do not have embeddings from clustering together in downstream analysis. An expected
-	# layer size is hardcoded for this section based on the BERT architecture.
-	expected_layer_size = 768
-	if len(token_vecs_cat) == 0:
-		print("no embeddings found for input text '{}', generating random vector".format(description))
-		random_concat_vector = np.random.rand(expected_layer_size*layers)
-		random_summed_vector = np.random.rand(expected_layer_size)
-		token_vecs_cat.append(random_concat_vector)
-		token_vecs_sum.append(random_summed_vector)
-
-	# Average the vectors obtained for each token across all the sentences present in the input text.
-	if method == "concat":
-		embedding = np.mean(np.array(token_vecs_cat),axis=0)
-	elif method == "sum":
-		embedding = np.mean(np.array(token_vecs_sum),axis=0)
-	else:
-		raise ValueError("method argument is invalid")
-	return(embedding)
+	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
+	return(PairwiseGraph(
+		vectorizing_function = _infer_document_vector_from_bert,
+		vectorizing_kwargs = {"model":model, "tokenizer":tokenizer, "method":method, "layers":layers},
+		edgelist = edgelist,
+		vector_dictionary = id_to_vector_dict,
+		row_vector_dictionary = None,
+		col_vector_dictionary = None,
+		vectorizer_object = None,
+		id_to_row_index=id_to_index_in_matrix, 
+		id_to_col_index=id_to_index_in_matrix,
+		row_index_to_id=index_in_matrix_to_id, 
+		col_index_to_id=index_in_matrix_to_id,
+		array=matrix))
 
 
 
@@ -506,14 +568,20 @@ def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
 	
-	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaires.
-	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, vectorizer, 
-		id_to_index_in_matrix, 
-		id_to_index_in_matrix, 
-		index_in_matrix_to_id,
-		index_in_matrix_to_id,
-		matrix))
-
+	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
+	return(PairwiseGraph(
+		vectorizing_function = _get_ngrams_vector,
+		vectorizing_kwargs = {"countvectorizer":vectorizer},
+		edgelist = edgelist,
+		vector_dictionary = id_to_vector_dict,
+		row_vector_dictionary = None,
+		col_vector_dictionary = None,
+		vectorizer_object = vectorizer,
+		id_to_row_index=id_to_index_in_matrix, 
+		id_to_col_index=id_to_index_in_matrix,
+		row_index_to_id=index_in_matrix_to_id, 
+		col_index_to_id=index_in_matrix_to_id,
+		array=matrix))
 
 
 
@@ -559,18 +627,20 @@ def pairwise_square_annotations(ids_to_annotations, ontology, metric, tfidf=Fals
 	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
 
-	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaires.
-	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, vectorizer, 
-		id_to_index_in_matrix, 
-		id_to_index_in_matrix, 
-		index_in_matrix_to_id,
-		index_in_matrix_to_id,
-		matrix))
-
-
-
-
-
+	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
+	return(PairwiseGraph(
+		vectorizing_function = _get_annotations_vector,
+		vectorizing_kwargs = {"countvectorizer":vectorizer, "ontology":ontology},
+		edgelist = edgelist,
+		vector_dictionary = id_to_vector_dict,
+		row_vector_dictionary = None,
+		col_vector_dictionary = None,
+		vectorizer_object = vectorizer,
+		id_to_row_index=id_to_index_in_matrix, 
+		id_to_col_index=id_to_index_in_matrix,
+		row_index_to_id=index_in_matrix_to_id, 
+		col_index_to_id=index_in_matrix_to_id,
+		array=matrix))
 
 
 
@@ -608,7 +678,7 @@ def pairwise_rectangular_doc2vec(model, ids_to_texts_1, ids_to_texts_2, metric):
 
 	row_in_matrix = 0	
 	for identifier,description in ids_to_texts_1.items():
-		inferred_vector = model.infer_vector(description.lower().split())
+		inferred_vector = _infer_document_vector_from_doc2vec(description, model)
 		vectors.append(inferred_vector)
 		row_index_in_matrix_to_id[row_in_matrix] = identifier
 		id_to_row_index_in_matrix[identifier] = row_in_matrix 
@@ -616,7 +686,7 @@ def pairwise_rectangular_doc2vec(model, ids_to_texts_1, ids_to_texts_2, metric):
 
 	col_in_matrix = 0
 	for identifier,description in ids_to_texts_2.items():
-		inferred_vector = model.infer_vector(description.lower().split())
+		inferred_vector = _infer_document_vector_from_doc2vec(description, model)
 		vectors.append(inferred_vector)
 		col_index_in_matrix_to_id[col_in_matrix] = identifier
 		id_to_col_index_in_matrix[identifier] = col_in_matrix 
@@ -648,34 +718,16 @@ def pairwise_rectangular_word2vec(model, ids_to_texts_1, ids_to_texts_2, metric,
 
 	row_in_matrix = 0	
 	for identifier,description in ids_to_texts_1.items():
-		words = description.lower().split()
-		words_in_model_vocab = [word for word in words if word in model.wv.vocab]
-		if len(words_in_model_vocab) == 0:
-			words_in_model_vocab.append(random.choice(list(model.wv.vocab)))
-		stacked_vectors = np.array([model.wv[word] for word in words_in_model_vocab])
-		if method == "mean":
-			vectors.append(stacked_vectors.mean(axis=0))
-		elif method == "max":
-			vectors.append(stacked_vectors.max(axis=0))
-		else:
-			raise Error("method argument is invalid")
+		vector = _infer_document_vector_from_word2vec(description, model, method)
+		vectors.append(vector)
 		row_index_in_matrix_to_id[row_in_matrix] = identifier
 		id_to_row_index_in_matrix[identifier] = row_in_matrix 
 		row_in_matrix = row_in_matrix+1
 
 	col_in_matrix = 0
 	for identifier,description in ids_to_texts_2.items():
-		words = description.lower().split()
-		words_in_model_vocab = [word for word in words if word in model.wv.vocab]
-		if len(words_in_model_vocab) == 0:
-			words_in_model_vocab.append(random.choice(list(model.wv.vocab)))
-		stacked_vectors = np.array([model.wv[word] for word in words_in_model_vocab])
-		if method == "mean":
-			vectors.append(stacked_vectors.mean(axis=0))
-		elif method == "max":
-			vectors.append(stacked_vectors.max(axis=0))
-		else:
-			raise Error("method argument is invalid")
+		vector = _infer_document_vector_from_word2vec(description, model, method)
+		vectors.append(vector)
 		col_index_in_matrix_to_id[col_in_matrix] = identifier
 		id_to_col_index_in_matrix[identifier] = col_in_matrix 
 		col_in_matrix = col_in_matrix+1
@@ -695,6 +747,8 @@ def pairwise_rectangular_word2vec(model, ids_to_texts_1, ids_to_texts_2, metric,
 
 
 
+
+
 def pairwise_rectangular_bert(model, tokenizer, ids_to_texts_1, ids_to_texts_2, metric, method, layers):
 	"""
 	docstring
@@ -707,7 +761,7 @@ def pairwise_rectangular_bert(model, tokenizer, ids_to_texts_1, ids_to_texts_2, 
 
 	row_in_matrix = 0	
 	for identifier,description in ids_to_texts_1.items():
-		inferred_vector = _infer_document_vector_from_bert(model, tokenizer, description, method, layers)
+		inferred_vector = _infer_document_vector_from_bert(description, model, tokenizer, method, layers)
 		vectors.append(inferred_vector)
 		row_index_in_matrix_to_id[row_in_matrix] = identifier
 		id_to_row_index_in_matrix[identifier] = row_in_matrix 
@@ -715,7 +769,7 @@ def pairwise_rectangular_bert(model, tokenizer, ids_to_texts_1, ids_to_texts_2, 
 
 	col_in_matrix = 0
 	for identifier,description in ids_to_texts_2.items():
-		inferred_vector = _infer_document_vector_from_bert(model, tokenizer, description, method, layers)
+		inferred_vector = _infer_document_vector_from_bert(description, model, tokenizer, method, layers)
 		vectors.append(inferred_vector)
 		col_index_in_matrix_to_id[col_in_matrix] = identifier
 		id_to_col_index_in_matrix[identifier] = col_in_matrix 
@@ -918,7 +972,7 @@ def elemwise_list_bert(model, tokenizer, text_list_1, text_list_2, metric_functi
 	descriptions = []
 	descriptions.extend(text_list_1)
 	descriptions.extend(text_list_2)
-	all_vectors = [_infer_document_vector_from_bert(model, tokenizer, description, method, layers) for description in descriptions]
+	all_vectors = [_infer_document_vector_from_bert(description, model, tokenizer, method, layers) for description in descriptions]
 	list_1_vectors = all_vectors[:len(text_list_1)]
 	list_2_vectors = all_vectors[len(text_list_1):]
 	vector_pairs = zip(list_1_vectors, list_2_vectors)
@@ -1138,6 +1192,17 @@ def _verify_dfs_are_consistent(*similarity_dfs):
 	for (s1, s2) in list(itertools.combinations_with_replacement(id_sets, 2)):	
 		if not len(s1.difference(s2)) == 0:
 			raise ValueError("dataframes specifying networks are not consisent")
+
+
+
+
+
+
+
+
+
+
+
 
 
 
