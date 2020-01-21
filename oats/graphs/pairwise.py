@@ -232,6 +232,10 @@ def _infer_document_vector_from_doc2vec(text, model):
 	vector = model.infer_vector(text.lower().split())
 	return(vector)
 
+
+
+
+
 # These two are not actually called from the other methods, they are only used for remembering vectorization scheme for future queries.
 def _get_ngrams_vector(text, countvectorizer):
 	"""docstring
@@ -357,8 +361,6 @@ def rectangular_adjacency_matrix_to_edgelist(matrix, row_indices_to_ids, col_ind
 
 
 
-
-
 def pairwise_square_doc2vec(model, ids_to_texts, metric):
 	"""
 	Find distance between strings of text in some input data using Doc2Vec. Note that only 
@@ -400,8 +402,9 @@ def pairwise_square_doc2vec(model, ids_to_texts, metric):
 		matrix))
 
 	return(PairwiseGraph(
+		metric_str = metric,
 		vectorizing_function = _infer_document_vector_from_doc2vec,		
-		vectorizing_kwargs = {"model":model},			
+		vectorizing_function_kwargs = {"model":model},			
 		edgelist = edgelist,						
 		vector_dictionary = id_to_vector_dict,
 		row_vector_dictionary = None,
@@ -457,12 +460,10 @@ def pairwise_square_word2vec(model, ids_to_texts, metric, method="mean"):
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
 	
 	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
-	vz_function = get_word2vec_vector
-	vz_args = {"model":model, "method":method}
-
 	return(PairwiseGraph(
+		metric_str = metric,
 		vectorizing_function = _infer_document_vector_from_word2vec,
-		vectorizing_kwargs = {"model":model, "method":method},
+		vectorizing_function_kwargs = {"model":model, "method":method},
 		edgelist = edgelist,
 		vector_dictionary = id_to_vector_dict,
 		row_vector_dictionary = None,
@@ -518,8 +519,9 @@ def pairwise_square_bert(model, tokenizer, ids_to_texts, metric, method, layers)
 
 	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
 	return(PairwiseGraph(
+		metric_str = metric,
 		vectorizing_function = _infer_document_vector_from_bert,
-		vectorizing_kwargs = {"model":model, "tokenizer":tokenizer, "method":method, "layers":layers},
+		vectorizing_function_kwargs = {"model":model, "tokenizer":tokenizer, "method":method, "layers":layers},
 		edgelist = edgelist,
 		vector_dictionary = id_to_vector_dict,
 		row_vector_dictionary = None,
@@ -570,8 +572,9 @@ def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 	
 	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
 	return(PairwiseGraph(
+		metric_str = metric,
 		vectorizing_function = _get_ngrams_vector,
-		vectorizing_kwargs = {"countvectorizer":vectorizer},
+		vectorizing_function_kwargs = {"countvectorizer":vectorizer},
 		edgelist = edgelist,
 		vector_dictionary = id_to_vector_dict,
 		row_vector_dictionary = None,
@@ -582,6 +585,38 @@ def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 		row_index_to_id=index_in_matrix_to_id, 
 		col_index_to_id=index_in_matrix_to_id,
 		array=matrix))
+
+
+
+
+
+def pairwise_square_lda(model, ids_to_texts, vectorizer, model):
+	"""docstring
+	"""
+
+
+	# Infer vectors for each string of text and remember mapping to the IDs.
+	descriptions = []
+	index_in_matrix_to_id = {}
+	id_to_index_in_matrix = {}
+	for identifier,description in ids_to_texts.items():
+		index_in_matrix = len(descriptions)
+		descriptions.append(description)
+		index_in_matrix_to_id[index_in_matrix] = identifier
+		id_to_index_in_matrix[identifier] = index_in_matrix
+
+	# Apply distance metric over all the vectors to yield a matrix.
+	#vectors,vectorizer = strings_to_vectors(*descriptions, tfidf=tfidf, **kwargs)
+
+
+	ngram_vectors = vectorizer.transform(descriptions).toarray()
+	
+
+
+
+	matrix = squareform(pdist(vectors,metric))
+	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
 
 
 
@@ -629,8 +664,9 @@ def pairwise_square_annotations(ids_to_annotations, ontology, metric, tfidf=Fals
 
 	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
 	return(PairwiseGraph(
+		metric_str = metric,
 		vectorizing_function = _get_annotations_vector,
-		vectorizing_kwargs = {"countvectorizer":vectorizer, "ontology":ontology},
+		vectorizing_function_kwargs = {"countvectorizer":vectorizer, "ontology":ontology},
 		edgelist = edgelist,
 		vector_dictionary = id_to_vector_dict,
 		row_vector_dictionary = None,
@@ -1083,13 +1119,6 @@ def merge_edgelists(dfs_dict, default_value=None):
 	Returns:
 		TYPE: Description
 	"""
-
-	# Very slow verification step to standardize the dataframes that specify the edge lists.
-	# This should only be run if not sure whether or not the methods that generate the edge
-	# lists are returning the edges in the exact same format (both i,j and j,i pairs present).
-	# dfs_dict = {name:_standardize_edgelist(df) for name,df in dfs_dict.items()}
-	# _verify_dfs_are_consistent(*dfs_dict.values())
-
 	for name,df in dfs_dict.items():
 		df.rename(columns={"value":name}, inplace=True)
 	merged_df = functools.reduce(lambda left,right: pd.merge(left,right,on=["from","to"], how="outer"), dfs_dict.values())
@@ -1099,13 +1128,20 @@ def merge_edgelists(dfs_dict, default_value=None):
 
 
 
-
 def make_undirected(df):
-	# The dataframe passed in must be in the form {from, to, [other...]}.
-	# Convert the undirected edgelist where an edge (j,i) is always implied by an edge (i,j) to a directed edgelist where
-	# both the (i,j) and (j,i) edges are explicity present in the dataframe. This is done so that we can make us of the
-	# groupby function to obtain all groups that contain all edges between some given node and everything its mapped to 
-	# by just grouping base on one of the columns specifying a node. This is easier than using a multi-indexed dataframe.
+	"""
+	The dataframe passed in must be in the form {from, to, [other...]}.
+	Convert the undirected edgelist where an edge (j,i) is always implied by an edge (i,j) to a directed edgelist where
+	both the (i,j) and (j,i) edges are explicity present in the dataframe. This is done so that we can make us of the
+	groupby function to obtain all groups that contain all edges between some given node and everything its mapped to 
+	by just grouping base on one of the columns specifying a node. This is easier than using a multi-indexed dataframe.
+	
+	Args:
+	    df (pandas.DataFrame): Any dataframe with in the form {from, to, [other...]}.
+	
+	Returns:
+	    pandas.DataFrame: The updated dataframe that includes edges in both directions.
+	"""
 	other_columns = df.columns[2:]
 	flipped_edges = df[flatten(["to","from",other_columns])]      # Create the flipped duplicate dataframe.
 	flipped_edges.columns = flatten(["from","to",other_columns])  # Rename the columns so it will stack correctly
@@ -1115,50 +1151,13 @@ def make_undirected(df):
 	
 
 
-
 def remove_self_loops(df):
+	""" 
+	Removes all edges connecting the same ID.
+	"""
 	return(df[df["from"] != df["to"]])
 
 
-
-
-
-
-def standardize_edgelist(df):
-	"""
-	This function is meant to produce a undirect edge list that contains both the (i,j)
-	and (j,i) edges for the entire graph for every possible combination of nodes in the
-	graph. Note that this function is supposed to be included so that the methods that
-	return the edges lists are not forced to always return complete edge lists. If they
-	don't, then when merging edgelists using merge_edgelists, there can be problems when
-	doing the outer join, because if only (i,j) is specified then (j,i) will be created 
-	but will be NA, which will make it incorrectly seem that that method did not return
-	a specific edge value for that pairing.
-
-	Not currently using this method however, because it is slow when the dataset gets
-	very large. Currently the methods that generate the edgelist do all pairwise 
-	combinations because this is faster, and then the outer join works without 
-	introducing incorrectly placed NAs.
-
-	Args:
-		df (TYPE): Description
-	
-	Returns:
-		TYPE: Description
-	"""
-
-	# Make the edgelist undirected.
-	graph = nx.from_pandas_edgelist(df, source="from", target="to", edge_attr=["value"])
-	graph = graph.to_undirected()
-	graph = graph.to_directed()
-	df = nx.to_pandas_edgelist(graph, source="from", target="to")
-
-	# Make sure the nodes are listed in ascending order. If making the edgelist
-	# non-redudant instead of redundant.
-	# See https://stackoverflow.com/a/45505141
-	#cond = df["from"] > df["to"]
-	#df.loc[cond, ["from","to"]] = df.loc[cond, ["to","from"]].values	
-	return(df)
 
 
 def subset_edgelist_with_ids(df, ids):
@@ -1170,6 +1169,7 @@ def subset_edgelist_with_ids(df, ids):
 	Args:
 		df (pandas.DataFrame): The edge list before subsetting.
 		ids (list): A list of the node IDs that are the only ones left after subsetting.
+
 	Returns:
 		pandas.DataFrame: The edge list after subsetting.
 	"""
@@ -1177,21 +1177,6 @@ def subset_edgelist_with_ids(df, ids):
 	return(df)
 
 
-
-def _verify_dfs_are_consistent(*similarity_dfs):
-	"""Check that each dataframe specifies the same set of edges.
-	Args:
-		*similarity_dfs: Any number of dataframe arguments.
-	Raises:
-		Error: The dataframes were found to not all be describing the same graph.
-	"""
-	id_sets = [set() for i in range(0,len(similarity_dfs))]
-	for i in range(0,len(similarity_dfs)):
-		id_sets[i].update(list(pd.unique(similarity_dfs[i]["from"].values)))
-		id_sets[i].update(list(pd.unique(similarity_dfs[i]["to"].values)))
-	for (s1, s2) in list(itertools.combinations_with_replacement(id_sets, 2)):	
-		if not len(s1.difference(s2)) == 0:
-			raise ValueError("dataframes specifying networks are not consisent")
 
 
 
