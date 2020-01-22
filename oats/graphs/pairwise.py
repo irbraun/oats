@@ -590,7 +590,7 @@ def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 
 
 
-def pairwise_square_lda(model, ids_to_texts, vectorizer, model):
+def pairwise_square_lda(model, ids_to_texts, vectorizer):
 	"""docstring
 	"""
 
