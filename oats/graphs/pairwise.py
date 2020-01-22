@@ -394,13 +394,6 @@ def pairwise_square_doc2vec(model, ids_to_texts, metric):
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
 	
 	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
-	return(PairwiseGraph(edgelist, id_to_vector_dict, None, None, None, 
-		id_to_index_in_matrix, 
-		id_to_index_in_matrix, 
-		index_in_matrix_to_id,
-		index_in_matrix_to_id,
-		matrix))
-
 	return(PairwiseGraph(
 		metric_str = metric,
 		vectorizing_function = _infer_document_vector_from_doc2vec,		
@@ -591,7 +584,7 @@ def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 
 
 def pairwise_square_lda(model, ids_to_texts, vectorizer):
-	"""docstring
+	""" TODO write this
 	"""
 
 
