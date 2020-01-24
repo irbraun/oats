@@ -134,7 +134,7 @@ def reduce_vocabulary_connected_components(descriptions, tokens, distance_matrix
 	for i,description in descriptions.items():
 		reduced_description = " ".join([transform_dict[token] for token in description.split()])
 		reduced_descriptions[i] = reduced_description
-	return(reduced_descriptions, untransform_dict)
+	return(reduced_descriptions, transform_dict ,untransform_dict)
 
 
 
@@ -200,7 +200,7 @@ def reduce_vocabulary_linares_pontes(descriptions, tokens, distance_matrix, n):
 	for i,description in descriptions.items():
 		reduced_description = " ".join([token_to_reduced_vocab_token[token] for token in description.split()])
 		reduced_descriptions[i] = reduced_description
-	return(reduced_descriptions, reduced_vocab_token_to_tokens)
+	return(reduced_descriptions, token_to_reduced_vocab_token, reduced_vocab_token_to_tokens)
 			
 
 
