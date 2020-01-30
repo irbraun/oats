@@ -49,10 +49,6 @@ class PairwiseGraph:
 		    row_index_to_id (None, optional): A mapping between row indices in the array and ID integers.
 		    col_index_to_id (None, optional): A mapping between column indices in the array and ID integers.
 		    array (None, optional): A numpy array containing all the distance values that were calculated.
-		
-		Deleted Parameters:
-		    vectorization_fucntion_kwargs (dictionary): The arguments by keyword to pass to that vectorization function.
-		
 		"""
 		self.metric_str = metric_str
 		self.vectorizing_function = vectorizing_function

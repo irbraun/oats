@@ -31,11 +31,30 @@ def get_clean_token_list(description):
 	token_list = description.lower().split()
 	return(token_list)
 
+
+
+
+
+
 def remove_punctuation(text):
+	"""Summary
+	>>> remove_punctuation("something,")
+	'something'
+	>>> remove_punctuation("something;")
+	'something'
+	"""
 	translator = str.maketrans('', '', string.punctuation)
 	return(text.translate(translator))
 
+
+
+
+
+
+
+
 def remove_newlines(text):
+
 	text = text.replace("\n", " ")
 	text = text.replace("\t", " ")
 	text = text.replace("\r", " ")
@@ -71,9 +90,9 @@ def concatenate_with_bar_delim(*tokens):
 	character. These are treated as seperate elements that should be incorporated 
 	into the string that is returned, trailing and leading bars are handled.
 	Args:
-	    *tokens: Description
+		*tokens: Description
 	Returns:
-	    TYPE: Description
+		TYPE: Description
 	"""
 	tokens = [token.split("|") for token in tokens]
 	tokens = itertools.chain.from_iterable(tokens)
@@ -141,10 +160,10 @@ def handle_synonym_in_parentheses(string, min_length):
 	parentheses shorter than min_length to be a real synonym, but rather part of the 
 	name, something like genename(t) for example. 
 	Args:
-	    string (str): Any string.
-	    min_length (int): Length requirement in characters for synonym to be considered.
+		string (str): Any string.
+		min_length (int): Length requirement in characters for synonym to be considered.
 	Returns:
-	    list: All strings that are supposed to be discrete components.
+		list: All strings that are supposed to be discrete components.
 	"""
 	names = []
 	pattern = r"\(.*?\)"
@@ -175,10 +194,10 @@ def add_prefix(token, prefix):
 	(avoids accidentally making a meaningless token ("") meaningful by
 	modifying it with an additional component.
 	Args:
-	    token (str): Any string.
-	    prefix (str): Any string.
+		token (str): Any string.
+		prefix (str): Any string.
 	Returns:
-	    str: The token with the prefix added to the beginning.
+		str: The token with the prefix added to the beginning.
 	"""
 	if len(token) > 0:
 		return("{}{}".format(prefix, token))
@@ -208,10 +227,10 @@ def append_words(description, words):
 	variance in word-choice but the structure of the description itself is not important
 	and can be ignored, such as in using bag-of-words or similar technique.
 	Args:
-	    description (str): Any string, a description of something.
-	    words (list): Strings to be appended to the description.
+		description (str): Any string, a description of something.
+		words (list): Strings to be appended to the description.
 	Returns:
-	    str: The description with new words appended.
+		str: The description with new words appended.
 	"""
 	combined_list = [description]
 	combined_list.extend(words)
@@ -227,9 +246,9 @@ def concatenate_descriptions(*descriptions):
 	combined description will still be parseable with some other NLP package or 
 	functions if generating a sentence tree or something like that.
 	Args:
-	    *descriptions: Description
+		*descriptions: Description
 	Returns:
-	    TYPE: Description
+		TYPE: Description
 	"""
 	descriptions = remove_duplicates_retain_order(descriptions)
 	descriptions = [add_end_tokens(description) for description in descriptions]
@@ -257,9 +276,9 @@ def get_ontology_ids(string):
 	that the abbreviation for the ontology name is in all caps, but makes no 
 	assumption about the length of the name.
 	Args:
-	    string (str): Any string of text.
+		string (str): Any string of text.
 	Returns:
-	    list: A list of the ontology term IDs mentioned in it.
+		list: A list of the ontology term IDs mentioned in it.
 	"""
 	pattern = r"[A-Z]+:[0-9]{7}"
 	results = re.findall(pattern, string)

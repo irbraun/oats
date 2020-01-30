@@ -372,7 +372,6 @@ class Dataset:
 
 	def _sort_by_species(self):
 		self.df.sort_values(by=["species"], inplace=True)
-		self._reset_ids()
 
 	def to_csv(self, path):
 		self._sort_by_species()
