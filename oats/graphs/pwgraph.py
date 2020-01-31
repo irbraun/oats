@@ -68,9 +68,10 @@ class PairwiseGraph:
 
 
 
-
 	def get_vector(self, text):
 		return(self.vectorizing_function(text, **self.vectorizing_function_kwargs))
+
+
 
 
 

@@ -29,9 +29,32 @@ from oats.nlp.search import binary_search_rabin_karp
 
 class Ontology:
 
+	"""A wrapper class for pronto.Ontology to provide some extra NLP-centric functions.
+	
+	Attributes:
+	    forward_term_dict (dict of str:list of str): Mapping between ontology term IDs and lists of words that are related to those terms.
+
+	    ic_dict (dict of str:float): Mapping between ontology term IDs and the information content of that term in the context of the ontology graph.
+	    
+	    pronto_ontology_obj (pronto.Ontology): The ontology object from the pronto package that this object is wrapping.
+	    
+	    reverse_term_dict (dict of str:list of str): Mapping between words and the lists of ontology term IDs that are related to those words.
+	    
+	    subclass_dict (dict of str:list of str): Mapping between ontology term IDs and a list of ontology term IDs of all terms inherited by the key term.
+	"""
+	
+
+
+
 
 	def __init__(self, ontology_obo_file):
+		"""Initiates an object of this class.
+		
+		Args:
+		    ontology_obo_file (str): Path of the .obo file of the ontology to build this object from.
 
+		"""
+		
 		# Generate all the data structures that are accessible from instances of the ontology class.
 		self.pronto_ontology_obj = pronto.Ontology(ontology_obo_file)
 		self.subclass_dict = self._get_subclass_dict()
@@ -45,18 +68,18 @@ class Ontology:
 
 
 
-
+	# Returns a list of tokens that appear in the labels and synonym strings of this ontology.
+	# This could be useful for generating a custom vocabulary based on which words are present
+	# in descriptions, labels, and synonyms for terms that are in this ontology. Note that this
+	# is different than finding the complete set of terms from the vocabulary or their labels,
+	# because this splits labels and synonyms that contain multiple words into seperate tokens 
+	# at the description of the tokenizer function. Additional processing might be needed to turn
+	# this set of tokens into a useful vocabulary. 
 	def get_tokens(self):
-		"""
-		Returns a list of tokens that appear in the labels and synonym strings of this ontology.
-		This could be useful for generating a custom vocabulary based on which words are present
-		in descriptions, labels, and synonyms for terms that are in this ontology. Note that this
-		is different than finding the complete set of terms from the vocabulary or their labels,
-		because this splits labels and synonyms that contain multiple words into seperate tokens 
-		at the description of the tokenizer function. Additional processing might be needed to turn
-		this set of tokens into a useful vocabulary. 
+		""" Gets the tokens (words) which appear in this ontology.
+
 		Returns:
-		    TYPE: Description
+		    list of str: Lists of words in the set of words present in all term labels and synonyms in this ontology.
 		"""
 		labels_and_synonyms = list(itertools.chain.from_iterable(list(self.forward_term_dict.values())))
 		tokens = set(list(itertools.chain.from_iterable([word_tokenize(x) for x in labels_and_synonyms])))
@@ -64,13 +87,15 @@ class Ontology:
 
 
 
-
 	def get_label_from_id(self, term_id):
-		"""Finds the label that belongs to the term this ID is referencing in this ontology.
+		"""Gets the label corresponding to an ontology term ID.
+		
 		Args:
 		    term_id (str): The ID string for some term.
+		
 		Returns:
 		    str: The label corresponding to that term ID.
+		
 		Raises:
 		    KeyError: This ID does not refer to a term in the ontology.
 		"""
@@ -82,12 +107,21 @@ class Ontology:
 
 
 
-	def get_inherited_term_ids(self, term_id):
-		"""Finds the terms which are inherited by the term referenced by the provided ID.
+
+
+
+
+
+
+	def _get_inherited_term_ids(self, term_id):
+		"""Gets all the terms inherited by a given term.
+		
 		Args:
 		    term_id (TYPE): The ID string for some term.
+		
 		Returns:
 		    TYPE: A list of additional term IDs which are inherited by this term.
+		
 		Raises:
 		    KeyError: This ID does not refer to a term in the ontology.
 		"""
@@ -116,7 +150,7 @@ class Ontology:
 		"""
 		subclass_dict = {}
 		for term in self.pronto_ontology_obj:
-			subclass_dict[term.id] = self.get_inherited_term_ids(term.id)
+			subclass_dict[term.id] = self._get_inherited_term_ids(term.id)
 		return(subclass_dict)
 
 
@@ -150,9 +184,6 @@ class Ontology:
 
 
 	
-
-
-
 
 	def _get_corpus_based_ic_dictionary_from_annotations(self, annotations_dict):
 		"""
@@ -200,7 +231,7 @@ class Ontology:
 
 		ic_dict = {}	
 
-		# TODO go from counts to ic.
+		# TODO go from counts to information content.
 		return(ic_dict)
 
 

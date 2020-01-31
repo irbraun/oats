@@ -31,20 +31,22 @@ from oats.nlp.search import binary_search_rabin_karp, binary_search_fuzzy
 
 
 
-def annotate_using_rabin_karp(object_dict, ontology, fixcase=1):
+def annotate_using_rabin_karp(ids_to_texts, ontology, fixcase=1):
 	"""Build a dictionary of annotations using the Rabin Karp algorithm.
 
 	Args:
-	    object_dict (dict): Mapping from IDs to natural language descriptions.
-	    ontology (Ontology): Ontology object with specified terms.
-	    fixcase (int, optional): Set to 1 to make words from ontologies and the searched text both lowercase, set to 0 else.
+		ids_to_texts (dict of int:str): Mapping from unique integer IDs to natural language text strings.
+
+		ontology (oats.annotation.Ontology): Object of the ontology to be used. 
+
+		fixcase (int, optional): Set to 1 to normalize all strings before matching, set to 0 to ignore this option.
 
 	Returns:
-	    dict: Mapping from object (phenotype) IDs to ontology term IDs.
+		dict of int:list of str: Mapping from unique integer IDs to lists of ontology term IDs.
 	"""
 	annotations = defaultdict(list)
 	prime = 193
-	for identifer,description in object_dict.items():
+	for identifer,description in ids_to_texts.items():
 		annotations[identifer].extend([])
 		for word,term_list in ontology.reverse_term_dict.items():
 			if fixcase==1:
@@ -62,29 +64,34 @@ def annotate_using_rabin_karp(object_dict, ontology, fixcase=1):
 
 
 
-def annotate_using_fuzzy_matching(object_dict, ontology, threshold=0.90, fixcase=1, local=1):
-    """Build a dictionary of annotations using the fuzzy string matching method.
-    
-    Args:
-        object_dict (dict): Mapping from IDs to natural language descriptions.
-        ontology (Ontology): Ontology object with specified terms.
-        threshold (float, optional): Value between 0 and 1 at which matches are considered real.
-        fixcase (int, optional): Set to 1 to make words from ontologies and the searched text both lowercase, set to 0 else.
-        local (int, optional): Set the alignment method, 0 for global and 1 for local. Should always be local for annotating long text.
-    
-    Returns:
-        dict: Mapping from object (phenotype) IDs to ontology term IDs.
-    """
-    annotations = defaultdict(list)
-    for identifier,description in object_dict.items():
-    	annotations[identifier].extend([])
-    	for word, term_list in ontology.reverse_term_dict.items():
-    		if fixcase==1:
-    			word = word.lower()
-    			description = description.lower()
-    		if binary_search_fuzzy(word, description, threshold, local):
-    			annotations[identifier].extend(term_list)
-    return(annotations)
+def annotate_using_fuzzy_matching(ids_to_texts, ontology, threshold=0.90, fixcase=1, local=1):
+	"""Build a dictionary of annotations using fuzzy string matching.
+	
+	Args:
+		ids_to_texts (dict of int:str): Mapping from unique integer IDs to natural language text strings.
+		
+		ontology (oats.annotation.Ontology): Ontology object with specified terms.
+		
+		threshold (float, optional): Value ranging from 0 to 1, the similarity threshold for string matches.
+		
+		fixcase (int, optional): Set to 1 to normalize all strings before matching, set to 0 to ignore this option.
+		
+		local (int, optional): Set the alignment method, 0 for global and 1 for local. Local alignment should 
+		always be used for annotating ontology terms to long strings of text.
+	
+	Returns:
+		dict of int:list of str: Mapping from unique integer IDs to lists of ontology term IDs.
+	"""
+	annotations = defaultdict(list)
+	for identifier,description in ids_to_texts.items():
+		annotations[identifier].extend([])
+		for word, term_list in ontology.reverse_term_dict.items():
+			if fixcase==1:
+				word = word.lower()
+				description = description.lower()
+			if binary_search_fuzzy(word, description, threshold, local):
+				annotations[identifier].extend(term_list)
+	return(annotations)
 
 
 
@@ -94,20 +101,24 @@ def annotate_using_fuzzy_matching(object_dict, ontology, threshold=0.90, fixcase
 
 
 
-def annotate_using_noble_coder(object_dict, path_to_jarfile, *ontology_names, precise=1):
-	"""Build a dictionary of annotations using NOBLE Coder.
+def annotate_using_noble_coder(ids_to_texts, jar_path, *ontology_names, precise=1):
+	"""Build a dictionary of annotations using NOBLE Coder (Tseytlin et al., 2016).
 
 	Args:
-	    object_dict (dict): Mapping from object IDs to natural language descriptions.
-	    path_to_jarfile (str): Path to the jar file for the NOBLE Coder tool.
-	    ontology_names (list): Strings used to find the correct terminology file, should match obo files too.
-	    precise (int, optional): Set to 1 to do precise matching, set to 0 to accept partial matches.
+		ids_to_texts (dict of int:str): Mapping from unique integer IDs to natural language text strings.
+		
+		jar_path (str): Path of the NOBLE Coder jar file.
+
+		ontology_names (list of str): Names of the ontologies (e.g., "pato", "po") used to find matching NOBLE Coder 
+		terminology files (e.g., pato.term, po.term) in ~/.noble/terminologies.
+
+		precise (int, optional): Set to 1 to do precise matching, set to 0 to accept partial matches.
 
 	Returns:
-	    dict: Mapping from object (phenotype) IDs to ontology term IDs.
+		dict of int:list of str: Mapping from unique integer IDs to lists of ontology term IDs.
 
 	Raises:
-	    FileNotFoundError: NOBLE Coder can't find the terminology file matching this ontology.
+		FileNotFoundError: NOBLE Coder cannot find the terminology file matching this ontology.
 	"""
 
 
@@ -127,8 +138,8 @@ def annotate_using_noble_coder(object_dict, path_to_jarfile, *ontology_names, pr
 
 	# Generate temporary text files for each of the text descriptions.
 	# Identifiers for descriptions are encoded into the filenames themselves.
-	annotations = {identifier:[] for identifier in object_dict.keys()}
-	for identifier,description in object_dict.items():
+	annotations = {identifier:[] for identifier in ids_to_texts.keys()}
+	for identifier,description in ids_to_texts.items():
 		tempfile_path = os.path.join(tempfiles_directory, f"{identifier}.txt")
 		with open(tempfile_path, "w") as file:
 			file.write(description)
@@ -139,7 +150,7 @@ def annotate_using_noble_coder(object_dict, path_to_jarfile, *ontology_names, pr
 		expected_terminology_file = os.path.expanduser(os.path.join("~",".noble", "terminologies", f"{ontology_name}.term"))
 		if not os.path.exists(expected_terminology_file):
 			raise FileNotFoundError(expected_terminology_file)
-		os.system(f"java -jar {path_to_jarfile} -terminology {ontology_name} -input {tempfiles_directory} -output {output_directory} -search '{specificity}' -score.concepts")
+		os.system(f"java -jar {jar_path} -terminology {ontology_name} -input {tempfiles_directory} -output {output_directory} -search '{specificity}' -score.concepts")
 		default_results_filename = "RESULTS.tsv"		
 		for identifier,term_list in _parse_noble_coder_results(default_results_path).items():
 			# Need to convert identifier back to an integer because it's being read from a file name.
@@ -163,16 +174,17 @@ def annotate_using_noble_coder(object_dict, path_to_jarfile, *ontology_names, pr
 
 
 
+
+
 def _parse_noble_coder_results(results_filename):
 	"""
-	Returns a mapping from object IDs to ontology term IDs inferred from reading
-	a NOBLE Coder output file, supports the above method.
+	Translates the generated NOBLE Coder output file into a dictionary of annotations.
 
 	Args:
-	    results_filename (str): Path to the output file created by NOBLE Coder.
+		results_filename (str): Path of the output file created by NOBLE Coder.
 
 	Returns:
-	    dict: Mapping from object (phenotype) IDs to ontology term IDs.
+		dict of int:list of str: Mapping from unique integer IDs to lists of ontology term IDs.
 	"""
 	df = pd.read_csv(results_filename, usecols=["Document", "Matched Term", "Code"], sep="\t")
 	annotations = defaultdict(list)
@@ -186,13 +198,21 @@ def _parse_noble_coder_results(results_filename):
 
 
 
+
+
+
+
+
+
+
 def _cleanup_noble_coder_results(output_directory, textfiles_directory):
 	"""
 	Removes all directories and files created and used by running NOBLE Coder.
 
 	Args:
-	    output_directory (str): Path to directory containing NOBLE Coder outputs.
-	    textfiles_directory (str): Path to the directory of input text files.
+		output_directory (str): Path of the directory containing the NOBLE Coder outputs.
+
+		textfiles_directory (str): Path of the directory of input text files.
 	"""
 
 	# Expected paths to each object that should be removed.
@@ -234,37 +254,37 @@ def _cleanup_noble_coder_results(output_directory, textfiles_directory):
 
 
 
-def write_annotations_to_tsv_file(annotations_dict, annotations_output_path):
-	"""Create a tsv file of annotations that is compatable with fastsemsim.
+def write_annotations_to_file(annotations_dict, annotations_output_path, sep="\t"):
+	""" Write a dictionary of annotations to a file.
 	
 	Args:
-	    annotations_dict (dict): Mapping from IDs to lists of ontology term IDs.
-	    annotations_output_file (str): Path to the output file to create.
+		annotations_dict (dict of int:list of str): Mapping from unique integer IDs to lists of ontology term IDs.
+
+		annotations_output_file (str): Path of the output file that will be created.
 	"""
 	outfile = open(annotations_output_path,"w")
 	for identifer,term_list in annotations_dict.items():
 		row_values = [str(identifer)]
 		row_values.extend(term_list)
-		outfile.write("\t".join(row_values).strip()+"\n")
+		outfile.write(sep.join(row_values).strip()+"\n")
 	outfile.close()
 
 
 
 
-def read_annotations_from_tsv_file(annotations_input_path):
-	"""Get a dictionary mapping ID's to list of ontology term ID's.
+def read_annotations_from_file(annotations_input_path, sep="\t"):
+	""" Read a file of annotations and produce a dictionary. 
 
 	Args:
-	    annotations_input_file (str): Path to the input file to open.
+		annotations_input_file (str): Path of the input annotations file to read.
 
 	Returns:
-	    dict: Mapping from object IDs to lists of ontology term IDs.
+		dict of int:list of str: Mapping from unique integer IDs to lists of ontology term IDs.
 	"""
 	infile = open(annotations_input_path, "r")
 	annotations_dict = {}
-	separator = "\t"
 	for line in infile.read():
-		row_values = line.strip().split(separator)
+		row_values = line.strip().split(sep)
 		identifier = row_values[0]
 		term_ids = row_values[1:len(row_values)]
 		annotations_dict[identifer] = term_ids
