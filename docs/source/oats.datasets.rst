@@ -36,22 +36,6 @@ oats.datasets.groupings module
    :undoc-members:
    :show-inheritance:
 
-oats.datasets.kegg module
--------------------------
-
-.. automodule:: oats.datasets.kegg
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-oats.datasets.pmn module
-------------------------
-
-.. automodule:: oats.datasets.pmn
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 oats.datasets.string module
 ---------------------------
 
