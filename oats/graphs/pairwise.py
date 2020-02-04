@@ -25,46 +25,48 @@ import random
 import torch
 from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM
 
+
+
 from oats.nlp.search import binary_search_rabin_karp
 from oats.utils.utils import flatten
-from oats.graphs.pwgraph import PairwiseGraph
+from oats.graphs.pwgraph import SquarePairwiseDistances
+from oats.graphs.pwgraph import RectangularPairwiseDistances
 
 
 
 
 
 
-""" Description of the distance functions provided here. 
+# Description of the distance functions provided here. 
 
-Category 1: pairwise_square_[method](...)
-These functions take a single dictionary mapping IDs to text or similar objects and finds 
-the pairwise distances between all of elements in that dictionary using whatever the method
-is that is specific to that function. This produces a square matrix of distances that is 
-symmetrical along the diagonal.
+# Category 1: pairwise_square_[method](...)
+# These functions take a single dictionary mapping IDs to text or similar objects and finds 
+# the pairwise distances between all of elements in that dictionary using whatever the method
+# is that is specific to that function. This produces a square matrix of distances that is 
+# symmetrical along the diagonal.
 
-Category 2: pairwise_rectangular_[method](...)
-These functions take two different dicitonaries mappings IDs to text or similar objects and 
-finds the pairwise distances between all combinations of an element from one group and an
-element from the other group, making the calculation in a way specific whatever the method 
-or approach for that function is. This produces a rectangular matrix of distances. The rows
-of that matrix correspond to the elements form the first dictionary, and the columns to the
-elements from the second dictionary. In edgelist form, the "from" column refers to IDs from
-the first dictionary, and the "to" column refers to IDs from the second dictionary. 
+# Category 2: pairwise_rectangular_[method](...)
+# These functions take two different dicitonaries mappings IDs to text or similar objects and 
+# finds the pairwise distances between all combinations of an element from one group and an
+# element from the other group, making the calculation in a way specific whatever the method 
+# or approach for that function is. This produces a rectangular matrix of distances. The rows
+# of that matrix correspond to the elements form the first dictionary, and the columns to the
+# elements from the second dictionary. In edgelist form, the "from" column refers to IDs from
+# the first dictionary, and the "to" column refers to IDs from the second dictionary. 
 
-Categery 3: elemwise_list_[method](...)
-These functions take two lists of text or similar objects that are of the exact same length
-and returns a list of distance values calculated based on the method or approach for that 
-particular function. The distance value in position i of the returned list is the distance 
-found between the element at position i in the first list and the element at position i in 
-the second list.
-"""
-
+# Categery 3: elemwise_list_[method](...)
+# These functions take two lists of text or similar objects that are of the exact same length
+# and returns a list of distance values calculated based on the method or approach for that 
+# particular function. The distance value in position i of the returned list is the distance 
+# found between the element at position i in the first list and the element at position i in 
+# the second list.
 
 
 
 
 
-def strings_to_count_vectors(*strs, **kwargs):
+
+def _strings_to_count_vectors(*strs, **kwargs):
 	"""
 	https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
 	What are the important keyword arguments that can be passed to the count vectorizer to specify how the 
@@ -94,7 +96,8 @@ def strings_to_count_vectors(*strs, **kwargs):
 	return(vectors, vectorizer)
 
 
-def strings_to_tfidf_vectors(*strs, **kwargs):
+
+def _strings_to_tfidf_vectors(*strs, **kwargs):
 	"""
 	https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html
 	What are the important keyword arguments that can be passed to the TFIDF (term-frequency inverse-
@@ -126,11 +129,32 @@ def strings_to_tfidf_vectors(*strs, **kwargs):
 	return(vectors, vectorizer)
 
 
-def strings_to_vectors(*strs, tfidf=False, **kwargs):
+
+
+
+
+
+
+
+def strings_to_numerical_vectors(*strs, tfidf=False, **kwargs):
+	"""Create a vector embedding for each passed in text string.
+	
+	Args:
+	    strs (list of str): All of the string arguments to find numerical embeddings for.
+		
+		lowercase (bool, optional). A keyword arg for sklearn.feature_extraction.text.TfidfVectorizer and sklearn.feature_extraction.text.CountVectorizer.
+		True by default. All the text is normalized to lowercase.
+
+	    tfidf (bool, optional): Description
+	    **kwargs: Description
+	
+	Returns:
+	    TYPE: Description
+	"""
 	if tfidf:
-		return(strings_to_tfidf_vectors(*strs, **kwargs))
+		return(_strings_to_tfidf_vectors(*strs, **kwargs))
 	else:
-		return(strings_to_count_vectors(*strs, **kwargs))
+		return(_strings_to_count_vectors(*strs, **kwargs))
 
 
 
@@ -138,7 +162,7 @@ def strings_to_vectors(*strs, tfidf=False, **kwargs):
 
 
 
-# These five methods are all used for storing in PairwiseGraph objects to be able to generate appropriate vectors given new text descriptions.
+# These five methods are all used for storing in SquarePairwiseDistances objects to be able to generate appropriate vectors given new text descriptions.
 
 # These are also used within the context of the other methods to generate vectors given nlp models and parameter choices.
 def _infer_document_vector_from_bert(text, model, tokenizer, method="sum", layers=4):
@@ -266,7 +290,7 @@ def _get_annotations_vector(term_list, countvectorizer, ontology):
 
 
 
-def square_adjacency_matrix_to_edgelist(matrix, indices_to_ids):
+def _square_adjacency_matrix_to_edgelist(matrix, indices_to_ids):
 	"""
 	Convert the matrix to a dataframe that specifies the nodes and edges of a graph.
 	Additionally a dictionary mapping indices in the array to node names (integers) 
@@ -297,7 +321,7 @@ def square_adjacency_matrix_to_edgelist(matrix, indices_to_ids):
 
 
 
-def rectangular_adjacency_matrix_to_edgelist(matrix, row_indices_to_ids, col_indices_to_ids):
+def _rectangular_adjacency_matrix_to_edgelist(matrix, row_indices_to_ids, col_indices_to_ids):
 	"""
 	Convert the matrix to a dataframe that specifies the nodes and edges of a graph.
 	Additionally two dictionaries mapping indices in the array to node names (integers)
@@ -374,7 +398,7 @@ def pairwise_square_doc2vec(model, ids_to_texts, metric):
 	    metric (str): A string indicating which distance metric should be used (e.g., cosine). 
 	
 	Returns:
-	   	oats.pairwise.PairwiseGraph: Distance matrix and accompanying information.
+	   	oats.pairwise.SquarePairwiseDistances: Distance matrix and accompanying information.
 	"""
 
 	# Infer vectors for each string of text and remember mapping to the IDs.
@@ -390,24 +414,22 @@ def pairwise_square_doc2vec(model, ids_to_texts, metric):
 	
 	# Apply distance metric over all the vectors to yield a matrix.
 	matrix = squareform(pdist(vectors,metric))
-	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	edgelist = _square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
 	
-	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
-	return(PairwiseGraph(
+
+	# Create and return a SquarePairwiseDistances object containing the edgelist, matrix, and dictionaries.
+	return(SquarePairwiseDistances(
 		metric_str = metric,
 		vectorizing_function = _infer_document_vector_from_doc2vec,		
 		vectorizing_function_kwargs = {"model":model},			
 		edgelist = edgelist,						
 		vector_dictionary = id_to_vector_dict,
-		row_vector_dictionary = None,
-		col_vector_dictionary = None,
 		vectorizer_object = None,
-		id_to_row_index=id_to_index_in_matrix, 
-		id_to_col_index=id_to_index_in_matrix,
-		row_index_to_id=index_in_matrix_to_id, 
-		col_index_to_id=index_in_matrix_to_id,
+		id_to_index = id_to_index_in_matrix,
+		index_to_id=index_in_matrix_to_id, 
 		array=matrix))
+
 
 
 
@@ -430,7 +452,7 @@ def pairwise_square_word2vec(model, ids_to_texts, metric, method="mean"):
 	    method (str, optional): Should the word embeddings be combined with mean or max.
 	
 	Returns:
-	   	oats.pairwise.PairwiseGraph: Distance matrix and accompanying information.
+	   	oats.pairwise.SquarePairwiseDistances: Distance matrix and accompanying information.
 	
 	Raises:
 	    Error: The 'method' argument has to be one of "mean" or "max".
@@ -447,26 +469,25 @@ def pairwise_square_word2vec(model, ids_to_texts, metric, method="mean"):
 		index_in_matrix_to_id[index_in_matrix] = identifier
 		id_to_index_in_matrix[identifier] = index_in_matrix
 
+
 	# Apply distance metric over all the vectors to yield a matrix.
 	matrix = squareform(pdist(vectors,metric))
-	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	edgelist = _square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
 	
-	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
-	return(PairwiseGraph(
+
+	# Create and return a SquarePairwiseDistances object containing the edgelist, matrix, and dictionaries.
+	return(SquarePairwiseDistances(
 		metric_str = metric,
 		vectorizing_function = _infer_document_vector_from_word2vec,
 		vectorizing_function_kwargs = {"model":model, "method":method},
 		edgelist = edgelist,
 		vector_dictionary = id_to_vector_dict,
-		row_vector_dictionary = None,
-		col_vector_dictionary = None,
 		vectorizer_object = None,
-		id_to_row_index=id_to_index_in_matrix, 
-		id_to_col_index=id_to_index_in_matrix,
-		row_index_to_id=index_in_matrix_to_id, 
-		col_index_to_id=index_in_matrix_to_id,
+		id_to_index=id_to_index_in_matrix,
+		index_to_id=index_in_matrix_to_id, 
 		array=matrix))
+
 
 
 
@@ -490,7 +511,7 @@ def pairwise_square_bert(model, tokenizer, ids_to_texts, metric, method, layers)
 	    layers (int): An integer saying how many layers should be used for each token.
 	
 	Returns:
-	   	oats.pairwise.PairwiseGraph: Distance matrix and accompanying information.
+	   	oats.pairwise.SquarePairwiseDistances: Distance matrix and accompanying information.
 
 	"""
 
@@ -507,24 +528,24 @@ def pairwise_square_bert(model, tokenizer, ids_to_texts, metric, method, layers)
 
 	# Apply distance metric over all the vectors to yield a matrix.
 	matrix = squareform(pdist(vectors,metric))
-	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	edgelist = _square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
 
-	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
-	return(PairwiseGraph(
+
+	# Create and return a SquarePairwiseDistances object containing the edgelist, matrix, and dictionaries.
+	return(SquarePairwiseDistances(
 		metric_str = metric,
 		vectorizing_function = _infer_document_vector_from_bert,
 		vectorizing_function_kwargs = {"model":model, "tokenizer":tokenizer, "method":method, "layers":layers},
 		edgelist = edgelist,
 		vector_dictionary = id_to_vector_dict,
-		row_vector_dictionary = None,
-		col_vector_dictionary = None,
 		vectorizer_object = None,
-		id_to_row_index=id_to_index_in_matrix, 
-		id_to_col_index=id_to_index_in_matrix,
-		row_index_to_id=index_in_matrix_to_id, 
-		col_index_to_id=index_in_matrix_to_id,
+		id_to_index=id_to_index_in_matrix, 
+		index_to_id=index_in_matrix_to_id, 
 		array=matrix))
+
+
+
 
 
 
@@ -540,10 +561,10 @@ def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 	    ids_to_texts (dict): A mapping between IDs and strings of text.
 	    metric (str): A string indicating which distance metric should be used (e.g., cosine).
 	    tfidf (bool, optional): Whether to use TFIDF weighting or not.
-	    **kwargs: All the keyword arguments that can be passed to sklearn.feature_extraction.CountVectorizer()
+	    **kwargs: All the keyword arguments that can be passed to sklearn.feature_extraction.CountVectorizer().
 	
 	Returns:
-	    oats.pairwise.PairwiseGraph: Distance matrix and accompanying information.
+	    oats.pairwise.SquarePairwiseDistances: Distance matrix and accompanying information.
 	"""
 
 	# Infer vectors for each string of text and remember mapping to the IDs.
@@ -558,25 +579,22 @@ def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 
 
 	# Apply distance metric over all the vectors to yield a matrix.
-	vectors,vectorizer = strings_to_vectors(*descriptions, tfidf=tfidf, **kwargs)
+	vectors,vectorizer = strings_to_numerical_vectors(*descriptions, tfidf=tfidf, **kwargs)
 	matrix = squareform(pdist(vectors,metric))
-	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	edgelist = _square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
 	
-	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
-	return(PairwiseGraph(
+
+	# Create and return a SquarePairwiseDistances object containing the edgelist, matrix, and dictionaries.
+	return(SquarePairwiseDistances(
 		metric_str = metric,
 		vectorizing_function = _get_ngrams_vector,
 		vectorizing_function_kwargs = {"countvectorizer":vectorizer},
 		edgelist = edgelist,
 		vector_dictionary = id_to_vector_dict,
-		row_vector_dictionary = None,
-		col_vector_dictionary = None,
 		vectorizer_object = vectorizer,
-		id_to_row_index=id_to_index_in_matrix, 
-		id_to_col_index=id_to_index_in_matrix,
-		row_index_to_id=index_in_matrix_to_id, 
-		col_index_to_id=index_in_matrix_to_id,
+		id_to_index=id_to_index_in_matrix,
+		index_to_id=index_in_matrix_to_id, 
 		array=matrix))
 
 
@@ -599,17 +617,18 @@ def pairwise_square_lda(model, ids_to_texts, vectorizer):
 		id_to_index_in_matrix[identifier] = index_in_matrix
 
 	# Apply distance metric over all the vectors to yield a matrix.
-	#vectors,vectorizer = strings_to_vectors(*descriptions, tfidf=tfidf, **kwargs)
+	#vectors,vectorizer = strings_to_numerical_vectors(*descriptions, tfidf=tfidf, **kwargs)
 
 
 	ngram_vectors = vectorizer.transform(descriptions).toarray()
-	
-
-
-
 	matrix = squareform(pdist(vectors,metric))
-	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	edgelist = _square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
+
+
+
+
+
 
 
 
@@ -631,7 +650,7 @@ def pairwise_square_annotations(ids_to_annotations, ontology, metric, tfidf=Fals
 	    **kwargs: All the keyword arguments that can be passed to sklearn.feature_extraction.CountVectorizer()
 	
 	Returns:
-	    oats.pairwise.PairwiseGraph: Distance matrix and accompanying information.
+	    oats.pairwise.SquarePairwiseDistances: Distance matrix and accompanying information.
 
 	"""
 
@@ -650,25 +669,22 @@ def pairwise_square_annotations(ids_to_annotations, ontology, metric, tfidf=Fals
 		id_to_index_in_matrix[identifier] = index_in_matrix
 
 	# Apply distance metric over all the vectors to yield a matrix.
-	vectors,vectorizer = strings_to_vectors(*joined_term_strings, tfidf=tfidf, **kwargs)
+	vectors,vectorizer = strings_to_numerical_vectors(*joined_term_strings, tfidf=tfidf, **kwargs)
 	matrix = squareform(pdist(vectors,metric))
-	edgelist = square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	edgelist = _square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
 
-	# Create and return a PairwiseGraph object containing the edgelist, matrix, and dictionaries.
-	return(PairwiseGraph(
+
+	# Create and return a SquarePairwiseDistances object containing the edgelist, matrix, and dictionaries.
+	return(SquarePairwiseDistances(
 		metric_str = metric,
 		vectorizing_function = _get_annotations_vector,
 		vectorizing_function_kwargs = {"countvectorizer":vectorizer, "ontology":ontology},
 		edgelist = edgelist,
 		vector_dictionary = id_to_vector_dict,
-		row_vector_dictionary = None,
-		col_vector_dictionary = None,
 		vectorizer_object = vectorizer,
-		id_to_row_index=id_to_index_in_matrix, 
-		id_to_col_index=id_to_index_in_matrix,
-		row_index_to_id=index_in_matrix_to_id, 
-		col_index_to_id=index_in_matrix_to_id,
+		id_to_index=id_to_index_in_matrix, 
+		index_to_id=index_in_matrix_to_id, 
 		array=matrix))
 
 
@@ -724,14 +740,32 @@ def pairwise_rectangular_doc2vec(model, ids_to_texts_1, ids_to_texts_2, metric):
 	all_vectors = vectors
 	row_vectors = all_vectors[:len(ids_to_texts_1)]
 	col_vectors = all_vectors[len(ids_to_texts_1):]
+	row_id_to_vector_dict = {row_index_in_matrix_to_id[i]:vector for i,vector in enumerate(row_vectors)}
+	col_id_to_vector_dict = {col_index_in_matrix_to_id[i]:vector for i,vector in enumerate(col_vectors)}
 	matrix = cdist(row_vectors, col_vectors, metric)
-	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(PairwiseGraph(edgelist, None, None, None, None, 
-		id_to_row_index_in_matrix, 
-		id_to_col_index_in_matrix, 
-		row_index_in_matrix_to_id, 
-		col_index_in_matrix_to_id, 
-		matrix))
+	edgelist = _rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
+
+
+
+	# Create and return a SquarePairwiseDistances object containing the edgelist, matrix, and dictionaries.
+	return(RectangularPairwiseDistances(
+		metric_str = metric,
+		vectorizing_function = _infer_document_vector_from_doc2vec,		
+		vectorizing_function_kwargs = {"model":model},		
+		edgelist = edgelist,
+		row_vector_dictionary = row_id_to_vector_dict,
+		col_vector_dictionary = col_id_to_vector_dict,
+		vectorizer_object = None,
+		id_to_row_index=id_to_row_index_in_matrix, 
+		id_to_col_index=id_to_col_index_in_matrix,
+		row_index_to_id=row_index_in_matrix_to_id, 
+		col_index_to_id=col_index_in_matrix_to_id,
+		array=matrix))
+
+
+
+
+
 
 
 
@@ -764,14 +798,29 @@ def pairwise_rectangular_word2vec(model, ids_to_texts_1, ids_to_texts_2, metric,
 	all_vectors = vectors
 	row_vectors = all_vectors[:len(ids_to_texts_1)]
 	col_vectors = all_vectors[len(ids_to_texts_1):]
+	row_id_to_vector_dict = {row_index_in_matrix_to_id[i]:vector for i,vector in enumerate(row_vectors)}
+	col_id_to_vector_dict = {col_index_in_matrix_to_id[i]:vector for i,vector in enumerate(col_vectors)}
 	matrix = cdist(row_vectors, col_vectors, metric)
-	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(PairwiseGraph(edgelist, None, None, None, None,
-		id_to_row_index_in_matrix, 
-		id_to_col_index_in_matrix, 
-		row_index_in_matrix_to_id, 
-		col_index_in_matrix_to_id, 
-		matrix))
+	edgelist = _rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
+	
+
+	return(RectangularPairwiseDistances(
+		metric_str = metric,
+		vectorizing_function = _infer_document_vector_from_word2vec,
+		vectorizing_function_kwargs = {"model":model, "method":method},
+		edgelist = edgelist,
+		row_vector_dictionary = row_id_to_vector_dict,
+		col_vector_dictionary = col_id_to_vector_dict,
+		vectorizer_object = None,
+		id_to_row_index=id_to_row_index_in_matrix, 
+		id_to_col_index=id_to_col_index_in_matrix,
+		row_index_to_id=row_index_in_matrix_to_id, 
+		col_index_to_id=col_index_in_matrix_to_id,
+		array=matrix))
+
+
+
+
 
 
 
@@ -807,17 +856,25 @@ def pairwise_rectangular_bert(model, tokenizer, ids_to_texts_1, ids_to_texts_2, 
 	all_vectors = vectors
 	row_vectors = all_vectors[:len(ids_to_texts_1)]
 	col_vectors = all_vectors[len(ids_to_texts_1):]
+	row_id_to_vector_dict = {row_index_in_matrix_to_id[i]:vector for i,vector in enumerate(row_vectors)}
+	col_id_to_vector_dict = {col_index_in_matrix_to_id[i]:vector for i,vector in enumerate(col_vectors)}
 	matrix = cdist(row_vectors, col_vectors, metric)
-	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(PairwiseGraph(edgelist, None, None, None, None, 
-		id_to_row_index_in_matrix, 
-		id_to_col_index_in_matrix, 
-		row_index_in_matrix_to_id, 
-		col_index_in_matrix_to_id, 
-		matrix))
+	edgelist = _rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
+	
 
-
-
+	return(RectangularPairwiseDistances(
+		metric_str = metric,
+		vectorizing_function = _infer_document_vector_from_bert,
+		vectorizing_function_kwargs = {"model":model, "tokenizer":tokenizer, "method":method, "layers":layers},
+		edgelist = edgelist,
+		row_vector_dictionary = row_id_to_vector_dict,
+		col_vector_dictionary = col_id_to_vector_dict,
+		vectorizer_object = None,
+		id_to_row_index=id_to_row_index_in_matrix, 
+		id_to_col_index=id_to_col_index_in_matrix,
+		row_index_to_id=row_index_in_matrix_to_id, 
+		col_index_to_id=col_index_in_matrix_to_id,
+		array=matrix))
 
 
 
@@ -847,7 +904,7 @@ def pairwise_rectangular_ngrams(ids_to_texts_1, ids_to_texts_2, metric, tfidf=Fa
 		id_to_col_index_in_matrix[identifier] = col_in_matrix 
 		col_in_matrix = col_in_matrix+1
 
-	all_vectors,vectorizer = strings_to_vectors(*descriptions, tfidf=tfidf, **kwargs)
+	all_vectors,vectorizer = strings_to_numerical_vectors(*descriptions, tfidf=tfidf, **kwargs)
 	row_vectors = all_vectors[:len(ids_to_texts_1)]
 	col_vectors = all_vectors[len(ids_to_texts_1):]
 
@@ -855,13 +912,24 @@ def pairwise_rectangular_ngrams(ids_to_texts_1, ids_to_texts_2, metric, tfidf=Fa
 	col_id_to_vector_dict = {col_index_in_matrix_to_id[i]:vector for i,vector in enumerate(col_vectors)}
 	matrix = cdist(row_vectors, col_vectors, metric)
 
-	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(PairwiseGraph(edgelist, None, row_id_to_vector_dict, col_id_to_vector_dict, vectorizer, 
-		id_to_row_index_in_matrix, 
-		id_to_col_index_in_matrix, 
-		row_index_in_matrix_to_id, 
-		col_index_in_matrix_to_id, 
-		matrix))
+	edgelist = _rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
+	
+	return(RectangularPairwiseDistances(
+		metric_str = metric,
+		vectorizing_function = _get_ngrams_vector,
+		vectorizing_function_kwargs = {"countvectorizer":vectorizer},
+		edgelist = edgelist,
+		row_vector_dictionary = row_id_to_vector_dict,
+		col_vector_dictionary = col_id_to_vector_dict,
+		vectorizer_object = vectorizer,
+		id_to_row_index=id_to_row_index_in_matrix, 
+		id_to_col_index=id_to_col_index_in_matrix,
+		row_index_to_id=row_index_in_matrix_to_id, 
+		col_index_to_id=col_index_in_matrix_to_id,
+		array=matrix))
+
+
+
 
 
 
@@ -899,7 +967,7 @@ def pairwise_rectangular_annotations(ids_to_annotations_1, ids_to_annotations_2,
 		col_in_matrix = col_in_matrix+1
 
 	# Find all the pairwise values for the distance matrix.
-	all_vectors,vectorizer = strings_to_vectors(*joined_term_strings, tfidf=tfidf, **kwargs)
+	all_vectors,vectorizer = strings_to_numerical_vectors(*joined_term_strings, tfidf=tfidf, **kwargs)
 	row_vectors = all_vectors[:len(ids_to_annotations_1)]
 	col_vectors = all_vectors[len(ids_to_annotations_1):]
 
@@ -907,8 +975,8 @@ def pairwise_rectangular_annotations(ids_to_annotations_1, ids_to_annotations_2,
 	col_id_to_vector_dict = {col_index_in_matrix_to_id[i]:vector for i,vector in enumerate(col_vectors)}
 	matrix = cdist(row_vectors, col_vectors, metric)
 	
-	edgelist = rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(PairwiseGraph(edgelist, None, row_id_to_vector_dict, col_id_to_vector_dict, vectorizer, 
+	edgelist = _rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
+	return(SquarePairwiseDistances(edgelist, None, row_id_to_vector_dict, col_id_to_vector_dict, vectorizer, 
 		id_to_row_index_in_matrix, 
 		id_to_col_index_in_matrix, 
 		row_index_in_matrix_to_id, 
@@ -1018,7 +1086,7 @@ def elemwise_list_ngrams(text_list_1, text_list_2, metric_function, tfidf=False,
 	descriptions = []
 	descriptions.extend(text_list_1)
 	descriptions.extend(text_list_2)
-	all_vectors,vectorizer = strings_to_vectors(*descriptions, **kwargs)
+	all_vectors,vectorizer = strings_to_numerical_vectors(*descriptions, **kwargs)
 	list_1_vectors = all_vectors[:len(text_list_1)]
 	list_2_vectors = all_vectors[len(text_list_1):]
 	vector_pairs = zip(list_1_vectors, list_2_vectors)
@@ -1042,7 +1110,7 @@ def elemwise_list_annotations(annotations_list_1, annotations_list_2, ontology, 
 		joined_term_string = " ".join(term_list).strip()
 		joined_term_strings.append(joined_term_string)
 
-	all_vectors,vectorizer = strings_to_vectors(*joined_term_strings, tfidf=tfidf, **kwargs)
+	all_vectors,vectorizer = strings_to_numerical_vectors(*joined_term_strings, tfidf=tfidf, **kwargs)
 	list_1_vectors = all_vectors[:len(text_list_1)]
 	list_2_vectors = all_vectors[len(text_list_1):]
 	vector_pairs = zip(list_1_vectors, list_2_vectors)
