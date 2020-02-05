@@ -32,6 +32,17 @@ from oats.utils.utils import flatten
 from oats.graphs.pwgraph import SquarePairwiseDistances
 from oats.graphs.pwgraph import RectangularPairwiseDistances
 
+from oats.graphs._utils import _square_adjacency_matrix_to_edgelist
+from oats.graphs._utils import _rectangular_adjacency_matrix_to_edgelist
+from oats.graphs._utils import _strings_to_count_vectors				
+from oats.graphs._utils import _strings_to_tfidf_vectors
+from oats.graphs._utils import _infer_document_vector_from_bert			# Is actually called when finding distance matrices.
+from oats.graphs._utils import _infer_document_vector_from_word2vec		# Is actually called when finding distance matrices.
+from oats.graphs._utils import _infer_document_vector_from_doc2vec		# Is actually called when finding distance matrices.
+from oats.graphs._utils import _get_ngrams_vector						# Not called, just a wrapper function to remember a vectorization scheme.
+from oats.graphs._utils import _get_annotations_vector					# Not called, just a wrapper function to remember a vectorization scheme.
+
+
 
 
 
@@ -65,68 +76,6 @@ from oats.graphs.pwgraph import RectangularPairwiseDistances
 
 
 
-
-def _strings_to_count_vectors(*strs, **kwargs):
-	"""
-	https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
-	What are the important keyword arguments that can be passed to the count vectorizer to specify how the 
-	features to be counted are selected, and specify how each of them is counted as well? Included here for 
-	quick reference for what araguments can be passed in.
-
-	lowercase : boolean, True by default
-	analyzer : string, {‘word’, ‘char’, ‘char_wb’} or callable
-	stop_words : string {‘english’}, list, or None (default)
-	token_pattern : string
-	ngram_range : tuple (min_n, max_n)
-	analyzer : string, {‘word’, ‘char’, ‘char_wb’} or callable
-	max_df : float in range [0.0, 1.0] or int, default=1.0
-	min_df : float in range [0.0, 1.0] or int, default=1
-	max_features : int or None, default=None
-	vocabulary : Mapping or iterable, optional
-	binary : boolean, default=False
-
-	# Attributes
-	vocabulary_: mapping between terms and feature indices
-	stop_words_: set of terms that were considered stop words
-	"""
-	text = [t for t in strs]
-	vectorizer = CountVectorizer(text, **kwargs)
-	vectorizer.fit(text)
-	vectors = vectorizer.transform(text).toarray()
-	return(vectors, vectorizer)
-
-
-
-def _strings_to_tfidf_vectors(*strs, **kwargs):
-	"""
-	https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html
-	What are the important keyword arguments that can be passed to the TFIDF (term-frequency inverse-
-	document-frequency) vectorizer to specify how the features to be quantified are selected, and how each
-	of them is quantified as well? Incluced here for quick reference for what arguments can be passed in.
-
-	# Arguments
-	lowercase : boolean, True by default
-	analyzer : string, {‘word’, ‘char’, ‘char_wb’} or callable
-	stop_words : string {‘english’}, list, or None (default)
-	token_pattern : string
-	ngram_range : tuple (min_n, max_n)
-	analyzer : string, {‘word’, ‘char’, ‘char_wb’} or callable
-	max_df : float in range [0.0, 1.0] or int, default=1.0
-	min_df : float in range [0.0, 1.0] or int, default=1
-	max_features : int or None, default=None
-	vocabulary : Mapping or iterable, optional
-	binary : boolean, default=False
-
-	# Attributes
-	vocabulary_: mapping between terms and feature indices
-	idf_: the inverse document frequency vector used in weighting
-	stop_words_: set of terms that were considered stop words
-	"""
-	text = [t for t in strs]
-	vectorizer = TfidfVectorizer(text, **kwargs)
-	vectorizer.fit(text)
-	vectors = vectorizer.transform(text).toarray()
-	return(vectors, vectorizer)
 
 
 
@@ -162,223 +111,43 @@ def strings_to_numerical_vectors(*strs, tfidf=False, **kwargs):
 
 
 
-# These five methods are all used for storing in SquarePairwiseDistances objects to be able to generate appropriate vectors given new text descriptions.
 
-# These are also used within the context of the other methods to generate vectors given nlp models and parameter choices.
-def _infer_document_vector_from_bert(text, model, tokenizer, method="sum", layers=4):
-	"""
-	This function uses a pretrained BERT model to infer a document level vector for a collection 
-	of one or more sentences. The sentence are defined using the nltk sentence parser. This is 
-	done because the BERT encoder expects either a single sentence or a pair of sentences. The
-	internal representations are drawn from the last n layers as specified by the layers argument, 
-	and represent a particular token but account for the context that it is in because the entire
-	sentence is input simultanously. The vectors for the layers can concatentated or summed 
-	together based on the method argument. The vector obtained for each token then are averaged
-	together to for the document level vector.
-	
-	Args:
-	    text (str):  A string representing the text for a single node of interest.
-	    model (pytorch model): An already loaded BERT PyTorch model from a file or other source.
-	    tokenizer (bert tokenizer): Object which handles how tokenization specific to BERT is done. 
-	    method (str): A string indicating how layers for a token should be combined (concat or sum).
-	    layers (int): An integer saying how many layers should be used for each token.
-	
-	Returns:
-	    numpy.Array: A numpy array which is the vector embedding for the passed in text. 
-	
-	Raises:
-	    ValueError: The method argument has to be either 'concat' or 'sum'.
-	"""
 
-	sentences = sent_tokenize(text)
-	token_vecs_cat = []
-	token_vecs_sum = []
 
-	for text in sentences:
-		marked_text = "{} {} {}".format("[CLS]",text,"[SEP]")
-		tokenized_text = tokenizer.tokenize(marked_text)
-		indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
-		segments_ids = [1] * len(tokenized_text)
-		tokens_tensor = torch.tensor([indexed_tokens])
-		segments_tensor = torch.tensor([segments_ids])
-		with torch.no_grad():
-			encoded_layers,_ = model(tokens_tensor,segments_tensor)
-		token_embeddings = torch.stack(encoded_layers, dim=0)
-		token_embeddings = token_embeddings.permute(1,2,0,3)
-		batch = 0
-		for token in token_embeddings[batch]:
-			concatenated_layer_vectors = torch.cat(tuple(token[-layers:]), dim=0)
-			summed_layer_vectors = torch.sum(token[-layers:], dim=0)
-			token_vecs_cat.append(np.array(concatenated_layer_vectors))
-			token_vecs_sum.append(np.array(summed_layer_vectors))
 
-	# Check to make sure atleast one token was found with an embedding to use as a the 
-	# vector representation. If there wasn't found, this is because of the combination
-	# of what the passed in description was, and how it was handled by either the sentence
-	# tokenizing step or the BERT tokenizer methods. Handle this by generating a random
-	# vector. This makes the embedding meaningless but prevents multiple instances that
-	# do not have embeddings from clustering together in downstream analysis. An expected
-	# layer size is hardcoded for this section based on the BERT architecture.
-	expected_layer_size = 768
-	if len(token_vecs_cat) == 0:
-		print("no embeddings found for input text '{}', generating random vector".format(description))
-		random_concat_vector = np.random.rand(expected_layer_size*layers)
-		random_summed_vector = np.random.rand(expected_layer_size)
-		token_vecs_cat.append(random_concat_vector)
-		token_vecs_sum.append(random_summed_vector)
 
-	# Average the vectors obtained for each token across all the sentences present in the input text.
-	if method == "concat":
-		embedding = np.mean(np.array(token_vecs_cat),axis=0)
-	elif method == "sum":
-		embedding = np.mean(np.array(token_vecs_sum),axis=0)
-	else:
-		raise ValueError("method argument is invalid")
-	return(embedding)
-def _infer_document_vector_from_word2vec(text, model, method):
+def pairwise_square_precomputed_vectors(ids_to_vectors, metric):
 	"""docstring
 	"""
-	words = text.lower().split()
-	words_in_model_vocab = [word for word in words if word in model.wv.vocab]
-	if len(words_in_model_vocab) == 0:
-		words_in_model_vocab.append(random.choice(list(model.wv.vocab)))
-	stacked_vectors = np.array([model.wv[word] for word in words_in_model_vocab])
-	if method == "mean":
-		vector = stacked_vectors.mean(axis=0)
-	elif method == "max":
-		vector = stacked_vectors.max(axis=0)
-	else:
-		raise Error("method argument is invalid")
-	return(vector)
-def _infer_document_vector_from_doc2vec(text, model):
-	"""docstring
-	"""
-	vector = model.infer_vector(text.lower().split())
-	return(vector)
 
-
-
-
-
-# These two are not actually called from the other methods, they are only used for remembering vectorization scheme for future queries.
-def _get_ngrams_vector(text, countvectorizer):
-	"""docstring
-	"""
-	vector = countvectorizer.transform([text]).toarray()[0]
-	return(vector)
-def _get_annotations_vector(term_list, countvectorizer, ontology):
-	"""docstring
-	"""
-	term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
-	term_list = flatten(term_list)
-	term_list = list(set(term_list))
-	joined_term_string = " ".join(term_list).strip()
-	vector = countvectorizer.transform([joined_term_string]).toarray()[0]
-	return(vector)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def _square_adjacency_matrix_to_edgelist(matrix, indices_to_ids):
-	"""
-	Convert the matrix to a dataframe that specifies the nodes and edges of a graph.
-	Additionally a dictionary mapping indices in the array to node names (integers) 
-	is passed in because the integers that refer to the position in the array do not
-	necessarily have to be the integers that are used as the node IDs in the graph
-	that is specified by the resulting list of edges. This is intended for handling
-	square arrays where the rows and columns are referring to the identical sets of 
-	nodes.
-
-	Args:
-		matrix (numpy array): A square array which is considered an adjacency matrix.
-		indices_to_ids (dict): Mapping between indices of the array and node names.
+	# Remember vectors for each ID and their position in the distance matrix.
+	vectors = []
+	index_in_matrix_to_id = {}
+	id_to_index_in_matrix = {}
+	for identifier,vector in ids_to_vectors.items():
+		index_in_matrix = len(vectors)
+		vectors.append(vector)
+		index_in_matrix_to_id[index_in_matrix] = identifier
+		id_to_index_in_matrix[identifier] = index_in_matrix
 	
-	Returns:
-		pandas.Dataframe: Dataframe where each row specifies an edge in a graph.
-	"""
 
-	df_of_matrix = pd.DataFrame(matrix)									# Convert the numpy array to a pandas dataframe.
-	boolean_triu = np.triu(np.ones(df_of_matrix.shape)).astype(np.bool)	# Create a boolean array of same shape where upper triangle is true.
-	df_of_matrix = df_of_matrix.where(boolean_triu)						# Make everything but the upper triangle NA so it is ignored by stack.
-	melted_matrix = df_of_matrix.stack().reset_index()					# Melt (stack) the array so the first two columns are matrix indices.
-	melted_matrix.columns = ["from", "to", "value"]						# Rename the columns to indicate this specifies a graph.
-	melted_matrix["from"] = pd.to_numeric(melted_matrix["from"])		# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["to"] = pd.to_numeric(melted_matrix["to"])			# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["from"] = melted_matrix["from"].map(indices_to_ids)	# Rename the node names to be IDs from the dataset not matrix indices.
-	melted_matrix["to"] = melted_matrix["to"].map(indices_to_ids)		# Rename the node names to be IDS from the dataset not matrix indices.
-	return(melted_matrix)												# Return the melted matrix that looks like an edge list.
-
-
-
-def _rectangular_adjacency_matrix_to_edgelist(matrix, row_indices_to_ids, col_indices_to_ids):
-	"""
-	Convert the matrix to a dataframe that specifies the nodes and edges of a graph.
-	Additionally two dictionaries mapping indices in the array to node names (integers)
-	are passed in because the integers that refer to the position in the array do not 
-	necessarily have to be the integers that are used as the node IDs in the graph that
-	is specified by the resulting list of edges. This is intended for rectangular arrays
-	where the nodes represented by each column are different from the nodes represented 
-	by each row. 
-
-	Args:
-		matrix (numpy array): A rectangular array which is considered an adjacency matrix.
-		row_indices_to_ids (dict): Mapping between indices of the array and node names.
-		col_indices_to_ids (dict): Mapping between indices of the array and node names.
+	# Apply distance metric over all the vectors to yield a matrix.
+	matrix = squareform(pdist(vectors,metric))
+	edgelist = _square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
+	id_to_vector_dict = ids_to_vectors
 	
-	Returns:
-		pandas.Dataframe: Dataframe where each row specifies an edge in a graph.
-	"""
-	df_of_matrix = pd.DataFrame(matrix)										# Convert the numpy array to a pandas dataframe.
-	melted_matrix = df_of_matrix.stack().reset_index()						# Melt (stack) the array so the first two columns are matrix indices.
-	melted_matrix.columns = ["from", "to", "value"]							# Rename the columns to indicate this specifies a graph.
-	melted_matrix["from"] = pd.to_numeric(melted_matrix["from"])			# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["to"] = pd.to_numeric(melted_matrix["to"])				# Make sure node names are integers because IDs have to be integers.
-	melted_matrix["from"] = melted_matrix["from"].map(row_indices_to_ids)	# Rename the node names to be IDs from the dataset not matrix indices.
-	melted_matrix["to"] = melted_matrix["to"].map(col_indices_to_ids)		# Rename the node names to be IDS from the dataset not matrix indices.
-	return(melted_matrix)													# Return the melted matrix that looks like an edge list.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	# Create and return a SquarePairwiseDistances object containing the edgelist, matrix, and dictionaries.
+	return(SquarePairwiseDistances(
+		metric_str = metric,
+		vectorizing_function = None,	
+		vectorizing_function_kwargs = None,			
+		edgelist = edgelist,						
+		vector_dictionary = id_to_vector_dict,
+		vectorizer_object = None,
+		id_to_index = id_to_index_in_matrix,
+		index_to_id=index_in_matrix_to_id, 
+		array=matrix))
 
 
 
@@ -601,7 +370,11 @@ def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 
 
 
-def pairwise_square_lda(model, ids_to_texts, vectorizer):
+
+
+
+
+def pairwise_square_lda(model, vectorizer, ids_to_texts, metric):
 	""" TODO write this
 	"""
 
@@ -624,6 +397,10 @@ def pairwise_square_lda(model, ids_to_texts, vectorizer):
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = _square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
+
+
+
+
 
 
 
@@ -711,9 +488,77 @@ def pairwise_square_annotations(ids_to_annotations, ontology, metric, tfidf=Fals
 
 
 
-def pairwise_rectangular_doc2vec(model, ids_to_texts_1, ids_to_texts_2, metric):
+
+
+
+
+
+
+
+
+
+
+
+
+def pairwise_rectangular_precomputed_vectors(ids_to_vectors_1, ids_to_vectors_2, metric):
+	"""docstring
 	"""
-	docstring
+	vectors = []
+	row_index_in_matrix_to_id = {}
+	col_index_in_matrix_to_id = {}
+	id_to_row_index_in_matrix = {}
+	id_to_col_index_in_matrix = {}
+
+	row_in_matrix = 0	
+	for identifier,vector in ids_to_vectors_1.items():
+		vectors.append(vector)
+		row_index_in_matrix_to_id[row_in_matrix] = identifier
+		id_to_row_index_in_matrix[identifier] = row_in_matrix 
+		row_in_matrix = row_in_matrix+1
+
+	col_in_matrix = 0
+	for identifier,vector in ids_to_vectors_2.items():
+		vectors.append(vector)
+		col_index_in_matrix_to_id[col_in_matrix] = identifier
+		id_to_col_index_in_matrix[identifier] = col_in_matrix 
+		col_in_matrix = col_in_matrix+1
+
+	all_vectors = vectors
+	row_vectors = all_vectors[:len(ids_to_vectors_1)]
+	col_vectors = all_vectors[len(ids_to_vectors_1):]
+	row_id_to_vector_dict = ids_to_vectors_1
+	col_id_to_vector_dict = ids_to_vectors_2
+	matrix = cdist(row_vectors, col_vectors, metric)
+	edgelist = _rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
+
+
+
+	# Create and return a SquarePairwiseDistances object containing the edgelist, matrix, and dictionaries.
+	return(RectangularPairwiseDistances(
+		metric_str = metric,
+		vectorizing_function = None,		
+		vectorizing_function_kwargs = None,		
+		edgelist = edgelist,
+		row_vector_dictionary = row_id_to_vector_dict,
+		col_vector_dictionary = col_id_to_vector_dict,
+		vectorizer_object = None,
+		id_to_row_index=id_to_row_index_in_matrix, 
+		id_to_col_index=id_to_col_index_in_matrix,
+		row_index_to_id=row_index_in_matrix_to_id, 
+		col_index_to_id=col_index_in_matrix_to_id,
+		array=matrix))
+
+
+
+
+
+
+
+
+
+
+def pairwise_rectangular_doc2vec(model, ids_to_texts_1, ids_to_texts_2, metric):
+	"""docstring
 	"""
 	vectors = []
 	row_index_in_matrix_to_id = {}
@@ -973,16 +818,23 @@ def pairwise_rectangular_annotations(ids_to_annotations_1, ids_to_annotations_2,
 
 	row_id_to_vector_dict = {row_index_in_matrix_to_id[i]:vector for i,vector in enumerate(row_vectors)}
 	col_id_to_vector_dict = {col_index_in_matrix_to_id[i]:vector for i,vector in enumerate(col_vectors)}
-	matrix = cdist(row_vectors, col_vectors, metric)
-	
+	matrix = cdist(row_vectors, col_vectors, metric)	
 	edgelist = _rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
-	return(SquarePairwiseDistances(edgelist, None, row_id_to_vector_dict, col_id_to_vector_dict, vectorizer, 
-		id_to_row_index_in_matrix, 
-		id_to_col_index_in_matrix, 
-		row_index_in_matrix_to_id, 
-		col_index_in_matrix_to_id, 
-		matrix))
 
+
+	return(RectangularPairwiseDistances(
+		metric_str = metric,
+		vectorizing_function = _get_annotations_vector,
+		vectorizing_function_kwargs = {"countvectorizer":vectorizer, "ontology":ontology},
+		edgelist = edgelist,
+		row_vector_dictionary = row_id_to_vector_dict,
+		col_vector_dictionary = col_id_to_vector_dict,
+		vectorizer_object = vectorizer,
+		id_to_row_index=id_to_row_index_in_matrix, 
+		id_to_col_index=id_to_col_index_in_matrix,
+		row_index_to_id=row_index_in_matrix_to_id, 
+		col_index_to_id=col_index_in_matrix_to_id,
+		array=matrix))
 
 
 
@@ -1148,94 +1000,6 @@ def elemwise_list_annotations(annotations_list_1, annotations_list_2, ontology, 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-############## Methods for manipulating, combining, and checking edgelists ################
-
-
-
-
-
-
-def merge_edgelists(dfs_dict, default_value=None):	
-	""" 
-	Takes a dictionary mapping between names and {from,to,value} formatted dataframes and
-	returns a single dataframe with the same nodes listed but where there is now one value
-	column for each dataframe provided, with the name of the column being the corresponding
-	name.
-
-	Args:
-		dfs_dict (dict): Mapping between strings (names) and pandas.DataFrame objects.
-		default_value (None, optional): A value to be inserted where none is present. 
-	
-	Returns:
-		TYPE: Description
-	"""
-	for name,df in dfs_dict.items():
-		df.rename(columns={"value":name}, inplace=True)
-	merged_df = functools.reduce(lambda left,right: pd.merge(left,right,on=["from","to"], how="outer"), dfs_dict.values())
-	if not default_value == None:
-		merged_df.fillna(default_value, inplace=True)
-	return(merged_df)
-
-
-
-def make_undirected(df):
-	"""
-	The dataframe passed in must be in the form {from, to, [other...]}.
-	Convert the undirected edgelist where an edge (j,i) is always implied by an edge (i,j) to a directed edgelist where
-	both the (i,j) and (j,i) edges are explicity present in the dataframe. This is done so that we can make us of the
-	groupby function to obtain all groups that contain all edges between some given node and everything its mapped to 
-	by just grouping base on one of the columns specifying a node. This is easier than using a multi-indexed dataframe.
-	
-	Args:
-	    df (pandas.DataFrame): Any dataframe with in the form {from, to, [other...]}.
-	
-	Returns:
-	    pandas.DataFrame: The updated dataframe that includes edges in both directions.
-	"""
-	other_columns = df.columns[2:]
-	flipped_edges = df[flatten(["to","from",other_columns])]      # Create the flipped duplicate dataframe.
-	flipped_edges.columns = flatten(["from","to",other_columns])  # Rename the columns so it will stack correctly
-	df = pd.concat([df, flipped_edges])
-	df.drop_duplicates(keep="first", inplace=True)
-	return(df)
-	
-
-
-def remove_self_loops(df):
-	""" 
-	Removes all edges connecting the same ID.
-	"""
-	return(df[df["from"] != df["to"]])
-
-
-
-
-def subset_edgelist_with_ids(df, ids):
-	""" 
-	Removes all edges from an edgelist that connects two nodes where one or two of the
-	nodes are not present in the passed in list of nodes to retain. This results in an
-	edge list that specifies a subgraph of the one specified by the original edgelist.
-
-	Args:
-		df (pandas.DataFrame): The edge list before subsetting.
-		ids (list): A list of the node IDs that are the only ones left after subsetting.
-
-	Returns:
-		pandas.DataFrame: The edge list after subsetting.
-	"""
-	df = df[df["from"].isin(ids) & df["to"].isin(ids)]
-	return(df)
 
 
 

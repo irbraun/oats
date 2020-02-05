@@ -6,15 +6,29 @@ import pandas as pd
 
 class SquarePairwiseDistances:
 
+	"""Summary
+	
+	Attributes:
+	    array (TYPE): Description
+	    edgelist (TYPE): Description
+	    id_to_index (TYPE): Description
+	    index_to_id (TYPE): Description
+	    metric_str (TYPE): Description
+	    vector_dictionary (TYPE): Description
+	    vectorizer_object (TYPE): Description
+	    vectorizing_function (TYPE): Description
+	    vectorizing_function_kwargs (TYPE): Description
+	"""
+	
 	def __init__(self,
 		metric_str,
-		vectorizing_function,
-		vectorizing_function_kwargs, 
 		edgelist,
 		vector_dictionary,
 		id_to_index,
 		index_to_id,
 		array,
+		vectorizing_function=None,
+		vectorizing_function_kwargs=None,
 		vectorizer_object=None): 
 		"""
 		This class is for creating objects to hold the specifications for a pairwise similarity or distance graph 
@@ -132,8 +146,6 @@ class RectangularPairwiseDistances:
 	
 	def __init__(self,
 		metric_str,
-		vectorizing_function,
-		vectorizing_function_kwargs, 
 		edgelist,
 		row_vector_dictionary,
 		col_vector_dictionary, 
@@ -142,6 +154,8 @@ class RectangularPairwiseDistances:
 		row_index_to_id, 
 		col_index_to_id,
 		array,
+		vectorizing_function,
+		vectorizing_function_kwargs, 
 		vectorizer_object=None):
 		"""
 		This class is for creating objects to hold the specifications for a pairwise similarity or distance graph 
