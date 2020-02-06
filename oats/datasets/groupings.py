@@ -89,14 +89,14 @@ class Groupings:
 
 			# Use the PlantCyc files from PMN as the source of the groupings.
 			if source.lower() == "plantcyc" or source.lower() == "pmn":
-				df = self._get_dataframe_from_pmn(species,path, _case_sensitive)
+				df = self._get_dataframe_from_pmn(species, path, self._case_sensitive)
 				fwd_mapping, rev_mapping = self._get_gene_mappings_from_pmn(species, df)
 				self._readable_name_mappings.update(self._get_id_to_readable_pmn_name_mapping(df))
 			
 
 			# Use the KEGG REST API to obtain the groupings.
 			elif source.lower() == "kegg":
-				df = self._get_dataframe_from_kegg(species, _case_sensitive)
+				df = self._get_dataframe_from_kegg(species, self._case_sensitive)
 				fwd_mapping, rev_mapping = self._get_gene_mappings_from_kegg(species, df)
 				self._readable_name_mappings.update(self._get_id_to_readable_kegg_name_mapping(df))
 
@@ -203,10 +203,10 @@ class Groupings:
 		"""Given a gene object, return a list of group IDs it belongs in.
 		
 		Args:
-		    gene_obj (TYPE): Description
+			gene_obj (TYPE): Description
 		
 		Returns:
-		    TYPE: Description
+			TYPE: Description
 		"""
 		group_ids = []
 		species = gene_obj.species
@@ -225,11 +225,11 @@ class Groupings:
 		the gene might belong to.
 		
 		Args:
-		    species (TYPE): Description
-		    gene_name (TYPE): Description
+			species (TYPE): Description
+			gene_name (TYPE): Description
 		
 		Returns:
-		    TYPE: Description
+			TYPE: Description
 		"""
 		if not self._case_sensitive:
 			return(self._species_to_rev_gene_mappings[species][name.lower()])
@@ -313,7 +313,7 @@ class Groupings:
 
 	#################### Methods specific to using KEGG through the REST API ####################
 
-	def _get_dataframe_from_kegg(kegg_species_abbreviation, _case_sensitive):
+	def _get_dataframe_from_kegg(self, kegg_species_abbreviation, _case_sensitive):
 		"""
 		Create a dictionary mapping KEGG pathways to lists of genes. Code is adapted from the example of
 		parsing pathway files obtained through the KEGG REST API, which can be found here:
@@ -339,7 +339,12 @@ class Groupings:
 		pathway_ids_dict = {}
 
 		for pathway in pathways:
-			pathway_file = REST.kegg_get(dbentries=pathway).read()
+
+			pathway_id = pathway.split()[0]
+			pathway_file = REST.kegg_get(dbentries=pathway_id).read()
+			
+
+
 			for line in pathway_file.rstrip().split("\n"):
 				section = line[:12].strip()
 				if not section == "":
@@ -408,38 +413,35 @@ class Groupings:
 		return(df)
 
 
-def _get_gene_mappings_from_kegg(kegg_species_abbreviation, kegg_pathways_df):
-	""" Obtain forward and reverse mappings between pathways and gene names.
-	Args:
-		kegg_species_abbreviation (str): The species code for which genes to look at.
-		kegg_pathways_df (pandas.DataFrame): The dataframe containing all the pathway information.
-	Returns:
-		(dict,dict): A mapping from pathway IDs to lists of gene names,
-					 and a mapping from gene names to lists of pathway IDs. 
-	"""
-	pathway_dict_fwd = defaultdict(list)
-	pathway_dict_rev = defaultdict(list)
-	delim = "|"
-	for row in kegg_pathways_df.itertuples():
-		gene_names = row.gene_names.strip().split(delim)
-		if not row.ncbi_id == "":
-			gene_names.append(add_prefix(row.ncbi_id, NCBI_TAG))
-			gene_names.append(row.ncbi_id)
-		if not row.uniprot_id == "":
-			gene_names.append(add_prefix(row.uniprot_id, UNIPROT_TAG))
-		for gene_name in gene_names:
-			pathway_dict_fwd[row.pathway_id].append(gene_name)
-			pathway_dict_rev[gene_name].append(row.pathway_id)
-	return(pathway_dict_fwd, pathway_dict_rev)
+	def _get_gene_mappings_from_kegg(self, kegg_species_abbreviation, kegg_pathways_df):
+		""" Obtain forward and reverse mappings between pathways and gene names.
+		Args:
+			kegg_species_abbreviation (str): The species code for which genes to look at.
+			kegg_pathways_df (pandas.DataFrame): The dataframe containing all the pathway information.
+		Returns:
+			(dict,dict): A mapping from pathway IDs to lists of gene names,
+						 and a mapping from gene names to lists of pathway IDs. 
+		"""
+		pathway_dict_fwd = defaultdict(list)
+		pathway_dict_rev = defaultdict(list)
+		delim = "|"
+		for row in kegg_pathways_df.itertuples():
+			gene_names = row.gene_names.strip().split(delim)
+			if not row.ncbi_id == "":
+				gene_names.append(add_prefix(row.ncbi_id, NCBI_TAG))
+				gene_names.append(row.ncbi_id)
+			if not row.uniprot_id == "":
+				gene_names.append(add_prefix(row.uniprot_id, UNIPROT_TAG))
+			for gene_name in gene_names:
+				pathway_dict_fwd[row.pathway_id].append(gene_name)
+				pathway_dict_rev[gene_name].append(row.pathway_id)
+		return(pathway_dict_fwd, pathway_dict_rev)
 
 
-def _get_id_to_readable_kegg_name_mapping(pathways_df):
-	df_reduced = pathways_df.drop_duplicates(subset="pathway_id",keep="first", inplace=False)
-	id_to_pathway_name = {row.pathway_id:row.pathway_name for row in df_reduced.itertuples()}
-	return(id_to_pathway_name)
-
-
-
+	def _get_id_to_readable_kegg_name_mapping(self, pathways_df):
+		df_reduced = pathways_df.drop_duplicates(subset="pathway_id",keep="first", inplace=False)
+		id_to_pathway_name = {row.pathway_id:row.pathway_name for row in df_reduced.itertuples()}
+		return(id_to_pathway_name)
 
 
 
@@ -469,49 +471,52 @@ def _get_id_to_readable_kegg_name_mapping(pathways_df):
 
 
 
-#################### Methods specific to handling the PlantCyc files obtained through Plant Metabolic Network (PMN) ####################
-
-
-def _get_dataframe_from_pmn(species_code, pathways_filepath, _case_sensitive):
-	usecols = ["Pathway-id", "Pathway-name", "Reaction-id", "EC", "Protein-id", "Protein-name", "Gene-id", "Gene-name"]
-	usenames = ["pathway_id", "pathway_name", "reaction_id", "ec_number", "protein_id", "protein_name", "gene_id", "gene_name"]
-	renamed = {k:v for k,v in zip(usecols,usenames)}
-	df = pd.read_table(pathways_filepath, usecols=usecols)
-	df.rename(columns=renamed, inplace=True)
-	df.fillna("", inplace=True)
-	
-	# Note, manually reviewed the conventions in gene names for the PlantCyc dataset.
-	# The string "unknown" is used for missing values, don't add this as a gene name.
-	df.replace(to_replace="unknown", value="", inplace=True)
-
-	df["gene_names"] = np.vectorize(concatenate_with_bar_delim)(df["protein_id"], df["protein_name"], df["gene_id"], df["gene_name"])
-	if not _case_sensitive:
-		df["gene_names"] = df["gene_names"].map(str.lower)
-	df["species"] = species_code
-	df = df[["species", "pathway_id", "pathway_name", "gene_names", "ec_number"]]
-	return(df)
 
 
 
-def _get_gene_mappings_from_pmn(species_code, pathways_df):
-	pathway_dict_fwd = defaultdict(list)
-	pathway_dict_rev = defaultdict(list)
-	delim = "|"
-	for row in pathways_df.itertuples():
-		gene_names = row.gene_names.strip().split(delim)
-		for gene_name in gene_names:
-			pathway_dict_fwd[row.pathway_id].append(gene_name)
-			pathway_dict_rev[gene_name].append(row.pathway_id)
-	return(pathway_dict_fwd, pathway_dict_rev)
+	#################### Methods specific to handling the PlantCyc files obtained through Plant Metabolic Network (PMN) ####################
+
+
+	def _get_dataframe_from_pmn(self, species_code, pathways_filepath, _case_sensitive):
+		usecols = ["Pathway-id", "Pathway-name", "Reaction-id", "EC", "Protein-id", "Protein-name", "Gene-id", "Gene-name"]
+		usenames = ["pathway_id", "pathway_name", "reaction_id", "ec_number", "protein_id", "protein_name", "gene_id", "gene_name"]
+		renamed = {k:v for k,v in zip(usecols,usenames)}
+		df = pd.read_table(pathways_filepath, usecols=usecols)
+		df.rename(columns=renamed, inplace=True)
+		df.fillna("", inplace=True)
+		
+		# Note, manually reviewed the conventions in gene names for the PlantCyc dataset.
+		# The string "unknown" is used for missing values, don't add this as a gene name.
+		df.replace(to_replace="unknown", value="", inplace=True)
+
+		df["gene_names"] = np.vectorize(concatenate_with_bar_delim)(df["protein_id"], df["protein_name"], df["gene_id"], df["gene_name"])
+		if not _case_sensitive:
+			df["gene_names"] = df["gene_names"].map(str.lower)
+		df["species"] = species_code
+		df = df[["species", "pathway_id", "pathway_name", "gene_names", "ec_number"]]
+		return(df)
+
+
+
+	def _get_gene_mappings_from_pmn(self, species_code, pathways_df):
+		pathway_dict_fwd = defaultdict(list)
+		pathway_dict_rev = defaultdict(list)
+		delim = "|"
+		for row in pathways_df.itertuples():
+			gene_names = row.gene_names.strip().split(delim)
+			for gene_name in gene_names:
+				pathway_dict_fwd[row.pathway_id].append(gene_name)
+				pathway_dict_rev[gene_name].append(row.pathway_id)
+		return(pathway_dict_fwd, pathway_dict_rev)
 
 
 
 
 
-def _get_id_to_readable_pmn_name_mapping(pathways_df):
-	df_reduced = pathways_df.drop_duplicates(subset="pathway_id",keep="first", inplace=False)
-	id_to_pathway_name = {row.pathway_id:row.pathway_name for row in df_reduced.itertuples()}
-	return(id_to_pathway_name)
+	def _get_id_to_readable_pmn_name_mapping(self, pathways_df):
+		df_reduced = pathways_df.drop_duplicates(subset="pathway_id",keep="first", inplace=False)
+		id_to_pathway_name = {row.pathway_id:row.pathway_name for row in df_reduced.itertuples()}
+		return(id_to_pathway_name)
 
 
 
