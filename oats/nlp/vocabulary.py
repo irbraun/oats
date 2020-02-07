@@ -174,6 +174,7 @@ def reduce_vocabulary_linares_pontes(descriptions, tokens, distance_matrix, n):
 	
 	Returns:
 		dict: Mapping between IDs and text descriptions with reduced vocabulary, matches input.
+		dict: Mapping between tokens present in the original vocab and the token it is replaced with in the reduced vocabulary.
 		dict: Mapping between tokens present in the reduced vocab and lists of corresponding original vocabulary tokens.
 	"""
 

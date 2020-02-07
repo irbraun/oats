@@ -196,7 +196,7 @@ def pairwise_square_doc2vec(model, ids_to_texts, metric):
 		vector_dictionary = id_to_vector_dict,
 		vectorizer_object = None,
 		id_to_index = id_to_index_in_matrix,
-		index_to_id=index_in_matrix_to_id, 
+		index_to_id = index_in_matrix_to_id, 
 		array=matrix))
 
 
