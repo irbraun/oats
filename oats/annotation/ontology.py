@@ -21,6 +21,7 @@ import re
 from nltk.tokenize import word_tokenize
 
 from oats.nlp.search import binary_search_rabin_karp
+from oats.utils.utils import flatten
 
 
 
@@ -58,7 +59,8 @@ class Ontology:
 		# Generate all the data structures that are accessible from instances of the ontology class.
 		self.pronto_ontology_obj = pronto.Ontology(ontology_obo_file)
 		self.subclass_dict = self._get_subclass_dict()
-		self.ic_dict = self._get_graph_based_ic_dictionary()
+		self.depth_dict = self._get_term_depth_dictionary()
+		self.graph_based_ic_dict = self._get_graph_based_ic_dictionary()
 		forward_term_dict, reverse_term_dict = self._get_term_dictionaries()
 		self.forward_term_dict = forward_term_dict
 		self.reverse_term_dict = reverse_term_dict
@@ -84,6 +86,9 @@ class Ontology:
 		labels_and_synonyms = list(itertools.chain.from_iterable(list(self.forward_term_dict.values())))
 		tokens = set(list(itertools.chain.from_iterable([word_tokenize(x) for x in labels_and_synonyms])))
 		return(list(tokens))
+
+
+
 
 
 
@@ -131,6 +136,7 @@ class Ontology:
 			raise KeyError("this identifier matches no terms in the ontology")
 		inherited_terms = [x.id for x in term.rparents()]
 		return(inherited_terms)
+
 
 
 
@@ -245,7 +251,7 @@ class Ontology:
 		"""
 		Create a dictionary of information content value for each term in the ontology.
 		The equation used for information content here is based on the depth of the term
-		which is multiplied by the term [1 - log(descendants)/log(total)]. This works so
+		which is multiplied by the term [1 - log(descendants+1)/log(total)]. This works so
 		that information content is proportional to depth (increases as terms get more
 		specific), but if the number of descendants is very high that value is decreased.
 
@@ -253,17 +259,130 @@ class Ontology:
 		    dict: Mapping between term IDs and information content values.
 		"""
 
-		# TODO depth is not the same thing as number of recursive parents, fix this.
 		# TODO find the literature reference or presentation where this equation is from.
 
 		ic_dict = {}
 		num_terms_in_ontology = len(self.pronto_ontology_obj)
 		for term in self.pronto_ontology_obj:
-			depth = len(term.rparents())
+			depth = self.depth_dict[term.id]
 			num_descendants = len(term.rchildren())
 			ic_value = float(depth)*(1-(math.log(num_descendants+1)/math.log(num_terms_in_ontology)))
 			ic_dict[term.id] = ic_value
 		return(ic_dict)
+
+
+
+
+
+
+
+	def _get_term_depth_dictionary(self):
+		"""
+		Create a dictionary of the depths of each term in the ontology. This is used in 
+		calculating the graph-based information content of each term. This value is not
+		the same as the number of recursive parents for a given term, because a single
+		term can have two or more parents in a DAG. In other words, multiple paths can 
+		exist from a term to the root of the graph, and the depth of the term should be
+		the minimum path length out of all of the possible paths.
+		
+		Returns:
+		    dict of str:int: Mapping between term IDs and their depth in the DAG.
+		"""
+		depth_dict = {}
+		for term in self.pronto_ontology_obj:
+			depth_dict[term.id] = self._get_depth_recursive(term, 0)
+		return(depth_dict)
+
+
+	def _get_depth_recursive(self, term, depth):
+		if len(term.parents) == 0:
+			return(depth)
+		else:
+			depths = []
+			for parent in term.parents:
+				depths.append(self._get_depth_recursive(parent, depth+1))
+			return(min(depths))
+
+
+
+
+
+
+
+	def jaccard_similarity(self, term_id_list_1, term_id_list_2, inherited=True):
+		"""
+		Find the similarity between two lists of ontology terms, by finding the Jaccard
+		similarity between the two sets of all the terms that are inherited by each of
+		the terms present in each list. 
+		
+		Args:
+		    term_id_list_1 (TYPE): Description
+
+		    term_id_list_2 (TYPE): Description
+
+		    inherited (bool, optional): Description
+		
+		Returns:
+		    TYPE: Description
+		"""
+		if inherited:
+			term_id_set_1 = set(term_id_list_1)
+			term_id_set_2 = set(term_id_list_2)
+		else:
+			inherited_term_list_1 = flatten(self.subclass_dict[term_id] for term_id in term_id_list_1)
+			inherited_term_list_2 = flatten(self.subclass_dict[term_id] for term_id in term_id_list_2)
+			inherited_term_list_1.extend(term_id_list_1)
+			inherited_term_list_2.extend(term_id_list_2)
+			term_id_set_1 = set(inherited_term_list_1)
+			term_id_set_2 = set(inherited_term_list_2)
+
+		intersection = term_id_set_1.intersection(term_id_set_2)
+		union = term_id_set_1.union(term_id_set_2)
+		return(len(intersection)/len(union))
+
+
+
+
+	
+
+	def info_content_similarity(self, term_id_list_1, term_id_list_2, inherited=True):
+		"""
+		Find the similarity between two lists of ontology terms, by finding the information 
+		content of the most specific term that is shared by the sets of all terms inherited
+		by all terms in each list. 
+
+		Args:
+		    term_id_list_1 (TYPE): Description
+
+		    term_id_list_2 (TYPE): Description
+
+		    inherited (bool, optional): Description
+		
+		Returns:
+		    TYPE: Description
+		"""
+		if inherited:
+			term_id_set_1 = set(term_id_list_1)
+			term_id_set_2 = set(term_id_list_2)
+		else:
+			inherited_term_list_1 = flatten(self.subclass_dict[term_id] for term_id in term_id_list_1)
+			inherited_term_list_2 = flatten(self.subclass_dict[term_id] for term_id in term_id_list_2)
+			inherited_term_list_1.extend(term_id_list_1)
+			inherited_term_list_2.extend(term_id_list_2)
+			term_id_set_1 = set(inherited_term_list_1)
+			term_id_set_2 = set(inherited_term_list_2)
+
+		intersection = list(term_id_set_1.intersection(term_id_set_2))
+		intersection_ic_values = [self.graph_based_ic_dict[term_id] for term_id in intersection]
+		if len(intersection_ic_values) == 0:
+			return(0.000)
+		return(max(intersection_ic_values))
+
+
+
+
+
+
 
 
 

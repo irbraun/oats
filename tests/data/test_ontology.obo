@@ -1,0 +1,85 @@
+format-version: 1.2
+
+default-namespace: test ontology
+ontology: to
+
+
+
+! This ontology is set up to contain two branches below the root.
+!
+!
+!                                                 --> 2       --> 5
+! The first branch of the ontology goes like:   1       --> 4 
+!                                                 --> 3       --> 6
+!
+!
+! The second branch of the ontology goes like:  1 --> 7 --> 8 --> 9 
+!
+!
+! This is done to model different aspects of a DAG, such as one term having
+! two different parents but those parents then being subclasses of a single
+! common term. The second branch just includes a linear set of terms that
+! subclasses of one another going back up to the root term. 
+
+
+
+
+[Term]
+id: TO:0000001
+name: one
+namespace: default
+
+
+[Term]
+id: TO:0000002
+name: two
+namespace: default
+is_a: TO:0000001
+
+
+[Term]
+id: TO:0000003
+name: three
+namespace: default
+is_a: TO:0000001
+
+
+[Term]
+id: TO:0000004
+name: four
+namespace: default
+is_a: TO:0000002
+is_a: TO:0000003
+
+
+[Term]
+id: TO:0000005
+name: five
+namespace: default
+is_a: TO:0000004
+
+[Term]
+id: TO:0000006
+name: six
+namespace: default
+is_a: TO:0000004
+
+
+
+[Term]
+id: TO:0000007
+name: seven
+namespace: default
+is_a: TO:0000001
+
+[Term]
+id: TO:0000008
+name: eight
+namespace: default
+is_a: TO:0000007
+
+[Term]
+id: TO:0000009
+name: nine
+namespace: default
+is_a: TO:0000008

@@ -26,10 +26,10 @@ import oats
 
 
 datasets = {
-	"simple_dataset_1":pd.read_csv("/Users/irbraun/oats/tests/test_data/small_dataset.csv"),
-	"simple_dataset_2":pd.read_csv("/Users/irbraun/oats/tests/test_data/small_dataset.csv"),
-	"simple_dataset_3":pd.read_csv("/Users/irbraun/oats/tests/test_data/small_dataset.csv"),
-	"simple_dataset_4":pd.read_csv("/Users/irbraun/oats/tests/test_data/small_dataset.csv"),
+	"simple_dataset_1":pd.read_csv("/Users/irbraun/oats/tests/data/small_dataset.csv"),
+	"simple_dataset_2":pd.read_csv("/Users/irbraun/oats/tests/data/small_dataset.csv"),
+	"simple_dataset_3":pd.read_csv("/Users/irbraun/oats/tests/data/small_dataset.csv"),
+	"simple_dataset_4":pd.read_csv("/Users/irbraun/oats/tests/data/small_dataset.csv"),
 }
 
 
