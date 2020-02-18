@@ -22,6 +22,16 @@ b_vectors = {3:[0.234,0.2352,0.2312,-0.1342], 4:[0.234,0.2352,0.2312,-0.1342], 5
 
 
 
+c = ["some words here", "some other words here", "and something"]
+c_terms = [["PATO:0000119"], ["PATO:0000569"], ["PATO:0000119","PATO:0000569"]]
+c_vectors = [[0.234,0.2352,0.2312,-0.1342], [0.234,0.2352,0.2312,-0.1342], [0.234,0.2352,0.2312,-0.1342]]
+
+d = ["some words here", "some other words here", "and something"]
+d_terms = [["PATO:0000119"], ["PATO:0000569"], ["PATO:0000119","PATO:0000569"]]
+d_vectors = [[0.234,0.2352,0.2312,-0.1342], [0.234,0.2352,0.2312,-0.1342], [0.234,0.2352,0.2312,-0.1342]]
+
+
+
 
 
 
@@ -132,11 +142,80 @@ def test_get_all_square_distance_matrices(word2vec_model, doc2vec_model, bert_mo
 
 
 
-
 @pytest.mark.fast
-def test_lda_methods():
+def test_lda_stuff(topic_model, vectorizer):
+	#START HERE
 
-	pass
+
+
+
+
+@pytest.mark.slow
+def test_get_all_distance_lists(word2vec_model, doc2vec_model, bert_model, bert_tokenizer, ontology):
+	"""Making sure the methods to get a list of element-wise distances between two lists of texts work in the simplest cases.
+	
+	Args:
+	    word2vec_model (TYPE): Description
+	    doc2vec_model (TYPE): Description
+	    bert_model (TYPE): Description
+	    bert_tokenizer (TYPE): Description
+	    ontology (TYPE): Description
+	"""
+	from oats.graphs.pairwise import elemwise_list_precomputed_vectors
+	from oats.graphs.pairwise import elemwise_list_ngrams
+	from oats.graphs.pairwise import elemwise_list_word2vec
+	from oats.graphs.pairwise import elemwise_list_doc2vec
+	from oats.graphs.pairwise import elemwise_list_bert
+	from oats.graphs.pairwise import elemwise_list_annotations
+
+	from scipy.spatial.distance import euclidean, cosine, jaccard
+
+
+	g = elemwise_list_precomputed_vectors(
+		vector_list_1=c_vectors, 
+		vector_list_2=d_vectors, 
+		metric_function=euclidean)
+	
+	g = elemwise_list_ngrams(
+		text_list_1=c, 
+		text_list_2=d, 
+		metric_function=euclidean)
+
+	g = elemwise_list_word2vec(
+		model=word2vec_model, 
+		text_list_1=c, 
+		text_list_2=d, 
+		metric_function=euclidean)
+
+	g = elemwise_list_doc2vec(
+		model=doc2vec_model, 
+		text_list_1=c, 
+		text_list_2=d, 
+		metric_function=euclidean)
+
+	g = elemwise_list_bert(
+		model=bert_model, 
+		tokenizer=bert_tokenizer, 
+		text_list_1=c, 
+		text_list_2=d, 
+		metric_function=euclidean, 
+		method="concat", 
+		layers=4)
+
+	g = elemwise_list_annotations(
+		annotations_list_1=c_terms, 
+		annotations_list_2=d_terms, 
+		ontology=ontology, 
+		metric_function=jaccard)
+
+
+
+
+
+
+
+
+
 
 
 
@@ -167,7 +246,6 @@ def test_pairwise_square_doc2vec(data, metric, doc2vec_model):
 	from oats.graphs.pairwise import pairwise_square_doc2vec
 	g = pairwise_square_doc2vec(model=doc2vec_model, ids_to_texts=data, metric=metric)
 """
-
 
 
 

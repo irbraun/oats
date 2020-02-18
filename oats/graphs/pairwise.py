@@ -41,6 +41,7 @@ from oats.graphs._utils import _infer_document_vector_from_word2vec		# Is actual
 from oats.graphs._utils import _infer_document_vector_from_doc2vec		# Is actually called when finding distance matrices.
 from oats.graphs._utils import _get_ngrams_vector						# Not called, just a wrapper function to remember a vectorization scheme.
 from oats.graphs._utils import _get_annotations_vector					# Not called, just a wrapper function to remember a vectorization scheme.
+from oats.graphs._utils import _get_topic_model_vector 					# Not called, just a wrapper function to remember a vectorization scheme.
 
 
 
@@ -374,10 +375,9 @@ def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 
 
 
-def pairwise_square_lda(model, vectorizer, ids_to_texts, metric):
+def pairwise_square_topic_model(model, vectorizer, ids_to_texts, metric):
 	""" TODO write this
 	"""
-
 
 	# Infer vectors for each string of text and remember mapping to the IDs.
 	descriptions = []
@@ -389,16 +389,26 @@ def pairwise_square_lda(model, vectorizer, ids_to_texts, metric):
 		index_in_matrix_to_id[index_in_matrix] = identifier
 		id_to_index_in_matrix[identifier] = index_in_matrix
 
+
 	# Apply distance metric over all the vectors to yield a matrix.
-	#vectors,vectorizer = strings_to_numerical_vectors(*descriptions, tfidf=tfidf, **kwargs)
-
-
+	vectors,vectorizer = strings_to_numerical_vectors(*descriptions, tfidf=tfidf, **kwargs)
 	ngram_vectors = vectorizer.transform(descriptions).toarray()
-	matrix = squareform(pdist(vectors,metric))
+	topic_vectors = model.transform(ngram_vectors)
+	matrix = squareform(pdist(topic_vectors,metric))
 	edgelist = _square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
-	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
-
-
+	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(topic_vectors)}
+	
+	# Create and return a SquarePairwiseDistances object containing the edgelist, matrix, and dictionaries.
+	return(SquarePairwiseDistances(
+		metric_str = metric,
+		vectorizing_function = _get_topic_model_vector,
+		vectorizing_function_kwargs = {"countvectorizer":vectorizer, "topic_model":model},
+		edgelist = edgelist,
+		vector_dictionary = id_to_vector_dict,
+		vectorizer_object = vectorizer,
+		id_to_index=id_to_index_in_matrix,
+		index_to_id=index_in_matrix_to_id, 
+		array=matrix))
 
 
 
@@ -858,6 +868,15 @@ def pairwise_rectangular_annotations(ids_to_annotations_1, ids_to_annotations_2,
 
 
 
+def elemwise_list_precomputed_vectors(vector_list_1, vector_list_2, metric_function):
+	"""
+	docstring
+	"""
+	assert len(vector_list_1) == len(vector_list_2)
+	vector_pairs = zip(vector_list_1, vector_list_2)
+	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
+	assert len(distances_list) == len(vector_list_1)
+	return(distances_list)
 
 
 
@@ -869,14 +888,17 @@ def elemwise_list_doc2vec(model, text_list_1, text_list_2, metric_function):
 	"""
 	docstring
 	"""
+	assert len(text_list_1) == len(text_list_2)
 	descriptions = []
 	descriptions.extend(text_list_1)
 	descriptions.extend(text_list_2)
-	all_vectors = [model.infer_vector(description.lower().split()) for description in descriptions]
+	all_vectors = [_infer_document_vector_from_doc2vec(description, model) for description in descriptions]
 	list_1_vectors = all_vectors[:len(text_list_1)]
 	list_2_vectors = all_vectors[len(text_list_1):]
+	assert len(list_1_vectors) == len(list_2_vectors)
 	vector_pairs = zip(list_1_vectors, list_2_vectors)
 	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
+	assert len(distances_list) == len(list_1_vectors)
 	return(distances_list)
 
 
@@ -886,27 +908,18 @@ def elemwise_list_word2vec(model, text_list_1, text_list_2, metric_function, met
 	"""
 	docstring
 	"""
+	assert len(text_list_1) == len(text_list_2)
 	descriptions = []
 	descriptions.extend(text_list_1)
 	descriptions.extend(text_list_2)
 	all_vectors = []
-	for description in descriptions:
-		words = description.lower().split()
-		words_in_model_vocab = [word for word in words if word in model.wv.vocab]
-		if len(words_in_model_vocab) == 0:
-			words_in_model_vocab.append(random.choice(list(model.wv.vocab)))
-		stacked_vectors = np.array([model.wv[word] for word in words_in_model_vocab])
-		if method == "mean":
-			all_vectors.append(stacked_vectors.mean(axis=0))
-		elif method == "max":
-			all_vectors.append(stacked_vectors.max(axis=0))
-		else:
-			raise Error("method argument is invalid")
-
+	all_vectors = [_infer_document_vector_from_word2vec(description, model, method) for description in descriptions]
 	list_1_vectors = all_vectors[:len(text_list_1)]
 	list_2_vectors = all_vectors[len(text_list_1):]
+	assert len(list_1_vectors) == len(list_2_vectors)
 	vector_pairs = zip(list_1_vectors, list_2_vectors)
 	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
+	assert len(distances_list) == len(list_1_vectors)
 	return(distances_list)
 
 
@@ -918,14 +931,17 @@ def elemwise_list_bert(model, tokenizer, text_list_1, text_list_2, metric_functi
 	"""
 	docstring
 	"""
+	assert len(text_list_1) == len(text_list_2)
 	descriptions = []
 	descriptions.extend(text_list_1)
 	descriptions.extend(text_list_2)
 	all_vectors = [_infer_document_vector_from_bert(description, model, tokenizer, method, layers) for description in descriptions]
 	list_1_vectors = all_vectors[:len(text_list_1)]
 	list_2_vectors = all_vectors[len(text_list_1):]
+	assert len(list_1_vectors) == len(list_2_vectors)
 	vector_pairs = zip(list_1_vectors, list_2_vectors)
 	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
+	assert len(distances_list) == len(list_1_vectors)
 	return(distances_list)
 
 
@@ -935,14 +951,17 @@ def elemwise_list_ngrams(text_list_1, text_list_2, metric_function, tfidf=False,
 	"""
 	docstring	
 	"""
+	assert len(text_list_1) == len(text_list_2)
 	descriptions = []
 	descriptions.extend(text_list_1)
 	descriptions.extend(text_list_2)
 	all_vectors,vectorizer = strings_to_numerical_vectors(*descriptions, **kwargs)
 	list_1_vectors = all_vectors[:len(text_list_1)]
 	list_2_vectors = all_vectors[len(text_list_1):]
+	assert len(list_1_vectors) == len(list_2_vectors)
 	vector_pairs = zip(list_1_vectors, list_2_vectors)
 	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
+	assert len(distances_list) == len(list_1_vectors)
 	return(distances_list)
 
 
@@ -953,8 +972,11 @@ def elemwise_list_annotations(annotations_list_1, annotations_list_2, ontology, 
 	"""
 	docstring	
 	"""
+	assert len(annotations_list_1) == len(annotations_list_2)
 	joined_term_strings = []
-	all_annotations_lists = annotations_list_1.extend(annotations_list_2)
+	all_annotations_lists = []
+	all_annotations_lists.extend(annotations_list_1)
+	all_annotations_lists.extend(annotations_list_2)
 	for term_list in all_annotations_lists:
 		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
 		term_list = flatten(term_list)
@@ -963,10 +985,12 @@ def elemwise_list_annotations(annotations_list_1, annotations_list_2, ontology, 
 		joined_term_strings.append(joined_term_string)
 
 	all_vectors,vectorizer = strings_to_numerical_vectors(*joined_term_strings, tfidf=tfidf, **kwargs)
-	list_1_vectors = all_vectors[:len(text_list_1)]
-	list_2_vectors = all_vectors[len(text_list_1):]
+	list_1_vectors = all_vectors[:len(annotations_list_1)]
+	list_2_vectors = all_vectors[len(annotations_list_1):]
+	assert len(list_1_vectors) == len(list_2_vectors)
 	vector_pairs = zip(list_1_vectors, list_2_vectors)
 	distances_list = [metric_function(vector_pair[0],vector_pair[1]) for vector_pair in vector_pairs]
+	assert len(distances_list) == len(list_1_vectors)
 	return(distances_list)
 
 

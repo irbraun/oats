@@ -320,6 +320,17 @@ def _get_annotations_vector(term_list, countvectorizer, ontology):
 
 
 
+def _get_topic_model_vector(text, countvectorizer, topic_model):
+	"""docstring
+	"""
+	ngram_vector = countvectorizer.transform([text]).toarray()[0]
+	topic_vector = topic_model.transform([ngram_vector])[0]
+	return(topic_vector)
+
+
+
+
+
 
 
 
