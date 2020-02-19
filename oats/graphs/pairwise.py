@@ -376,7 +376,17 @@ def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 
 
 def pairwise_square_topic_model(model, vectorizer, ids_to_texts, metric):
-	""" TODO write this
+	"""
+	docstring
+
+	Args:
+	    model (TYPE): Description
+	    vectorizer (TYPE): Description
+	    ids_to_texts (TYPE): Description
+	    metric (TYPE): Description
+	
+	Returns:
+	    TYPE: Description
 	"""
 
 	# Infer vectors for each string of text and remember mapping to the IDs.
@@ -391,12 +401,14 @@ def pairwise_square_topic_model(model, vectorizer, ids_to_texts, metric):
 
 
 	# Apply distance metric over all the vectors to yield a matrix.
-	vectors,vectorizer = strings_to_numerical_vectors(*descriptions, tfidf=tfidf, **kwargs)
 	ngram_vectors = vectorizer.transform(descriptions).toarray()
 	topic_vectors = model.transform(ngram_vectors)
 	matrix = squareform(pdist(topic_vectors,metric))
 	edgelist = _square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(topic_vectors)}
+
+
+	print(id_to_vector_dict)
 	
 	# Create and return a SquarePairwiseDistances object containing the edgelist, matrix, and dictionaries.
 	return(SquarePairwiseDistances(
@@ -782,6 +794,80 @@ def pairwise_rectangular_ngrams(ids_to_texts_1, ids_to_texts_2, metric, tfidf=Fa
 		row_index_to_id=row_index_in_matrix_to_id, 
 		col_index_to_id=col_index_in_matrix_to_id,
 		array=matrix))
+
+
+
+
+
+
+
+
+
+
+def pairwise_rectangular_topic_model(model, vectorizer, ids_to_texts_1, ids_to_texts_2, metric):
+	"""
+	docstring
+	"""
+	descriptions = []
+	row_index_in_matrix_to_id = {}
+	col_index_in_matrix_to_id = {}
+	id_to_row_index_in_matrix = {}
+	id_to_col_index_in_matrix = {}
+
+	row_in_matrix = 0
+	for identifier,description in ids_to_texts_1.items():
+		descriptions.append(description)
+		row_index_in_matrix_to_id[row_in_matrix] = identifier
+		id_to_row_index_in_matrix[identifier] = row_in_matrix 
+		row_in_matrix = row_in_matrix+1
+
+	col_in_matrix = 0
+	for identifier,description in ids_to_texts_2.items():
+		descriptions.append(description)
+		col_index_in_matrix_to_id[col_in_matrix] = identifier
+		id_to_col_index_in_matrix[identifier] = col_in_matrix 
+		col_in_matrix = col_in_matrix+1
+
+	# Apply distance metric over all the vectors to yield a matrix.
+	ngram_vectors = vectorizer.transform(descriptions).toarray()
+	topic_vectors = model.transform(ngram_vectors)
+	all_vectors = topic_vectors
+	row_vectors = all_vectors[:len(ids_to_texts_1)]
+	col_vectors = all_vectors[len(ids_to_texts_1):]
+
+	row_id_to_vector_dict = {row_index_in_matrix_to_id[i]:vector for i,vector in enumerate(row_vectors)}
+	col_id_to_vector_dict = {col_index_in_matrix_to_id[i]:vector for i,vector in enumerate(col_vectors)}
+	matrix = cdist(row_vectors, col_vectors, metric)
+
+	edgelist = _rectangular_adjacency_matrix_to_edgelist(matrix, row_index_in_matrix_to_id, col_index_in_matrix_to_id)
+	
+	return(RectangularPairwiseDistances(
+		metric_str = metric,
+		vectorizing_function = _get_topic_model_vector,
+		vectorizing_function_kwargs = {"countvectorizer":vectorizer, "topic_model":model},
+		edgelist = edgelist,
+		row_vector_dictionary = row_id_to_vector_dict,
+		col_vector_dictionary = col_id_to_vector_dict,
+		vectorizer_object = vectorizer,
+		id_to_row_index=id_to_row_index_in_matrix, 
+		id_to_col_index=id_to_col_index_in_matrix,
+		row_index_to_id=row_index_in_matrix_to_id, 
+		col_index_to_id=col_index_in_matrix_to_id,
+		array=matrix))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,34 +1,10 @@
 import pytest
 import sys
 import pandas as pd
+import json
 sys.path.append("../oats")
 import oats
 
-
-
-
-
-
-# Sample set of descriptions and annotations A.
-a = {1:"some words here", 2:"some other words"}
-a_terms = {1:["PATO:0000119"], 2:["PATO:0000569"]}
-a_vectors = {1:[0.234,0.2352,0.2312,-0.1342], 2:[0.234,0.2352,0.2312,-0.1342]}
-
-# Sample set of descriptions and annotations B.
-b = {3:"some words here", 4:"some other words here", 5:"and something"}
-b_terms = {3:["PATO:0000119"], 4:["PATO:0000569"], 5:["PATO:0000119","PATO:0000569"]}
-b_vectors = {3:[0.234,0.2352,0.2312,-0.1342], 4:[0.234,0.2352,0.2312,-0.1342], 5:[0.234,0.2352,0.2312,-0.1342]}
-
-
-
-
-c = ["some words here", "some other words here", "and something"]
-c_terms = [["PATO:0000119"], ["PATO:0000569"], ["PATO:0000119","PATO:0000569"]]
-c_vectors = [[0.234,0.2352,0.2312,-0.1342], [0.234,0.2352,0.2312,-0.1342], [0.234,0.2352,0.2312,-0.1342]]
-
-d = ["some words here", "some other words here", "and something"]
-d_terms = [["PATO:0000119"], ["PATO:0000569"], ["PATO:0000119","PATO:0000569"]]
-d_vectors = [[0.234,0.2352,0.2312,-0.1342], [0.234,0.2352,0.2312,-0.1342], [0.234,0.2352,0.2312,-0.1342]]
 
 
 
@@ -74,6 +50,41 @@ def ontology():
 	return(ontology)
 
 
+@pytest.fixture
+def fit_vectorizer():
+	from sklearn.feature_extraction.text import TfidfVectorizer
+	text = open("tests/data/corpus.txt", "r").read()
+	vectorizer = TfidfVectorizer(max_features=10000, stop_words="english", lowercase=False)
+	vectorizer = vectorizer.fit([text])
+	return(vectorizer)
+
+
+@pytest.fixture
+def unfit_nmf_topic_model():
+	from sklearn.decomposition import NMF
+	number_of_topics = 10
+	seed = 12352
+	topic_model = NMF(n_components=number_of_topics, random_state=seed)
+	return(topic_model)
+
+
+@pytest.fixture
+def unfit_lda_topic_model():
+	from sklearn.decomposition import LatentDirichletAllocation as LDA
+	number_of_topics = 10
+	seed = 12352
+	topic_model = LDA(n_components=number_of_topics, random_state=seed)
+	return(topic_model)
+
+
+
+
+
+
+
+
+with open("tests/data/small_dataset.json") as f:
+  data = json.load(f)
 
 
 
@@ -84,8 +95,11 @@ def ontology():
 
 
 
-@pytest.mark.slow
-def test_get_all_rectanglular_distance_matrices(word2vec_model, doc2vec_model, bert_model, bert_tokenizer, ontology):
+
+
+
+@pytest.mark.simple
+def test_get_all_rectanglular_distance_matrices(word2vec_model, doc2vec_model, bert_model, bert_tokenizer, ontology, fit_vectorizer, unfit_lda_topic_model, unfit_nmf_topic_model):
 	"""Making sure the methods to generate distance matrices from two sets of text instances work in the simplest cases.
 	
 	Args:
@@ -94,6 +108,9 @@ def test_get_all_rectanglular_distance_matrices(word2vec_model, doc2vec_model, b
 	    bert_model (TYPE): Description
 	    bert_tokenizer (TYPE): Description
 	    ontology (TYPE): Description
+	    fit_vectorizer (TYPE): Description
+	    unfit_lda_topic_model (TYPE): Description
+	    unfit_nmf_topic_model (TYPE): Description
 	"""
 	from oats.graphs.pairwise import pairwise_rectangular_precomputed_vectors
 	from oats.graphs.pairwise import pairwise_rectangular_ngrams
@@ -101,12 +118,36 @@ def test_get_all_rectanglular_distance_matrices(word2vec_model, doc2vec_model, b
 	from oats.graphs.pairwise import pairwise_rectangular_doc2vec
 	from oats.graphs.pairwise import pairwise_rectangular_bert
 	from oats.graphs.pairwise import pairwise_rectangular_annotations
-	g = pairwise_rectangular_precomputed_vectors(ids_to_vectors_1=a_vectors, ids_to_vectors_2=b_vectors, metric="euclidean")
-	g = pairwise_rectangular_ngrams(ids_to_texts_1=a, ids_to_texts_2=b, metric="euclidean")
-	g = pairwise_rectangular_word2vec(word2vec_model, ids_to_texts_1=a, ids_to_texts_2=b, metric="euclidean")
-	g = pairwise_rectangular_doc2vec(doc2vec_model, ids_to_texts_1=a, ids_to_texts_2=b, metric="euclidean")
-	g = pairwise_rectangular_bert(bert_model, bert_tokenizer, ids_to_texts_1=a, ids_to_texts_2=b, metric="euclidean", method="concat", layers=4)
+	from oats.graphs.pairwise import pairwise_rectangular_topic_model
+
+
+	# Reading data from the json file.
+	a_vectors = data["data_group_1"]["vectors_dictionary"]
+	a_terms = data["data_group_1"]["annotations_dictionary"]
+	a_strings = data["data_group_1"]["descriptions_dictionary"]
+	b_vectors = data["data_group_2"]["vectors_dictionary"]
+	b_terms = data["data_group_2"]["annotations_dictionary"]
+	b_strings = data["data_group_2"]["descriptions_dictionary"]
+
+
+	# Some additional setup that's necessary for using the topic models.
+	# Fitting the topic models with n-grams vectors generated from the text using the vectorizer which has already been fitted to a vocabulary.
+	lda = unfit_lda_topic_model
+	nmf = unfit_nmf_topic_model
+	lda.fit(fit_vectorizer.transform(b_strings.values()))
+	nmf.fit(fit_vectorizer.transform(b_strings.values()))
+
+	# Running all the pairwise distance matrix functions with the simplest cases of all arguments.
+	# This test is just for catching major problems not edge cases.
+	# The only assertion statements run are the ones inside of all of these methods.
+	g = pairwise_rectangular_precomputed_vectors(ids_to_vectors_1=data["data_group_1"]["vectors_dictionary"], ids_to_vectors_2=b_vectors, metric="euclidean")
+	g = pairwise_rectangular_ngrams(ids_to_texts_1=a_strings, ids_to_texts_2=b_strings, metric="euclidean")
+	g = pairwise_rectangular_word2vec(word2vec_model, ids_to_texts_1=a_strings, ids_to_texts_2=b_strings, metric="euclidean")
+	g = pairwise_rectangular_doc2vec(doc2vec_model, ids_to_texts_1=a_strings, ids_to_texts_2=b_strings, metric="euclidean")
+	g = pairwise_rectangular_bert(bert_model, bert_tokenizer, ids_to_texts_1=a_strings, ids_to_texts_2=b_strings, metric="euclidean", method="concat", layers=4)
 	g = pairwise_rectangular_annotations(ids_to_annotations_1=a_terms, ids_to_annotations_2=b_terms, ontology=ontology, metric="jaccard")
+	g = pairwise_rectangular_topic_model(model=lda, vectorizer=fit_vectorizer, ids_to_texts_1=a_strings, ids_to_texts_2=b_strings, metric="euclidean")
+	g = pairwise_rectangular_topic_model(model=nmf, vectorizer=fit_vectorizer, ids_to_texts_1=a_strings, ids_to_texts_2=b_strings, metric="euclidean")
 
 
 
@@ -115,8 +156,9 @@ def test_get_all_rectanglular_distance_matrices(word2vec_model, doc2vec_model, b
 
 
 
-@pytest.mark.slow
-def test_get_all_square_distance_matrices(word2vec_model, doc2vec_model, bert_model, bert_tokenizer, ontology):
+
+@pytest.mark.simple
+def test_get_all_square_distance_matrices(word2vec_model, doc2vec_model, bert_model, bert_tokenizer, ontology, fit_vectorizer, unfit_lda_topic_model, unfit_nmf_topic_model):
 	"""Making sure the methods to generate distance matrices from one set of text instances work in the simplest cases.
 	
 	Args:
@@ -125,6 +167,9 @@ def test_get_all_square_distance_matrices(word2vec_model, doc2vec_model, bert_mo
 	    bert_model (TYPE): Description
 	    bert_tokenizer (TYPE): Description
 	    ontology (TYPE): Description
+	    fit_vectorizer (TYPE): Description
+	    unfit_lda_topic_model (TYPE): Description
+	    unfit_nmf_topic_model (TYPE): Description
 	"""
 	from oats.graphs.pairwise import pairwise_square_precomputed_vectors
 	from oats.graphs.pairwise import pairwise_square_ngrams
@@ -132,25 +177,52 @@ def test_get_all_square_distance_matrices(word2vec_model, doc2vec_model, bert_mo
 	from oats.graphs.pairwise import pairwise_square_doc2vec
 	from oats.graphs.pairwise import pairwise_square_bert
 	from oats.graphs.pairwise import pairwise_square_annotations
+	from oats.graphs.pairwise import pairwise_square_topic_model
+
+
+	# Reading data from the json file.
+	b_vectors = data["data_group_2"]["vectors_dictionary"]
+	b_terms = data["data_group_2"]["annotations_dictionary"]
+	b_strings = data["data_group_2"]["descriptions_dictionary"]
+
+
+
+	# Some additional setup that's necessary for using the topic models.
+	# Fitting the topic models with n-grams vectors generated from the text using the vectorizer which has already been fitted to a vocabulary.
+	lda = unfit_lda_topic_model
+	nmf = unfit_nmf_topic_model
+	lda.fit(fit_vectorizer.transform(b_strings.values()))
+	nmf.fit(fit_vectorizer.transform(b_strings.values()))
+
+
+
+	# Running all the pairwise distance matrix functions with the simplest cases of all arguments.
+	# This test is just for catching major problems not edge cases.
+	# The only assertion statements run are the ones inside of all of these methods.
 	g = pairwise_square_precomputed_vectors(ids_to_vectors=b_vectors, metric="euclidean")
-	g = pairwise_square_ngrams(ids_to_texts=b, metric="euclidean")
-	g = pairwise_square_word2vec(word2vec_model, ids_to_texts=b, metric="euclidean")
-	g = pairwise_square_doc2vec(doc2vec_model, ids_to_texts=b, metric="euclidean")
-	g = pairwise_square_bert(bert_model, bert_tokenizer, ids_to_texts=b, metric="euclidean", method="concat", layers=4)
+	g = pairwise_square_ngrams(ids_to_texts=b_strings, metric="euclidean")
+	g = pairwise_square_word2vec(word2vec_model, ids_to_texts=b_strings, metric="euclidean")
+	g = pairwise_square_doc2vec(doc2vec_model, ids_to_texts=b_strings, metric="euclidean")
+	g = pairwise_square_bert(bert_model, bert_tokenizer, ids_to_texts=b_strings, metric="euclidean", method="concat", layers=4)
 	g = pairwise_square_annotations(ids_to_annotations=b_terms, ontology=ontology, metric="jaccard")
-
-
-
-
-@pytest.mark.fast
-def test_lda_stuff(topic_model, vectorizer):
-	#START HERE
+	g = pairwise_square_topic_model(model=nmf, vectorizer=fit_vectorizer, ids_to_texts=b_strings, metric="euclidean")
+	g = pairwise_square_topic_model(model=lda, vectorizer=fit_vectorizer, ids_to_texts=b_strings, metric="euclidean")
 
 
 
 
 
-@pytest.mark.slow
+
+
+
+
+
+
+
+
+
+
+@pytest.mark.simple
 def test_get_all_distance_lists(word2vec_model, doc2vec_model, bert_model, bert_tokenizer, ontology):
 	"""Making sure the methods to get a list of element-wise distances between two lists of texts work in the simplest cases.
 	
@@ -167,46 +239,25 @@ def test_get_all_distance_lists(word2vec_model, doc2vec_model, bert_model, bert_
 	from oats.graphs.pairwise import elemwise_list_doc2vec
 	from oats.graphs.pairwise import elemwise_list_bert
 	from oats.graphs.pairwise import elemwise_list_annotations
-
-	from scipy.spatial.distance import euclidean, cosine, jaccard
-
-
-	g = elemwise_list_precomputed_vectors(
-		vector_list_1=c_vectors, 
-		vector_list_2=d_vectors, 
-		metric_function=euclidean)
 	
-	g = elemwise_list_ngrams(
-		text_list_1=c, 
-		text_list_2=d, 
-		metric_function=euclidean)
+	from scipy.spatial.distance import euclidean, cosine, jaccard
+	
 
-	g = elemwise_list_word2vec(
-		model=word2vec_model, 
-		text_list_1=c, 
-		text_list_2=d, 
-		metric_function=euclidean)
+	# Reading data from the json file.
+	b_vectors = data["data_group_2"]["vectors_dictionary"].values()
+	b_terms = data["data_group_2"]["annotations_dictionary"].values()
+	b_strings = data["data_group_2"]["descriptions_dictionary"].values()
 
-	g = elemwise_list_doc2vec(
-		model=doc2vec_model, 
-		text_list_1=c, 
-		text_list_2=d, 
-		metric_function=euclidean)
 
-	g = elemwise_list_bert(
-		model=bert_model, 
-		tokenizer=bert_tokenizer, 
-		text_list_1=c, 
-		text_list_2=d, 
-		metric_function=euclidean, 
-		method="concat", 
-		layers=4)
-
-	g = elemwise_list_annotations(
-		annotations_list_1=c_terms, 
-		annotations_list_2=d_terms, 
-		ontology=ontology, 
-		metric_function=jaccard)
+	# Running all the element-wise distance functions with the simplest cases of all arguments.
+	# This test is just for catching major problems not edge cases.
+	# The only assertion statements run are the ones inside of all of these methods.
+	g = elemwise_list_precomputed_vectors(vector_list_1=b_vectors, vector_list_2=b_vectors, metric_function=euclidean)
+	g = elemwise_list_ngrams(text_list_1=b_strings, text_list_2=b_strings, metric_function=euclidean)
+	g = elemwise_list_word2vec(model=word2vec_model, text_list_1=b_strings, text_list_2=b_strings, metric_function=euclidean)
+	g = elemwise_list_doc2vec(model=doc2vec_model, text_list_1=b_strings, text_list_2=b_strings, metric_function=euclidean)
+	g = elemwise_list_bert(model=bert_model, tokenizer=bert_tokenizer, text_list_1=b_strings, text_list_2=b_strings, metric_function=euclidean, method="concat", layers=4)
+	g = elemwise_list_annotations(annotations_list_1=b_terms, annotations_list_2=b_terms, ontology=ontology, metric_function=jaccard)
 
 
 
