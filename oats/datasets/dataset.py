@@ -33,7 +33,7 @@ class Dataset:
 	"""A class that wraps a dataframe containing gene names, natural language, and ontology annotations.
 	
 	Attributes:
-	    df (pandas.DataFrame): The dataframe containing the dataset accessed through this class.
+		df (pandas.DataFrame): The dataframe containing the dataset accessed through this class.
 
 	"""
 	
@@ -60,12 +60,12 @@ class Dataset:
 		"""Add additional data to this dataset.
 		
 		Args:
-		    new_data (pandas.DataFrame): A dataframe containing the data to be added to this dataset.
-		    The columns of this dataframe must contain the columns used by this object which are "species",
-		    "gene_names", "description", and "term_ids". Any of those columns can contain any number of 
-		    missing values but the columns must exist. Any columns that are outside of that list of column 
-		    names are ignored. Gene names, symbols, or identifiers in the "gene_names" column should be 
-		    pipe delimited, as should multiple ontology term IDs in the "term_ids" column.
+			new_data (pandas.DataFrame): A dataframe containing the data to be added to this dataset.
+			The columns of this dataframe must contain the columns used by this object which are "species",
+			"gene_names", "description", and "term_ids". Any of those columns can contain any number of 
+			missing values but the columns must exist. Any columns that are outside of that list of column 
+			names are ignored. Gene names, symbols, or identifiers in the "gene_names" column should be 
+			pipe delimited, as should multiple ontology term IDs in the "term_ids" column.
 		
 		"""
 		new_data = new_data[self._col_names_without_id]
@@ -86,7 +86,7 @@ class Dataset:
 		done during the preprocessing and creation of a given dataset. It resets the actual row
 		indices of the internal dataframe object, forgets the old ones, and uses the new ones 
 		to populate a column to use as IDs for entries in the dataset. This ensures that there
-		will always be a ID value to access where the IDs are always unique integers.
+		will always be an ID value to access where the IDs are always unique integers.
 		"""
 		self.df.reset_index(drop=True,inplace=True)
 		self.df.id = [int(i) for i in self.df.index.values]
@@ -110,9 +110,9 @@ class Dataset:
 		"""Remove all but k randomly sampled records from the dataset.
 		
 		Args:
-		    k (int): The number of records (IDs) to retain.
+			k (int): The number of records (IDs) to retain.
 
-		    seed (int, optional): A seed value for the random subsampling.
+			seed (int, optional): A seed value for the random subsampling.
 		"""
 		self.df = self.df.sample(n=k, random_state=seed)
 
@@ -122,7 +122,7 @@ class Dataset:
 		"""Remove all records not related to these species.
 		
 		Args:
-		    *species: Strings referring to species names.
+			*species: Strings referring to species names.
 		"""
 		self.df = self.df[self.df["species"].isin(species)]
 
@@ -143,9 +143,9 @@ class Dataset:
 		"""Remove all records that don't have atleast one related ontology term annotation.
 		
 		Args:
-		    ontology_name (str, optional): A string which is the name of an ontology (e.g, "PATO", "PO").
-		    If this ontology name is provided then only annotations from that ontology are considered when
-		    filtering the dataset.
+			ontology_name (str, optional): A string which is the name of an ontology (e.g, "PATO", "PO").
+			If this ontology name is provided then only annotations from that ontology are considered when
+			filtering the dataset.
 		"""
 		if ontology_name is not None:
 			self.df = self.df[self.df["term_ids"].str.contains(ontology_name)]
@@ -159,7 +159,7 @@ class Dataset:
 		"""Remove all records with IDs not in the provided list.
 		
 		Args:
-		    ids (list of int): A list of the unique integer IDs for the records to retain.
+			ids (list of int): A list of the unique integer IDs for the records to retain.
 		"""
 		self.df = self.df[self.df["id"].isin(ids)]
 
@@ -182,7 +182,7 @@ class Dataset:
 		"""Get a mapping from record IDs to their corresponding gene objects.
 		
 		Returns:
-		    dict of int:oats.datasets.gene.Gene: Mapping from record IDs to gene objects.
+			dict of int:oats.datasets.gene.Gene: Mapping from record IDs to gene objects.
 		"""
 		gene_dict = {}
 		for row in self.df.itertuples():
@@ -200,7 +200,7 @@ class Dataset:
 		"""Get a mapping from IDs to lists of ontology term IDs.
 		
 		Returns:
-		    dict of int:list of str: Mapping between record IDs and lists of ontology term IDs.
+			dict of int:list of str: Mapping between record IDs and lists of ontology term IDs.
 		"""
 		annotations_dict = {}
 		for row in self.df.itertuples():
@@ -218,7 +218,7 @@ class Dataset:
 		"""Get a mapping from record IDs to text descriptions.
 		
 		Returns:
-		    dict of int:str: Mapping between record IDs and text descriptions.
+			dict of int:str: Mapping between record IDs and text descriptions.
 		"""
 		description_dict = {identifier:description for (identifier,description) in zip(self.df.id, self.df.description)}
 		return(description_dict)
@@ -231,7 +231,7 @@ class Dataset:
 		"""Get a mapping from record IDs to species names.
 		
 		Returns:
-		    dict of int:str: Mapping between records IDs and species names.
+			dict of int:str: Mapping between records IDs and species names.
 		"""
 		species_dict = {identifier:species for (identifier,species) in zip(self.df.id, self.df.species)}
 		return(species_dict)
@@ -246,7 +246,7 @@ class Dataset:
 		"""Get a list of the IDs for all records in this dataset.
 		
 		Returns:
-		    list of int: Unique integer IDs for all the records in this dataset.
+			list of int: Unique integer IDs for all the records in this dataset.
 		"""
 		return(list(self.df.id.values))
 
@@ -258,7 +258,7 @@ class Dataset:
 		"""Get a list of all the species that are represented in this dataset.
 		
 		Returns:
-		    list of str: Names of all the species represented in the dataset.
+			list of str: Names of all the species represented in the dataset.
 		"""
 		return(list(pd.unique(self.df.species.values)))
 
@@ -270,17 +270,17 @@ class Dataset:
 		"""Get a mapping between gene names or identifiers and the corresponding ID in this dataset.
 		
 		Args:
-		    unambiguous (bool, optional): When the unambiguous argument is True then the only 
-		    keys that are present in the dictionary are names that map to a single gene from the 
-		    dataset, so this excludes names that map to genes from multiple species. This is 
-		    because this method is useful for mapping gene names (with no species information) 
-		    in other files to IDs from this dataset. So those files should only be used when 
-		    they contain unambiguous names or accessions that encode the species information. 
-		    When this argument is False this check is not performed and values may be overwritten
-		    if the same key appears twice across multiple species.
+			unambiguous (bool, optional): When the unambiguous argument is True then the only 
+			keys that are present in the dictionary are names that map to a single gene from the 
+			dataset, so this excludes names that map to genes from multiple species. This is 
+			because this method is useful for mapping gene names (with no species information) 
+			in other files to IDs from this dataset. So those files should only be used when 
+			they contain unambiguous names or accessions that encode the species information. 
+			When this argument is False this check is not performed and values may be overwritten
+			if the same key appears twice across multiple species.
 		
 		Returns:
-		    dict of str:int: Mapping between gene names or identifiers and unique integer IDs.
+			dict of str:int: Mapping between gene names or identifiers and unique integer IDs.
 		
 		"""
 
@@ -488,7 +488,7 @@ class Dataset:
 		"""Writes the dataset to a file.
 		
 		Args:
-		    path (str): Path of the csv file that will be created.
+			path (str): Path of the csv file that will be created.
 		"""
 		self._sort_by_species()
 		self.df.to_csv(path, index=False)
@@ -501,7 +501,7 @@ class Dataset:
 		"""Creates a pandas.DataFrame object from this dataset.
 		
 		Returns:
-		    pandas.DataFrame: A dataframe representation of this dataset.
+			pandas.DataFrame: A dataframe representation of this dataset.
 		"""
 		self._sort_by_species()
 		return(self.df)
@@ -513,11 +513,27 @@ class Dataset:
 	def describe(self):
 		"""Prints a quick summary of the dataset contents.
 		"""
-		print("Number of rows in the dataframe: {}".format(len(self.df)))
-		print("Number of unique IDs:            {}".format(len(pd.unique(self.df.id))))
-		print("Number of unique descriptions:   {}".format(len(pd.unique(self.df.description))))
-		print("Number of unique gene name sets: {}".format(len(pd.unique(self.df.gene_names))))
-		print("Number of species represented:   {}".format(len(pd.unique(self.df.species))))
+
+		#print("Number of rows in the dataframe: {}".format(len(self.df)))
+		#print("Number of unique IDs:            {}".format(len(pd.unique(self.df.id))))
+		#print("Number of unique descriptions:   {}".format(len(pd.unique(self.df.description))))
+		#print("Number of unique gene name sets: {}".format(len(pd.unique(self.df.gene_names))))
+		#print("Number of species represented:   {}".format(len(pd.unique(self.df.species))))
+
+		# Generate a dataframe that summarizes how many genes and unique descriptions there are for each species.
+		summary_df = self.df.groupby("species").agg({
+			"gene_names": lambda x: len(x), 
+			"description": lambda x: len(pd.unique(x))
+			})
+		summary_df.rename(columns={"gene_names":"num_genes", "description":"unique_descriptions"}, inplace=True)
+		summary_df.loc['total']= summary_df.sum()
+		summary_df.reset_index(drop=False, inplace=True)
+		return(summary_df)
+
+
+
+
+
 
 
 

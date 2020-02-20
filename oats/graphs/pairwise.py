@@ -24,6 +24,9 @@ import re
 import random
 import torch
 from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import NMF
+from sklearn.decomposition import LatentDirichletAllocation as LDA
 
 
 
@@ -373,22 +376,35 @@ def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 
 
 
-
-
-def pairwise_square_topic_model(model, vectorizer, ids_to_texts, metric):
+def pairwise_square_topic_model(ids_to_texts, metric, seed=124134, num_topics=10, algorithm="lda", **kwargs):
 	"""
 	docstring
-
+	
 	Args:
-	    model (TYPE): Description
-	    vectorizer (TYPE): Description
 	    ids_to_texts (TYPE): Description
 	    metric (TYPE): Description
+	    seed (int, optional): Description
+	    num_topics (TYPE): Description
+	    algorithm (str, optional): Description
+	    **kwargs: Description
 	
 	Returns:
 	    TYPE: Description
+	
+	Raises:
+	    ValueError: Description
+	
 	"""
 
+	# Fitting the topic model using the provided parameters and this dataset of text descriptions.
+	vectorizer = TfidfVectorizer(**kwargs)
+	if algorithm.lower() == "lda":
+		model = LDA(n_components=num_topics, random_state=seed)
+	elif algorithm.lower() == "nmf":
+		model = NMF(n_components=num_topics, random_state=seed)
+	else:
+		raise ValueError("algorithm argument is invalid")
+	
 	# Infer vectors for each string of text and remember mapping to the IDs.
 	descriptions = []
 	index_in_matrix_to_id = {}
@@ -399,16 +415,12 @@ def pairwise_square_topic_model(model, vectorizer, ids_to_texts, metric):
 		index_in_matrix_to_id[index_in_matrix] = identifier
 		id_to_index_in_matrix[identifier] = index_in_matrix
 
-
 	# Apply distance metric over all the vectors to yield a matrix.
-	ngram_vectors = vectorizer.transform(descriptions).toarray()
-	topic_vectors = model.transform(ngram_vectors)
+	ngram_vectors = vectorizer.fit_transform(descriptions).toarray()
+	topic_vectors = model.fit_transform(ngram_vectors)
 	matrix = squareform(pdist(topic_vectors,metric))
 	edgelist = _square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(topic_vectors)}
-
-
-	print(id_to_vector_dict)
 	
 	# Create and return a SquarePairwiseDistances object containing the edgelist, matrix, and dictionaries.
 	return(SquarePairwiseDistances(
@@ -421,9 +433,6 @@ def pairwise_square_topic_model(model, vectorizer, ids_to_texts, metric):
 		id_to_index=id_to_index_in_matrix,
 		index_to_id=index_in_matrix_to_id, 
 		array=matrix))
-
-
-
 
 
 
@@ -804,10 +813,22 @@ def pairwise_rectangular_ngrams(ids_to_texts_1, ids_to_texts_2, metric, tfidf=Fa
 
 
 
-def pairwise_rectangular_topic_model(model, vectorizer, ids_to_texts_1, ids_to_texts_2, metric):
+def pairwise_rectangular_topic_model(ids_to_texts_1, ids_to_texts_2, metric, seed=124134, num_topics=10, algorithm="LDA", **kwargs):
 	"""
 	docstring
 	"""
+
+
+	# Fitting the topic model using the provided parameters and this dataset of text descriptions.
+	vectorizer = TfidfVectorizer(**kwargs)
+	if algorithm.lower() == "lda":
+		model = LDA(n_components=num_topics, random_state=seed)
+	elif algorithm.lower() == "nmf":
+		model = NMF(n_components=num_topics, random_state=seed)
+	else:
+		raise ValueError("algorithm argument is invalid")
+
+
 	descriptions = []
 	row_index_in_matrix_to_id = {}
 	col_index_in_matrix_to_id = {}
@@ -829,8 +850,8 @@ def pairwise_rectangular_topic_model(model, vectorizer, ids_to_texts_1, ids_to_t
 		col_in_matrix = col_in_matrix+1
 
 	# Apply distance metric over all the vectors to yield a matrix.
-	ngram_vectors = vectorizer.transform(descriptions).toarray()
-	topic_vectors = model.transform(ngram_vectors)
+	ngram_vectors = vectorizer.fit_transform(descriptions).toarray()
+	topic_vectors = model.fit_transform(ngram_vectors)
 	all_vectors = topic_vectors
 	row_vectors = all_vectors[:len(ids_to_texts_1)]
 	col_vectors = all_vectors[len(ids_to_texts_1):]
