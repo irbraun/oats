@@ -3,13 +3,17 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-OATS: Ontology Annotation and Text Similarity
-================================
+``oats``
+========
+
+This is a python package created to provide functions for generating and working with networks constructed from natural language descriptions. Specifically, this package was designed for datasets of text descriptions associated with genes, for the purposes of predicting gene function or membership in pathways and regulatory networks through constructing similarity networks with genes and their associated descriptions as nodes. However, many of the functions provided here can generalize to any problem requiring constructing similarity networks based on natural language datasets.
 
 
-Description
-^^^^^^^^^^^
-A description goes here 
+Setup
+^^^^^
+Run ``pip install dist/oats-0.0.1-py3-none-any.whl`` to install the package for use with Python 3. 
+
+
 
 
 Examples
@@ -18,9 +22,7 @@ Some examples go here:..
 	
 .. code-block:: text
 
-   int i = 1
-   >>> "some results"
-   callfunction(arg=24)
+   pip install dist/oats-0.0.1-py3-none-any.whl
     
 after the code
 
@@ -30,7 +32,7 @@ after the code
 API Reference
 ^^^^^^^^^^^^^
 .. toctree::
-   :maxdepth: 5
+   :maxdepth: 4
 
    modules
 
