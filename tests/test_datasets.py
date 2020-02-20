@@ -36,7 +36,6 @@ datasets = {
 
 
 
-
 @pytest.mark.parametrize("input_data, expected", [
     (datasets["simple_dataset_1"], 10),   
     (datasets["simple_dataset_2"], 10),   
@@ -48,6 +47,7 @@ def test_reading_in_data(input_data, expected):
 	dataset = Dataset()
 	dataset.add_data(input_data)
 	assert dataset.to_pandas().shape[0] == expected
+	print(dataset.describe())
 
 
 
@@ -67,7 +67,7 @@ def test_collapsing_by_all_gene_names(input_data, expected):
 	dataset.add_data(input_data)
 	dataset.collapse_by_all_gene_names()
 	assert dataset.to_pandas().shape[0] == expected
-
+	print(dataset.describe())
 
 
 

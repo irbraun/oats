@@ -50,35 +50,6 @@ def ontology():
 	return(ontology)
 
 
-@pytest.fixture
-def fit_vectorizer():
-	from sklearn.feature_extraction.text import TfidfVectorizer
-	text = open("tests/data/corpus.txt", "r").read()
-	vectorizer = TfidfVectorizer(max_features=10000, stop_words="english", lowercase=False)
-	vectorizer = vectorizer.fit([text])
-	return(vectorizer)
-
-
-@pytest.fixture
-def unfit_nmf_topic_model():
-	from sklearn.decomposition import NMF
-	number_of_topics = 10
-	seed = 12352
-	topic_model = NMF(n_components=number_of_topics, random_state=seed)
-	return(topic_model)
-
-
-@pytest.fixture
-def unfit_lda_topic_model():
-	from sklearn.decomposition import LatentDirichletAllocation as LDA
-	number_of_topics = 10
-	seed = 12352
-	topic_model = LDA(n_components=number_of_topics, random_state=seed)
-	return(topic_model)
-
-
-
-
 
 
 
@@ -99,7 +70,7 @@ with open("tests/data/small_dataset.json") as f:
 
 
 @pytest.mark.simple
-def test_get_all_rectanglular_distance_matrices(word2vec_model, doc2vec_model, bert_model, bert_tokenizer, ontology, fit_vectorizer, unfit_lda_topic_model, unfit_nmf_topic_model):
+def test_get_all_rectanglular_distance_matrices(word2vec_model, doc2vec_model, bert_model, bert_tokenizer, ontology):
 	"""Making sure the methods to generate distance matrices from two sets of text instances work in the simplest cases.
 	
 	Args:
@@ -129,14 +100,6 @@ def test_get_all_rectanglular_distance_matrices(word2vec_model, doc2vec_model, b
 	b_terms = data["data_group_2"]["annotations_dictionary"]
 	b_strings = data["data_group_2"]["descriptions_dictionary"]
 
-
-	# Some additional setup that's necessary for using the topic models.
-	# Fitting the topic models with n-grams vectors generated from the text using the vectorizer which has already been fitted to a vocabulary.
-	lda = unfit_lda_topic_model
-	nmf = unfit_nmf_topic_model
-	lda.fit(fit_vectorizer.transform(b_strings.values()))
-	nmf.fit(fit_vectorizer.transform(b_strings.values()))
-
 	# Running all the pairwise distance matrix functions with the simplest cases of all arguments.
 	# This test is just for catching major problems not edge cases.
 	# The only assertion statements run are the ones inside of all of these methods.
@@ -146,8 +109,8 @@ def test_get_all_rectanglular_distance_matrices(word2vec_model, doc2vec_model, b
 	g = pairwise_rectangular_doc2vec(doc2vec_model, ids_to_texts_1=a_strings, ids_to_texts_2=b_strings, metric="euclidean")
 	g = pairwise_rectangular_bert(bert_model, bert_tokenizer, ids_to_texts_1=a_strings, ids_to_texts_2=b_strings, metric="euclidean", method="concat", layers=4)
 	g = pairwise_rectangular_annotations(ids_to_annotations_1=a_terms, ids_to_annotations_2=b_terms, ontology=ontology, metric="jaccard")
-	g = pairwise_rectangular_topic_model(model=lda, vectorizer=fit_vectorizer, ids_to_texts_1=a_strings, ids_to_texts_2=b_strings, metric="euclidean")
-	g = pairwise_rectangular_topic_model(model=nmf, vectorizer=fit_vectorizer, ids_to_texts_1=a_strings, ids_to_texts_2=b_strings, metric="euclidean")
+	g = pairwise_rectangular_topic_model(ids_to_texts_1=a_strings, ids_to_texts_2=b_strings, metric="euclidean", num_topics=4, algorithm="lda")
+	g = pairwise_rectangular_topic_model(ids_to_texts_1=a_strings, ids_to_texts_2=b_strings, metric="euclidean", num_topics=4, algorithm="nmf")
 
 
 
@@ -158,7 +121,7 @@ def test_get_all_rectanglular_distance_matrices(word2vec_model, doc2vec_model, b
 
 
 @pytest.mark.simple
-def test_get_all_square_distance_matrices(word2vec_model, doc2vec_model, bert_model, bert_tokenizer, ontology, fit_vectorizer, unfit_lda_topic_model, unfit_nmf_topic_model):
+def test_get_all_square_distance_matrices(word2vec_model, doc2vec_model, bert_model, bert_tokenizer, ontology):
 	"""Making sure the methods to generate distance matrices from one set of text instances work in the simplest cases.
 	
 	Args:
@@ -185,17 +148,6 @@ def test_get_all_square_distance_matrices(word2vec_model, doc2vec_model, bert_mo
 	b_terms = data["data_group_2"]["annotations_dictionary"]
 	b_strings = data["data_group_2"]["descriptions_dictionary"]
 
-
-
-	# Some additional setup that's necessary for using the topic models.
-	# Fitting the topic models with n-grams vectors generated from the text using the vectorizer which has already been fitted to a vocabulary.
-	lda = unfit_lda_topic_model
-	nmf = unfit_nmf_topic_model
-	lda.fit(fit_vectorizer.transform(b_strings.values()))
-	nmf.fit(fit_vectorizer.transform(b_strings.values()))
-
-
-
 	# Running all the pairwise distance matrix functions with the simplest cases of all arguments.
 	# This test is just for catching major problems not edge cases.
 	# The only assertion statements run are the ones inside of all of these methods.
@@ -205,9 +157,8 @@ def test_get_all_square_distance_matrices(word2vec_model, doc2vec_model, bert_mo
 	g = pairwise_square_doc2vec(doc2vec_model, ids_to_texts=b_strings, metric="euclidean")
 	g = pairwise_square_bert(bert_model, bert_tokenizer, ids_to_texts=b_strings, metric="euclidean", method="concat", layers=4)
 	g = pairwise_square_annotations(ids_to_annotations=b_terms, ontology=ontology, metric="jaccard")
-	g = pairwise_square_topic_model(model=nmf, vectorizer=fit_vectorizer, ids_to_texts=b_strings, metric="euclidean")
-	g = pairwise_square_topic_model(model=lda, vectorizer=fit_vectorizer, ids_to_texts=b_strings, metric="euclidean")
-
+	g = pairwise_square_topic_model(ids_to_texts=b_strings, metric="euclidean", num_topics=4, algorithm="lda")
+	g = pairwise_square_topic_model(ids_to_texts=b_strings, metric="euclidean", num_topics=4, algorithm="nmf")
 
 
 
