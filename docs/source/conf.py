@@ -16,6 +16,8 @@ import sphinx_bootstrap_theme
 sys.path.insert(0, os.path.abspath('../..'))
 
 
+
+
 # -- Project information -----------------------------------------------------
 
 project = 'oats'
@@ -35,6 +37,10 @@ extensions = [
 	'sphinx.ext.autodoc',
 	'sphinx_bootstrap_theme'
 ]
+
+
+# Had to add this too.
+master_doc = 'index'
 
 
 
