@@ -1,0 +1,20 @@
+name: oats
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.6
+  - pandas
+  - numpy
+  - scikit-learn
+  - jupyter
+  - rdflib
+  - sparqlwrapper
+  - fuzzywuzzy
+  - nltk
+  - pronto=0.12.2
+  - biopython
+  - seaborn
+  - networkx
+  - scipy
+  - flask
