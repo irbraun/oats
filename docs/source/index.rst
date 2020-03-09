@@ -61,7 +61,7 @@ This subpackage contains functions for working with natural language that were n
 
 
 API Reference Contents
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^
 .. toctree::
    :maxdepth: 5
 
