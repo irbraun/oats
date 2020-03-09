@@ -1,4 +1,4 @@
-name: oats
+name: environment
 channels:
   - conda-forge
   - bioconda
