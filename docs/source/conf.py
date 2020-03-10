@@ -34,18 +34,7 @@ class Mock(MagicMock):
 	def __getattr__(cls, name):
 		return MagicMock()
  
-MOCK_MODULES = [
-	'collections.defaultdict',
-	'pandas',
-	'glob',
-	'os',
-	'sys',
-	'glob',
-	'nltk.tokenizer',
-	'itertools.chain',
-	'pickle',
-	'time'
-]	
+MOCK_MODULES = ['collections.defaultdict', 'pandas', 'glob', 'os', 'sys', 'glob', 'nltk.tokenizer', 'itertools.chain', 'pickle', 'time']	
 
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
