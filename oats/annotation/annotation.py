@@ -17,7 +17,7 @@ import glob
 #import math
 #import re
 
-from oats.nlp.search import binary_search_rabin_karp, binary_search_fuzzy
+#from oats.nlp.search import binary_search_rabin_karp, binary_search_fuzzy
 
 
 
