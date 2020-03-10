@@ -38,63 +38,10 @@ class Mock(MagicMock):
 
 #MOCK_MODULES = ['collections.defaultdict', 'pandas', 'glob', 'nltk.tokenizer', 'fuzzywuzzy.fuzz', 'fuzzywuzzy.process']	
 
-MOCK_MODULES = [
-	'Bio',
-	'Bio.Entrez',
-	'Bio.KEGG',
-	'Bio.KEGG.REST',
-	'_pickle',
-	'collections',
-	'collections.defaultdict',
-	'functools',
-	'fuzzywuzzy',
-	'fuzzywuzzy.fuzz',
-	'fuzzywuzzy.process',
-	'glob',
-	'itertools',
-	'itertools.chain',
-	'math',
-	'networkx',
-	'nltk.corpus',
-	'nltk.corpus.wordnet',
-	'nltk.probability',
-	'nltk.probability.FreqDist',
-	'nltk.tokenize',
-	'nltk.tokenize.sent_tokenize',
-	'nltk.tokenize.word_tokenize',
-	'numpy',
-	'pandas',
-	'pronto',
-	'pytorch_pretrained_bert',
-	'pytorch_pretrained_bert.BertForMaskedLM',
-	'pytorch_pretrained_bert.BertModel',
-	'pytorch_pretrained_bert.BertTokenizer',
-	'pywsd.lesk',
-	'pywsd.lesk.cosine_lesk',
-	'random',
-	're',
-	'scipy.spatial.distance',
-	'scipy.spatial.distance.cdist',
-	'scipy.spatial.distance.pdist',
-	'scipy.spatial.distance.squareform',
-	'sklearn.decomposition',
-	'sklearn.decomposition.LatentDirichletAllocation',
-	'sklearn.decomposition.NMF',
-	'sklearn.ensemble',
-	'sklearn.ensemble.RandomForestClassifier',
-	'sklearn.feature_extraction.text',
-	'sklearn.feature_extraction.text.CountVectorizer',
-	'sklearn.feature_extraction.text.TfidfVectorizer',
-	'sklearn.linear_model',
-	'sklearn.linear_model.LinearRegression',
-	'sklearn.linear_model.LogisticRegression',
-	'sklearn.neighbors',
-	'sklearn.neighbors.NearestNeighbors',
-	'time',
-	'torch',
-]
+#MOCK_MODULES = ['Bio', 'Bio.Entrez', 'Bio.KEGG', 'Bio.KEGG.REST', '_pickle', 'collections', 'collections.defaultdict', 'functools', 'fuzzywuzzy', 'fuzzywuzzy.fuzz', 'fuzzywuzzy.process', 'glob', 'itertools', 'itertools.chain', 'math', 'networkx', 'nltk.corpus', 'nltk.corpus.wordnet', 'nltk.probability', 'nltk.probability.FreqDist', 'nltk.tokenize', 'nltk.tokenize.sent_tokenize', 'nltk.tokenize.word_tokenize', 'numpy', 'pandas', 'pronto', 'pytorch_pretrained_bert', 'pytorch_pretrained_bert.BertForMaskedLM', 'pytorch_pretrained_bert.BertModel', 'pytorch_pretrained_bert.BertTokenizer', 'pywsd.lesk', 'pywsd.lesk.cosine_lesk', 'random', 're', 'scipy.spatial.distance', 'scipy.spatial.distance.cdist', 'scipy.spatial.distance.pdist', 'scipy.spatial.distance.squareform', 'sklearn.decomposition', 'sklearn.decomposition.LatentDirichletAllocation', 'sklearn.decomposition.NMF', 'sklearn.ensemble', 'sklearn.ensemble.RandomForestClassifier', 'sklearn.feature_extraction.text', 'sklearn.feature_extraction.text.CountVectorizer', 'sklearn.feature_extraction.text.TfidfVectorizer', 'sklearn.linear_model', 'sklearn.linear_model.LinearRegression', 'sklearn.linear_model.LogisticRegression', 'sklearn.neighbors', 'sklearn.neighbors.NearestNeighbors', 'time', 'torch']
+#MOCK_MODULES = ['Bio', 'Bio.Entrez', 'Bio.KEGG', 'Bio.KEGG.REST', '_pickle', 'collections']
 
-
+MOCK_MODULES = ['collections.defaultdict', 'collections', 'pandas', 'glob', 'fuzzywuzzy', 'fuzzywuzzy.fuzz', 'fuzzywuzzy.process']
 
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
