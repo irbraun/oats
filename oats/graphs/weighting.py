@@ -1,9 +1,7 @@
-import numpy as np
-import pandas as pd
-from collections import defaultdict
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+import numpy as np
 
 
 

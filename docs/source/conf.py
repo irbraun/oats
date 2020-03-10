@@ -20,23 +20,21 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 
 
+# Because the environment for building the documentation has to be very ligthweight, it is different
+# than the conda environment used for actually running tests or using the methods in the package. 
+# However, autodoc still requires that all the modules be genuinely importable, which means that
+# they can't be importing packages that are not available or present in this lightweight environment,
+# even if none of those methods are actually going to be called while building the documentation.
+# The solution is to mock all of those modules that are imported by any of the modules looked at by 
+# autodoc.
 
-# Having to add this part, because we don't want autodoc to do the imports? Working on this.
 from mock import Mock as MagicMock
- 
-class Mock(MagicMock):
+ class Mock(MagicMock):
 	@classmethod
 	def __getattr__(cls, name):
 		return MagicMock()
  
 MOCK_MODULES = ['collections.defaultdict','pandas','glob']
-
-
-
-
-
-#MOCK_MODULES = ['numpy', 'scipy', 'gensim','numpy','pandas','fastsemsim','string','itertools','pronto','os','sys','glob','math','re']
-#MOCK_MODULES = ['numpy', 'scipy']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 

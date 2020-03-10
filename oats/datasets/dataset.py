@@ -1,24 +1,7 @@
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import HashingVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.neighbors import DistanceMetric
-from itertools import product
-from scipy import spatial
-from nltk.corpus import wordnet
-import gensim
-import numpy as np
+from itertools import chain
 import pandas as pd
-import fastsemsim as fss
-import string
 import itertools
-import pronto
-from collections import defaultdict
-from pandas import DataFrame
-import os
-import sys
-import glob
-
-
+import networkx as nx
 
 from oats.datasets.gene import Gene
 from oats.nlp.preprocess import concatenate_descriptions
@@ -415,8 +398,6 @@ class Dataset:
 		"""Merges all the records where the species and any of the listed gene names or identifiers match. Text descriptions 
 		are concatenated and a union of the gene names and ontology term IDs are retained.
 		"""
-		import networkx as nx
-		from itertools import chain
 
 		# Build the graph model of this data where nodes are gene names or IDs.
 		g = nx.Graph()

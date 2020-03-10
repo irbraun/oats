@@ -1,14 +1,6 @@
 from nltk.corpus import wordnet
-import gensim
-import numpy as np
-import pandas as pd
-import fastsemsim as fss
-import string
-import itertools
-import pronto
-from collections import defaultdict
 from pywsd.lesk import cosine_lesk
-
+import itertools
 
 from oats.nlp.preprocess import get_clean_token_list
 

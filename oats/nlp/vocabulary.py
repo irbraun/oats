@@ -1,11 +1,9 @@
-import pandas as pd
-import numpy as np
-import itertools
-import networkx as nx
-from nltk.tokenize import sent_tokenize, word_tokenize
+from sklearn.feature_extraction.text import CountVectorizer
 from nltk.probability import FreqDist
 from collections import defaultdict
-from sklearn.feature_extraction.text import CountVectorizer
+import itertools
+import numpy as np
+import networkx as nx
 
 from oats.utils.utils import flatten
 

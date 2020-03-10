@@ -1,15 +1,5 @@
-from itertools import product
-from scipy import spatial
-from nltk.corpus import wordnet
-import gensim
-import numpy as np
-import pandas as pd
-import fastsemsim as fss
-import string
 import itertools
-import pronto
 import re
-from collections import defaultdict
 
 from oats.utils.utils import remove_duplicates_retain_order
 

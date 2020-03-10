@@ -1,33 +1,12 @@
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import HashingVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from scipy.spatial.distance import pdist, cdist, squareform
-from sklearn.neighbors import DistanceMetric
-from itertools import product
-from nltk.corpus import wordnet
 from nltk.tokenize import sent_tokenize
-from collections import defaultdict
-import gensim
+from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM
+import torch
 import numpy as np
 import pandas as pd
-import fastsemsim as fss
-import string
-import itertools
-import functools
-import pronto
-import os
-import sys
-import glob
-import math
-import re
 import random
-import torch
-from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM
 
-
-
-from oats.nlp.search import binary_search_rabin_karp
 from oats.utils.utils import flatten
 
 
