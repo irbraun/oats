@@ -36,8 +36,73 @@ class Mock(MagicMock):
  
 MOCK_MODULES = ['collections.defaultdict', 'pandas', 'glob', 'nltk.tokenizer', 'itertools.chain', '_pickle', 'time']	
 
-MOCK_MODULES = ['collections.defaultdict', 'pandas', 'glob', 'nltk.tokenizer', 
-'fuzzywuzzy.fuzz', 'fuzzywuzzy.process']	
+MOCK_MODULES = ['collections.defaultdict', 'pandas', 'glob', 'nltk.tokenizer', 'fuzzywuzzy.fuzz', 'fuzzywuzzy.process']	
+
+MOCK_MODULES = [
+	'BertForMaskedLM'
+	'BertModel'
+	'BertTokenizer'
+	'Bio'
+	'Bio.KEGG'
+	'CountVectorizer'
+	'Entrez'
+	'FreqDist'
+	'Gene'
+	'LatentDirichletAllocation'
+	'LinearRegression'
+	'LogisticRegression'
+	'NCBI_TAG'
+	'NMF'
+	'NearestNeighbors'
+	'REST'
+	'RandomForestClassifier'
+	'RectangularPairwiseDistances'
+	'SquarePairwiseDistances'
+	'TfidfVectorizer'
+	'cdist'
+	'chain'
+	'collections'
+	'constants'
+	'cosine_lesk'
+	'defaultdict'
+	'functools'
+	'fuzz'
+	'fuzzywuzzy'
+	'glob'
+	'itertools'
+	'math'
+	'networkx'
+	'nltk.corpus'
+	'nltk.probability'
+	'nltk.tokenize'
+	'numpy'
+	'os'
+	'pandas'
+	'pdist'
+	'process'
+	'pronto'
+	'pytorch_pretrained_bert'
+	'pywsd.lesk'
+	'random'
+	're'
+	'scipy.spatial.distance'
+	'sent_tokenize'
+	'sklearn.decomposition'
+	'sklearn.ensemble'
+	'sklearn.feature_extraction.text'
+	'sklearn.linear_model'
+	'sklearn.neighbors'
+	'squareform'
+	'sys'
+	'time'
+	'torch'
+	'word_tokenize'
+	'wordnet'
+]
+
+
+
+
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 
