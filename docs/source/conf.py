@@ -34,72 +34,65 @@ class Mock(MagicMock):
 	def __getattr__(cls, name):
 		return MagicMock()
  
-MOCK_MODULES = ['collections.defaultdict', 'pandas', 'glob', 'nltk.tokenizer', 'itertools.chain', '_pickle', 'time']	
+#MOCK_MODULES = ['collections.defaultdict', 'pandas', 'glob', 'nltk.tokenizer', 'itertools.chain', '_pickle', 'time']	
 
-MOCK_MODULES = ['collections.defaultdict', 'pandas', 'glob', 'nltk.tokenizer', 'fuzzywuzzy.fuzz', 'fuzzywuzzy.process']	
+#MOCK_MODULES = ['collections.defaultdict', 'pandas', 'glob', 'nltk.tokenizer', 'fuzzywuzzy.fuzz', 'fuzzywuzzy.process']	
 
 MOCK_MODULES = [
-	'BertForMaskedLM'
-	'BertModel'
-	'BertTokenizer'
-	'Bio'
-	'Bio.KEGG'
-	'CountVectorizer'
-	'Entrez'
-	'FreqDist'
-	'Gene'
-	'LatentDirichletAllocation'
-	'LinearRegression'
-	'LogisticRegression'
-	'NCBI_TAG'
-	'NMF'
-	'NearestNeighbors'
-	'REST'
-	'RandomForestClassifier'
-	'RectangularPairwiseDistances'
-	'SquarePairwiseDistances'
-	'TfidfVectorizer'
-	'cdist'
-	'chain'
-	'collections'
-	'constants'
-	'cosine_lesk'
-	'defaultdict'
-	'functools'
-	'fuzz'
-	'fuzzywuzzy'
-	'glob'
-	'itertools'
-	'math'
-	'networkx'
-	'nltk.corpus'
-	'nltk.probability'
-	'nltk.tokenize'
-	'numpy'
-	'os'
-	'pandas'
-	'pdist'
-	'process'
-	'pronto'
-	'pytorch_pretrained_bert'
-	'pywsd.lesk'
-	'random'
-	're'
-	'scipy.spatial.distance'
-	'sent_tokenize'
-	'sklearn.decomposition'
-	'sklearn.ensemble'
-	'sklearn.feature_extraction.text'
-	'sklearn.linear_model'
-	'sklearn.neighbors'
-	'squareform'
-	'sys'
-	'time'
-	'torch'
-	'word_tokenize'
-	'wordnet'
+	'Bio',
+	'Bio.Entrez',
+	'Bio.KEGG',
+	'Bio.KEGG.REST',
+	'_pickle',
+	'collections',
+	'collections.defaultdict',
+	'functools',
+	'fuzzywuzzy',
+	'fuzzywuzzy.fuzz',
+	'fuzzywuzzy.process',
+	'glob',
+	'itertools',
+	'itertools.chain',
+	'math',
+	'networkx',
+	'nltk.corpus',
+	'nltk.corpus.wordnet',
+	'nltk.probability',
+	'nltk.probability.FreqDist',
+	'nltk.tokenize',
+	'nltk.tokenize.sent_tokenize',
+	'nltk.tokenize.word_tokenize',
+	'numpy',
+	'pandas',
+	'pronto',
+	'pytorch_pretrained_bert',
+	'pytorch_pretrained_bert.BertForMaskedLM',
+	'pytorch_pretrained_bert.BertModel',
+	'pytorch_pretrained_bert.BertTokenizer',
+	'pywsd.lesk',
+	'pywsd.lesk.cosine_lesk',
+	'random',
+	're',
+	'scipy.spatial.distance',
+	'scipy.spatial.distance.cdist',
+	'scipy.spatial.distance.pdist',
+	'scipy.spatial.distance.squareform',
+	'sklearn.decomposition',
+	'sklearn.decomposition.LatentDirichletAllocation',
+	'sklearn.decomposition.NMF',
+	'sklearn.ensemble',
+	'sklearn.ensemble.RandomForestClassifier',
+	'sklearn.feature_extraction.text',
+	'sklearn.feature_extraction.text.CountVectorizer',
+	'sklearn.feature_extraction.text.TfidfVectorizer',
+	'sklearn.linear_model',
+	'sklearn.linear_model.LinearRegression',
+	'sklearn.linear_model.LogisticRegression',
+	'sklearn.neighbors',
+	'sklearn.neighbors.NearestNeighbors',
+	'time',
+	'torch',
 ]
-
 
 
 
