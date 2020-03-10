@@ -1,23 +1,21 @@
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import HashingVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.neighbors import DistanceMetric
-from itertools import product
-from scipy import spatial
-from nltk.corpus import wordnet
+#from sklearn.feature_extraction.text import CountVectorizer
+#from sklearn.feature_extraction.text import HashingVectorizer
+#from sklearn.metrics.pairwise import cosine_similarity
+#from sklearn.neighbors import DistanceMetric
+#from itertools import product
 from collections import defaultdict
-import gensim
-import numpy as np
+#import gensim
+#import numpy as np
 import pandas as pd
-import fastsemsim as fss
-import string
-import itertools
-import pronto
+#import fastsemsim as fss
+#import string
+#import itertools
+#import pronto
 import os
 import sys
 import glob
-import math
-import re
+#import math
+#import re
 
 from oats.nlp.search import binary_search_rabin_karp, binary_search_fuzzy
 

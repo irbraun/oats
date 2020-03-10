@@ -18,6 +18,33 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 
 
+
+
+
+# Having to add this part, because we don't want autodoc to do the imports? Working on this.
+from mock import Mock as MagicMock
+ 
+class Mock(MagicMock):
+	@classmethod
+	def __getattr__(cls, name):
+		return MagicMock()
+ 
+MOCK_MODULES = ['collections.defaultdict','pandas','glob']
+
+
+
+
+
+#MOCK_MODULES = ['numpy', 'scipy', 'gensim','numpy','pandas','fastsemsim','string','itertools','pronto','os','sys','glob','math','re']
+#MOCK_MODULES = ['numpy', 'scipy']
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
+
+
+
+
+
+
 # -- Project information -----------------------------------------------------
 
 project = 'oats'
@@ -37,6 +64,7 @@ extensions = [
 	'sphinx.ext.autodoc',
 	'sphinx_bootstrap_theme'
 ]
+
 
 
 # Had to add this too.
@@ -66,34 +94,34 @@ html_theme = 'bootstrap'
 # documentation.
 #
 html_theme_options = {
-    # Bootswatch (http://bootswatch.com/) theme.
-    "bootswatch_theme": "flatly",
-    # Choose Bootstrap version.
-    "bootstrap_version": "3",
-    # Tab name for entire site. (Default: "Site")
-    "navbar_site_name": "Documentation",
-    # HTML navbar class (Default: "navbar") to attach to <div> element.
-    # For black navbar, do "navbar navbar-inverse"
-    "navbar_class": "navbar",
-    # Render the next and previous page links in navbar. (Default: true)
-    "navbar_sidebarrel": True,
-    # Render the current pages TOC in the navbar. (Default: true)
-    "navbar_pagenav": False,
-    # A list of tuples containing pages or urls to link to.
-    #"navbar_links": [
-    #    ("GitHub", _parser.get("metadata", "home-page").strip(), True)
-    #] + [
-    #    (k, v, True)
-    #    for k, v in project_urls.items()
-    #    if k not in {"Documentation", "Changelog"}
-    #],
-    "admonition_use_panel": True,
+	# Bootswatch (http://bootswatch.com/) theme.
+	"bootswatch_theme": "flatly",
+	# Choose Bootstrap version.
+	"bootstrap_version": "3",
+	# Tab name for entire site. (Default: "Site")
+	"navbar_site_name": "Documentation",
+	# HTML navbar class (Default: "navbar") to attach to <div> element.
+	# For black navbar, do "navbar navbar-inverse"
+	"navbar_class": "navbar",
+	# Render the next and previous page links in navbar. (Default: true)
+	"navbar_sidebarrel": True,
+	# Render the current pages TOC in the navbar. (Default: true)
+	"navbar_pagenav": False,
+	# A list of tuples containing pages or urls to link to.
+	#"navbar_links": [
+	#    ("GitHub", _parser.get("metadata", "home-page").strip(), True)
+	#] + [
+	#    (k, v, True)
+	#    for k, v in project_urls.items()
+	#    if k not in {"Documentation", "Changelog"}
+	#],
+	"admonition_use_panel": True,
 }
 
 html_sidebars = {
-    "*": ["localtoc.html"],
-    "examples/*": ["localtoc.html"],
-    "api/*": ["localtoc.html"],
+	"*": ["localtoc.html"],
+	"examples/*": ["localtoc.html"],
+	"api/*": ["localtoc.html"],
 }
 
 

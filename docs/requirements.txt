@@ -1,0 +1,6 @@
+pywsd==1.2.4
+gensim==3.8.1
+fastsemsim==1.0.0
+pytorch-pretrained-bert==0.6.2
+sphinx_bootstrap_theme
+mock
