@@ -3,6 +3,7 @@ from nltk.tokenize import word_tokenize
 import itertools
 import pronto
 import math
+import re
 
 from oats.utils.utils import flatten
 
