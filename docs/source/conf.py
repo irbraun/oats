@@ -36,7 +36,8 @@ class Mock(MagicMock):
  
 MOCK_MODULES = ['collections.defaultdict', 'pandas', 'glob', 'nltk.tokenizer', 'itertools.chain', '_pickle', 'time']	
 
-MOCK_MODULES = ['collections.defaultdict', 'pandas', 'glob', 'nltk.tokenizer', 'fuzzywuzzy.fuzz', 'fuzzywuzzy.process']	
+MOCK_MODULES = ['collections.defaultdict', 'pandas', 'glob', 'nltk.tokenizer', 
+'fuzzywuzzy.fuzz', 'fuzzywuzzy.process']	
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 
