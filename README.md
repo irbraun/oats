@@ -1,6 +1,21 @@
-# OATS: Ontology Annotation and Text Similarity
+# OATS (Ontology Annotation and Text Similarity)
+
+### Description
+
+`oats` is a python package created to provide functions for quickly generating similarity values between text using a wide variety of approaches from natural language processing, machine learning, and semantic annotation with ontologies. Specifically, this package is aimed at generating pairwise similarity matrices for large datasets of short descriptions, although there is flexability. The package was created to support an analysis of similarities between phenotype descriptions and 
+
+
 
 This is a python package created to provide functions for generating and working with networks constructed from natural language descriptions. Specifically, this package was designed for datasets of text descriptions associated with genes, for the purposes of predicting gene function or membership in pathways and regulatory networks through constructing similarity networks with genes and their associated descriptions as nodes. However, many of the functions provided here can generalize to any problem requiring constructing similarity networks based on natural language datasets.
+
+### Documentation
+
+Available on Read the Docs [here][1].
+
+
+
+
+
 
 #### Functions specific to biological datasets
 1. Preprocessing, cleaning, and organizing datasets of gene names and accessions.
@@ -14,5 +29,14 @@ This is a python package created to provide functions for generating and working
 4. Constructing similarity networks for text descriptions using the above methods.
 5. Training and testing machine learning models for combining methods to join networks.
 
+
+
+
 ### Feedback
 This package is a work in progress. Send any feedback, questions, or suggestions to irbraun at iastate dot edu.
+
+
+
+
+
+[1]: https://irbraun-oats.readthedocs.io/en/latest/
