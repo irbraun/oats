@@ -10,17 +10,17 @@ import oats
 
 
 
-# species	gene_names	description	term_ids
-# ath	A	sentence from line 1	XO:0000111
-# ath	A	sentence from line 2	XO:0000111
-# ath	B	sentence from line 3	XO:0000111
-# ath	B	sentence from line 4	XO:0000111
-# zma	C	sentence from line 5	XO:0000111
-# zma	C	sentence from line 6	XO:0000111
-# zma	C	sentence from line 7	XO:0000111
-# zma	C	sentence from line 8	XO:0000111
-# zma	D	sentence from line 9	XO:0000111
-# zma	D	sentence from line 10	XO:0000111
+# species	gene_names   gene_synonyms	description	term_ids
+# ath	A	Z   sentence from line 1	XO:0000111
+# ath	A	Z   sentence from line 2	XO:0000111
+# ath	B	Z   sentence from line 3	XO:0000111
+# ath	B	Z   sentence from line 4	XO:0000111
+# zma	C	Z   sentence from line 5	XO:0000111
+# zma	C	Z   sentence from line 6	XO:0000111
+# zma	C	Z   sentence from line 7	XO:0000111
+# zma	C	Z   sentence from line 8	XO:0000111
+# zma	D	Z   sentence from line 9	XO:0000111
+# zma	D	Z   sentence from line 10	XO:0000111
 
 
 

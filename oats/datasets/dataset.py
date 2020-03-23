@@ -28,7 +28,7 @@ class Dataset:
 	def __init__(self):
 		"""Initiates an object of this class.
 		"""
-		self._col_names = ["id", "species", "gene_names", "description", "term_ids"]
+		self._col_names = ["id", "species", "gene_names", "gene_synonyms", "description", "term_ids", "sources"]
 		self._col_names_without_id = self._col_names
 		self._col_names_without_id.remove("id")
 		self.df = pd.DataFrame(columns=self._col_names)
@@ -39,7 +39,7 @@ class Dataset:
 
 
 
-	def add_data(self, new_data):
+	def add_data(self, new_data, source="unnamed"):
 		"""Add additional data to this dataset.
 		
 		Args:
@@ -73,7 +73,7 @@ class Dataset:
 		"""
 		self.df.reset_index(drop=True,inplace=True)
 		self.df.id = [int(i) for i in self.df.index.values]
-		self.df = self.df[["id", "species", "gene_names", "description", "term_ids"]]
+		self.df = self.df[["id", "species", "gene_names", "gene_synonyms", "description", "term_ids", "sources"]]
 
 
 
@@ -321,8 +321,10 @@ class Dataset:
 		# Groupy by that column and merge the other fields appropriately.
 		collapsed_df = self.df.groupby("first_gene_name").agg({"species": lambda x: x.values[0],
 																"gene_names": lambda x: concatenate_with_bar_delim(*x),
+																"gene_synonyms": lambda x: concatenate_with_bar_delim(*x),
 																"description":lambda x: concatenate_descriptions(*x),
-																"term_ids":lambda x: concatenate_with_bar_delim(*x)})
+																"term_ids":lambda x: concatenate_with_bar_delim(*x),
+																"sources":lambda x: concatenate_with_bar_delim(*x)})
 		collapsed_df["id"] = None
 		self.df = collapsed_df
 		self._reset_ids()
@@ -431,8 +433,10 @@ class Dataset:
 		# Groupy by the connected component column and merge the other fields appropriately.
 		self.df = self.df.groupby("component").agg({"species": lambda x: x.values[0],
 															"gene_names": lambda x: concatenate_with_bar_delim(*x),
+															"gene_synonyms": lambda x: concatenate_with_bar_delim(*x),
 															"description":lambda x: concatenate_descriptions(*x),
-															"term_ids":lambda x: concatenate_with_bar_delim(*x)})
+															"term_ids":lambda x: concatenate_with_bar_delim(*x),
+															"sources":lambda x: concatenate_with_bar_delim(*x)})
 		
 		# Reset the ID values in the dataset to reflect this change.
 		self.df["id"] = None
