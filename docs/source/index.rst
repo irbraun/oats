@@ -37,7 +37,7 @@ This subpackage contains classes and methods for reading in ontology files using
 
 
 
-**Datasets** (see :doc:`oats.datasets`)
+**BioData** (see :doc:`oats.datasets`)
 
 This subpackage contains classes and methods for reading, creating, manipulating, combining, and saving datasets that are based on the relationships between genes and either ontology term annotations or natural language descriptions or both. The dataset class includes methods for creating and adding to such a dataset from csv files, or manipulating and filtering the dataset. Methods for obtaining dictionaries related to this data are provided. The groupings class provides methods for creating or determining relationships between genes from a dataset and any arbitrary group, such as a biochemical pathway, or functional group. These groups can be specified arbitrarily using csv files or can be obtained through existing bioinformatics resources such as `kegg <https://www.genome.jp/kegg/>`_ or `plantcyc <https://www.plantcyc.org/>`_. The main purpose of this subpackage in general is to provided methods for reading in data related to genes, annotations, and text descriptions, and to provied methods for filtering and accessing them as a means of organizing this data for later input into the vectorizing methods or distance matrix methods provided in the distance subpackage.
 

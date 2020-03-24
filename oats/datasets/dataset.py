@@ -26,7 +26,7 @@ class Dataset:
 
 
 	def __init__(self):
-		"""Initiates an object of this class.
+		"""
 		"""
 		self._col_names = ["id", "species", "gene_names", "gene_synonyms", "description", "term_ids", "sources"]
 		self._col_names_without_id = self._col_names

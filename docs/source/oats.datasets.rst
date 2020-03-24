@@ -12,14 +12,6 @@ oats.datasets.dataset module
    :undoc-members:
    :show-inheritance:
 
-oats.datasets.edges module
---------------------------
-
-.. automodule:: oats.datasets.edges
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 oats.datasets.gene module
 -------------------------
 
@@ -36,10 +28,10 @@ oats.datasets.groupings module
    :undoc-members:
    :show-inheritance:
 
-oats.datasets.string module
----------------------------
+oats.datasets.relationships module
+----------------------------------
 
-.. automodule:: oats.datasets.string
+.. automodule:: oats.datasets.relationships
    :members:
    :undoc-members:
    :show-inheritance:

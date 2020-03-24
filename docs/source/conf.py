@@ -74,9 +74,10 @@ extensions = [
 # This needed to be added too.
 master_doc = 'index'
 
+
 # Additional options.
 add_module_names = False
-
+autoclass_content = 'both'
 
 
 

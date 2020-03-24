@@ -26,21 +26,15 @@ import oats
 
 
 datasets = {
-	"simple_dataset_1":pd.read_csv("/Users/irbraun/oats/tests/data/small_dataset.csv"),
-	"simple_dataset_2":pd.read_csv("/Users/irbraun/oats/tests/data/small_dataset.csv"),
-	"simple_dataset_3":pd.read_csv("/Users/irbraun/oats/tests/data/small_dataset.csv"),
-	"simple_dataset_4":pd.read_csv("/Users/irbraun/oats/tests/data/small_dataset.csv"),
+	"simple_dataset":pd.read_csv("/Users/irbraun/oats/tests/data/small_dataset.csv"),
 }
 
 
 
 
-
+@pytest.mark.small
 @pytest.mark.parametrize("input_data, expected", [
-    (datasets["simple_dataset_1"], 10),   
-    (datasets["simple_dataset_2"], 10),   
-    (datasets["simple_dataset_3"], 10),    
-    (datasets["simple_dataset_4"], 10),        
+    (datasets["simple_dataset"], 10),      
 ])
 def test_reading_in_data(input_data, expected):
 	from oats.datasets.dataset import Dataset
@@ -54,12 +48,9 @@ def test_reading_in_data(input_data, expected):
 
 
 
-
+@pytest.mark.small
 @pytest.mark.parametrize("input_data, expected", [
-    (datasets["simple_dataset_1"], 4),   
-    (datasets["simple_dataset_2"], 4),   
-    (datasets["simple_dataset_3"], 4),    
-    (datasets["simple_dataset_4"], 4),        
+    (datasets["simple_dataset"], 4),       
 ])
 def test_collapsing_by_all_gene_names(input_data, expected):
 	from oats.datasets.dataset import Dataset

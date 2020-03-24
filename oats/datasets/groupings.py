@@ -53,8 +53,7 @@ class Groupings:
 	"""
 	
 	def __init__(self, species_dict, source, name_mapping=None, case_sensitive=False):
-		"""Initiates an object of this class.
-
+		"""
 		Args:
 			species_dict (dict of str:str): A mapping where keys are species names and values are file paths with data for that species.
 			Not every type of grouping object that can be created needs files to be specified in this dictionary. The values can be 
@@ -131,6 +130,26 @@ class Groupings:
 
 
 	##############  The primary methods that should be used from outside this class  ##############
+
+	def get_groupings_for_dataset(self, dataset):
+		"""Returns the 
+		
+		Args:
+		    dataset (oats.datasets.Dataset): A dataset object.
+		
+		Returns:
+		    (dict,dict): A mapping from IDs to lists of group identifiers, and a mapping from group identifiers to lists of IDs.
+		"""
+		gene_dict = dataset.get_gene_dictionary()
+		id_to_group_ids_dict = self.get_id_to_group_ids_dict(gene_dict)
+		group_id_to_ids_dict = self.get_group_id_to_ids_dict(gene_dict)
+		return(id_to_group_ids_dict, group_id_to_ids_dict)
+
+
+
+
+
+
 
 
 
@@ -242,10 +261,12 @@ class Groupings:
 		"""
 		Given a group ID and species code (three letters), return a list of all the gene names 
 		which are associated with that ID in this instance of this class.
-		Args:
 		
+		Args:
 			species (TYPE): Description
+			
 			group_id (TYPE): Description
+		
 		Returns:
 			TYPE: Description
 		"""
