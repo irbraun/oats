@@ -25,13 +25,15 @@ class Dataset:
 
 
 
-	def __init__(self):
+	def __init__(self, data=None):
 		"""
 		"""
 		self._col_names = ["id", "species", "gene_names", "gene_synonyms", "description", "term_ids", "sources"]
 		self._col_names_without_id = self._col_names
 		self._col_names_without_id.remove("id")
 		self.df = pd.DataFrame(columns=self._col_names)
+		if data is not None:
+			self.add_data(data)
 
 
 
@@ -51,12 +53,26 @@ class Dataset:
 			pipe delimited, as should multiple ontology term IDs in the "term_ids" column.
 		
 		"""
-		new_data = new_data[self._col_names_without_id]
-		new_data.loc[:,"id"] = None
-		new_data.fillna("", inplace=True)
-		self.df = self.df.append(new_data, ignore_index=True, sort=False)
-		self.df = self.df.drop_duplicates(keep="first", inplace=False)
-		self._reset_ids()
+
+		if isinstance(new_data, pd.DataFrame):
+			new_data = new_data[self._col_names_without_id]
+			new_data.loc[:,"id"] = None
+			new_data.fillna("", inplace=True)
+			self.df = self.df.append(new_data, ignore_index=True, sort=False)
+			self.df = self.df.drop_duplicates(keep="first", inplace=False)
+			self._reset_ids()
+
+		elif isinstance(new_data, str):
+			new_data = pd.read_csv(new_data)
+			new_data = new_data[self._col_names_without_id]
+			new_data.loc[:,"id"] = None
+			new_data.fillna("", inplace=True)
+			self.df = self.df.append(new_data, ignore_index=True, sort=False)
+			self.df = self.df.drop_duplicates(keep="first", inplace=False)
+			self._reset_ids()
+
+		else:
+			raise ValueError("the data argument should be filename string or a pandas dataframe object")
 
 
 
