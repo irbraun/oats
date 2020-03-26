@@ -177,7 +177,7 @@ Pairwise distance matrix between descriptions using a Doc2Vec model.
 ### References
 This package makes use of several underlying methods, libraries, and resources.
 
-- NLP Libraries and Models([gensim](https://radimrehurek.com/gensim/), [ntlk](https://www.nltk.org/), [sklearn](https://scikit-learn.org/stable/), [Word2Vec](https://arxiv.org/abs/1301.3781), [Doc2Vec](https://arxiv.org/abs/1405.4053))
+- NLP Libraries and Models ([gensim](https://radimrehurek.com/gensim/), [ntlk](https://www.nltk.org/), [sklearn](https://scikit-learn.org/stable/), [Word2Vec](https://arxiv.org/abs/1301.3781), [Doc2Vec](https://arxiv.org/abs/1405.4053))
 - Ontologies and Annotation ([NOBLE Coder](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-015-0871-y), [pronto](https://github.com/althonos/pronto))
 - Biological Databases ([STRING](https://string-db.org/), [KEGG](https://www.genome.jp/kegg/), [PlantCyc](https://www.plantcyc.org/))
 
