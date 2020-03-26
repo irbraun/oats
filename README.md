@@ -2,11 +2,10 @@
 
 ### Description
 
-`oats` is a python package created to provide functions for quickly generating similarity values between text using a wide variety of approaches from natural language processing, machine learning, and semantic annotation with ontologies. Specifically, this package is aimed at generating pairwise similarity matrices for large datasets of short descriptions, although there is flexability. The package was created to support an analysis of similarities between phenotype descriptions and 
+`oats` is a python package created to provide functions for evaluting similarity between text, using a wide variety of approaches including natural language processing, machine learning, and semantic annotation using ontologies. This package was specifically created to be used in a project to assess similarity between phenotype descriptions across plant species in order to better organize this data and make biological predictions. For this reason, some of the subpackages are specifically oriented towards working with biological datasets, although many of the functions are applicable outside of this domain. In general, the purpose of this package is to provide useful wrappers or shortcut functions on top of a number of existing packages and tools for working with biological datasets, ontologies, and natural language in order to make analysis of this kind of data easier. 
 
 
 
-This is a python package created to provide functions for generating and working with networks constructed from natural language descriptions. Specifically, this package was designed for datasets of text descriptions associated with genes, for the purposes of predicting gene function or membership in pathways and regulatory networks through constructing similarity networks with genes and their associated descriptions as nodes. However, many of the functions provided here can generalize to any problem requiring constructing similarity networks based on natural language datasets.
 
 ### Documentation
 
@@ -14,19 +13,15 @@ Available on Read the Docs [here][1].
 
 #### BioData
 
+This subpackage contains classes and methods for reading, merging, filtering, and saving biological datasets that relate genes or proteins to either natural language text descriptions or ontology term annotations. In addition, this subpackage includes classes and methods for relating genes or proteins in a dataset to other existing bioinformatics resources such as [STRING][2], [KEGG][3] and [PlantCyc][4].
 
 
+Loading a dataset with plant genes, phenotype descriptions, and ontology terms.
 ```
 >>> from oats.datasets.dataset import Dataset
 >>> data = Dataset("example.csv")
 >>> data.to_pandas()
 ```
-
-
-
-
-
-
 ```
   id  species    gene_names           gene_synonyms                                   description                                                                            term_ids               sources
 ----  ---------  -------------------  ----------------------------------------------  -------------------------------------------------------------------------------------  ---------------------  ---------
@@ -47,14 +42,11 @@ Available on Read the Docs [here][1].
 ```
 
 
-
+Merging the dataset so that each row and unique ID represents a single gene.
 ```
 >>> data.collapse_by_all_gene_names()
 >>> data.to_pandas()
 ```
-
-
-
 ```
   id  species    gene_names                         gene_synonyms                                           description                                                                                                                                                                                    term_ids                                     sources
 ----  ---------  ---------------------------------  ------------------------------------------------------  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  -------------------------------------------  ---------
@@ -70,7 +62,7 @@ Available on Read the Docs [here][1].
 
 
 
-
+Relating those unique IDs for each gene to biochemical pathways from PlantCyc.
 ```
 >>> from oats.datasets.groupings import Groupings
 >>> pathway_species_files = {
@@ -80,7 +72,6 @@ Available on Read the Docs [here][1].
 >>> id_to_groups, group_to_ids = groupings.get_groupings_for_dataset(data)
 >>> id_to_groups
 ```
-
 ```
 {0: ['PWY-1042', 'PWY-5723', 'PWY66-399', 'PWY-5484', 'GLUCONEO-PWY', 'GLYCOLYSIS'],
  1: ['PWY-6351', 'PWY-6352'],
@@ -171,3 +162,6 @@ This package is a work in progress. Send any feedback, questions, or suggestions
 
 
 [1]: https://irbraun-oats.readthedocs.io/en/latest/
+[2]: https://string-db.org/
+[3]: https://www.genome.jp/kegg/
+[4]: https://www.plantcyc.org/
