@@ -48,14 +48,6 @@ Merging the dataset so that each row and unique ID represents a single gene.
 >>> data.to_pandas()
 ```
 ```
-
-```
-
-
-
-
-Relating those unique IDs for each gene to biochemical pathways from PlantCyc.
-```
   id  species    gene_names                         gene_synonyms                                           description                                                                                                                                                                                    term_ids                                     sources
 ----  ---------  ---------------------------------  ------------------------------------------------------  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  -------------------------------------------  ---------
    0  ath        At1g74030|ENO1|enolase 1           F2P9_10|AT1G74030.1                                     Decreased root hair density. Distorted trichomes. Trichomes are less turgescent and are distorted with respect to the wild type. Plants also have fewer root hairs with respect to wild type.  GO:0009507|PO:0001170|GO:0009735             example
@@ -65,6 +57,27 @@ Relating those unique IDs for each gene to biochemical pathways from PlantCyc.
    4  zma        GRMZM2G117878|ufgt2                UDP-glycosyltransferase 76C1                            Salt stress intolerant. Drought susceptible.                                                                                                                                                                                                example
    5  zma        ccd8|GRMZM2G446858|Zm00001d043442  Zmccd8|ccd8-trDs|ccd8|ccd8a                             A plant with a thin culm, giving the plant an overall slender appearance. Small ears. Short plant. Slender plant.                                                                              GO:0010311|GO:0022622|GO:1901601|GO:0010016  example
 ```
+
+
+
+
+Relating those unique IDs for each gene to biochemical pathways from PlantCyc.
+```
+>>> from oats.datasets.groupings import Groupings
+>>> pathway_species_files = {"ath":"aracyc_pathways.20180702", "zma":"corncyc_pathways.20180702"}
+>>> groupings = Groupings(pathway_species_files, "pmn")
+>>> id_to_groups, group_to_ids = groupings.get_groupings_for_dataset(data)
+>>> id_to_groups
+```
+```
+{0: ['PWY-1042', 'PWY-5723', 'PWY66-399', 'PWY-5484', 'GLUCONEO-PWY', 'GLYCOLYSIS'],
+ 1: ['PWY-6351', 'PWY-6352'],
+ 2: ['PWY-2', 'PWY1F-353'],
+ 3: [],
+ 4: [],
+ 5: ['PWY-7101', 'PWY-6806']}
+```
+
 
 
 
