@@ -73,7 +73,7 @@ Relating those unique IDs for each gene to biochemical pathways from PlantCyc.
 ```
 >>> from oats.datasets.groupings import Groupings
 >>> pathway_species_files = {"ath":"aracyc_pathways.20180702", "zma":"corncyc_pathways.20180702"}
->>> groupings = Groupings(pathway_species_files, "pmn")
+>>> groupings = Groupings(pathway_species_files, "plantcyc")
 >>> id_to_groups, group_to_ids = groupings.get_groupings_for_dataset(data)
 >>> id_to_groups
 ```
