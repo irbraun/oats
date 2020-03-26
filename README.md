@@ -11,7 +11,7 @@
 
 Available on Read the Docs [here](https://irbraun-oats.readthedocs.io/en/latest/).
 
-#### BioData
+### BioData Subpackage
 
 Loading a dataset with plant genes, phenotype descriptions, and ontology terms.
 ```
@@ -69,7 +69,7 @@ Relating those unique IDs for each gene to biochemical pathways from PlantCyc.
 
 
 
-#### Annotations
+### Annotations Subpackage
 
 
 Get a dictionary that relates unique IDs to phenotype descriptions.
@@ -124,7 +124,7 @@ Look at the labels of the terms that were annotated to the descriptions.
 ```
 
 
-#### Distances
+### Distances Subpackage
 
 
 Pairwise distance matrix between descriptions using n-grams.
