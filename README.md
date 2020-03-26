@@ -19,7 +19,7 @@ Available on Read the Docs [here](https://irbraun-oats.readthedocs.io/en/latest/
 
 
 
-### `oats.biodata` subpackage
+### Subpackage specific to biological datasets (`oats.biodata`)
 
 Loading a dataset with plant genes, phenotype descriptions, and ontology terms.
 ```
@@ -90,7 +90,7 @@ Relating those unique IDs for each gene to biochemical pathways from PlantCyc.
 
 
 
-### `oats.annotations` subpackage
+### Subpackage for ontologies and annotations (`oats.annotations`)
 
 
 Get a dictionary that relates unique IDs to phenotype descriptions.
@@ -145,7 +145,7 @@ Look at the labels of the terms that were annotated to the descriptions.
 ```
 
 
-### `oats.distances` subpackage
+### Subpackage for finding distances between text (`oats.distances`)
 
 
 Pairwise distance matrix between descriptions using n-grams.
