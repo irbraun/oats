@@ -175,19 +175,11 @@ Pairwise distance matrix between descriptions using a Doc2Vec model.
 ```
 
 ### References
-This package makes use of several underlying methods, libraries, and resources for working with natural language, ontologies, and biological datasets.
+This package makes use of several underlying methods, libraries, and resources.
 
-- [STRING](https://string-db.org/): Database of protein-protein interactions
-- [KEGG](https://www.genome.jp/kegg/): Database of biochemical pathways
-- [PlantCyc](https://www.plantcyc.org/): Database of biochemical pathways specific to plants.
-- [NOBLE Coder](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-015-0871-y): Java-based tool for annotating text with ontology terms.
-- [pronto](https://github.com/althonos/pronto): Library for working with ontologies
-- [gensim](https://radimrehurek.com/gensim/): Library using for machine learning and text processing
-- [ntlk](https://www.nltk.org/):  Library using for text processing
-- [sklearn](https://scikit-learn.org/stable/): Machine learning library
-- [Word2Vec](https://arxiv.org/abs/1301.3781): Method for word embeddings
-- [Doc2Vec](https://arxiv.org/abs/1405.4053): Method for document embeddings
-
+- NLP Libraries and Models([gensim](https://radimrehurek.com/gensim/), [ntlk](https://www.nltk.org/), [sklearn](https://scikit-learn.org/stable/), [Word2Vec](https://arxiv.org/abs/1301.3781), [Doc2Vec](https://arxiv.org/abs/1405.4053))
+- Ontologies and Annotation ([NOBLE Coder](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-015-0871-y), [pronto](https://github.com/althonos/pronto))
+- Biological Databases ([STRING](https://string-db.org/), [KEGG](https://www.genome.jp/kegg/), [PlantCyc](https://www.plantcyc.org/))
 
 
  
