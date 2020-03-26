@@ -145,49 +145,6 @@ Available on Read the Docs [here][1].
 
 
 
-```
->>> from oats.distances.pairwise import pairwise_square_word2vec
->>> from oats.distances.pairwise import pairwise_square_doc2vec
->>> from oats.distances.pairwise import pairwise_square_bert
->>> from oats.distances.pairwise import pairwise_square_ngrams
->>> from oats.distances.pairwise import pairwise_square_topics
->>>
->>> doc2vec_model = gensim.doc2vec.load(model="models/doc2vec.bin")
->>> word2vec_model = gensim.word2vec.load(model="models/word2vec_enwiki.bin")
->>> descriptions = data.get_descriptions_dictionary()
->>> pprint(descriptions)
-
-0: a description of something
-1: a descriptions of something else
-2: a description of something else
-
->>> dists = pairwise_square_word2vec(model=m, id_to_texts=descriptions)
->>> dists.matrix
-
-[[0.245, 0.235, 0.345, 0.3453],
- [0.245, 0.235, 0.345, 0.3453],
- [0.245, 0.235, 0.345, 0.3453],
- [0.245, 0.235, 0.345, 0.3453]]
-
->>> dists = pairwise_square_ngrams(model=m, id_to_texts=descriptions)
->>> dists.matrix
-
-[[0.245, 0.235, 0.345, 0.3453],
- [0.245, 0.235, 0.345, 0.3453],
- [0.245, 0.235, 0.345, 0.3453],
- [0.245, 0.235, 0.345, 0.3453]]
-
->>> dists = pairwise_square_topics(model=m, id_to_texts=descriptions)
->>> dists.matrix
-
-[[0.245, 0.235, 0.345, 0.3453],
- [0.245, 0.235, 0.345, 0.3453],
- [0.245, 0.235, 0.345, 0.3453],
- [0.245, 0.235, 0.345, 0.3453]]
-
-```
-
-
 
 
 
