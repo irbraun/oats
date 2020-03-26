@@ -9,12 +9,9 @@
 
 ### Documentation
 
-Available on Read the Docs [here][1].
+Available on Read the Docs [here](https://irbraun-oats.readthedocs.io/en/latest/).
 
 #### BioData
-This subpackage contains classes and methods for reading, merging, filtering, and saving biological datasets that relate genes or proteins to either natural language text descriptions or ontology term annotations. In addition, this subpackage includes classes and methods for relating genes or proteins in a dataset to other existing bioinformatics resources such as [STRING][2], [KEGG][3] and [PlantCyc][4].
-
-
 
 Loading a dataset with plant genes, phenotype descriptions, and ontology terms.
 ```
@@ -85,9 +82,6 @@ Relating those unique IDs for each gene to biochemical pathways from PlantCyc.
 
 
 #### Annotations
-This subpackage contains 
-
-
 
 
 Get a dictionary that relates unique IDs to phenotype descriptions.
@@ -192,12 +186,26 @@ Pairwise distance matrix between descriptions using a Doc2Vec model.
  ['0.3525', '0.4185', '0.4586', '0.3088', '0.4536', '0.0000']]
 ```
 
+### References
+This package makes use of several underlying methods, libraries, and resources for working with natural language, ontologies, and biological datasets.
+
+- [STRING](https://string-db.org/): Database of protein-protein interactions
+- [KEGG](https://www.genome.jp/kegg/): Database of biochemical pathways
+- [PlantCyc](https://www.plantcyc.org/): Database of biochemical pathways specific to plants.
+- [NOBLE Coder](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-015-0871-y): Java-based tool for annotating text with ontology terms.
+- [pronto](https://github.com/althonos/pronto): Library for working with ontologies
+- [gensim](https://radimrehurek.com/gensim/): Library using for machine learning and text processing
+- [ntlk](https://www.nltk.org/):  Library using for text processing
+- [sklearn](https://scikit-learn.org/stable/): Machine learning library
+- [Word2Vec](https://arxiv.org/abs/1301.3781): Method for word embeddings
+- [Doc2Vec](https://arxiv.org/abs/1405.4053): Method for document embeddings
+
+
+
+ 
+
+
+
 
 ### Feedback
 This package is a work in progress. Send any feedback, questions, or suggestions to irbraun at iastate dot edu.
-
-
-[1]: https://irbraun-oats.readthedocs.io/en/latest/
-[2]: https://string-db.org/
-[3]: https://www.genome.jp/kegg/
-[4]: https://www.plantcyc.org/
