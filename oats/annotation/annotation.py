@@ -142,6 +142,7 @@ def annotate_using_noble_coder(ids_to_texts, jar_path, *ontology_names, precise=
 			# NOBLE Coder finds every occurance of a matching, reduce this to form a set.
 			identifier = int(identifier)
 			term_list = list(set(term_list))
+			term_list = [term_id.replace("_",":") for term_id in term_list]
 			annotations[identifier].extend(term_list)
 
 
