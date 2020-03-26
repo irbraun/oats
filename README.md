@@ -149,6 +149,7 @@ Look at the labels of the terms that were annotated to the descriptions.
 
 Pairwise distance matrix between descriptions using n-grams.
 ```
+>>> from oats.graphs import pairwise as pw
 >>> dists = pw.pairwise_square_ngrams(ids_to_texts=descriptions, binary=True, metric="jaccard")    
 >>> dists.array
 ```
