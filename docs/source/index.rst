@@ -6,13 +6,12 @@
 ``oats``
 ========
 
-This is a python package created to provide functions for generating and working with similarity networks constructed from natural language descriptions. Specifically, this package was designed for datasets of text descriptions associated with genes, for the purposes of predicting gene function or membership in pathways and regulatory networks through constructing similarity networks with genes and their associated descriptions as nodes. However, many of the functions provided here can generalize to any problem requiring constructing similarity networks based on natural language datasets.
+`oats` is a python package created to provide functions for evaluting similarity between text, using a wide variety of approaches including natural language processing, machine learning, and semantic annotation using ontologies. This package was specifically created to be used in a project to assess similarity between phenotype descriptions across plant species in order to better organize this data and make biological predictions. For this reason, some of the subpackages are specifically oriented towards working with biological datasets, although many of the functions are applicable outside of this domain. In general, the purpose of this package is to provide useful wrappers or shortcut functions on top of a number of existing packages and tools for working with biological datasets, ontologies, and natural language in order to make analysis of this kind of data easier. 
 
 
 Setup
 ^^^^^
-Run ``pip install dist/oats-0.0.1-py3-none-any.whl`` to install the package with all submodules.
-
+Run ``pip install dist/oats-0.0.1-py3-none-any.whl`` to install.
 
 
 
