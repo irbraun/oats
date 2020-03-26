@@ -13,7 +13,7 @@ This is a python package created to provide functions for generating and working
 Available on Read the Docs [here][1].
 
 #### BioData
-The `oats.biodata` subpackage has classes, methods, and functions for handling, sorting, merging, and other things data that has to do with genes mapped to phenotype descriptions mapped to ontology term annotations and other things like that.
+
 
 
 ```
@@ -91,8 +91,6 @@ The `oats.biodata` subpackage has classes, methods, and functions for handling, 
 ```
 
 #### Annotations
-The `oats.annotations` subpackage has classes, methods, and functions for handling, sorting, merging, and other things data that has to do with genes mapped to phenotype descriptions mapped to ontology term annotations and other things like that. In addition to using the NOBLE Coder annotation jarfile, there are other methods available such as direct or fuzzy text alignment. The ontology class also has methods and some static functions for handling ontology related tasks.
-
 
 ```
 >>> descriptions = data.get_description_dictionary()
@@ -144,7 +142,7 @@ The `oats.annotations` subpackage has classes, methods, and functions for handli
 
 
 #### Distances
-The `oats.distances` subpackage has classes, methods, and functions for handling, sorting, merging, and other things data that has to do with genes mapped to phenotype descriptions mapped to ontology term annotations and other things like that. In addition to using the NOBLE Coder annotation jarfile, there are other methods available such as direct or fuzzy text alignment. The ontology class also has methods and some static functions for handling ontology related tasks. Talk about what the options are here for finding distanes matrices between stuff. 
+
 
 
 ```
