@@ -67,9 +67,7 @@ Merging the dataset so that each row and unique ID represents a single gene.
 Relating those unique IDs for each gene to biochemical pathways from PlantCyc.
 ```
 >>> from oats.datasets.groupings import Groupings
->>> pathway_species_files = {
->>>   "ath":"../data/group_related_files/pmn/aracyc_pathways.20180702", 
->>>   "zma":"../data/group_related_files/pmn/corncyc_pathways.20180702"}
+>>> pathway_species_files = {"ath":"aracyc_pathways.20180702", "zma":"corncyc_pathways.20180702"}
 >>> groupings = Groupings(pathway_species_files, "pmn")
 >>> id_to_groups, group_to_ids = groupings.get_groupings_for_dataset(data)
 >>> id_to_groups
@@ -115,7 +113,7 @@ Create an ontology object and annotate descriptions with terms using NOBLE Coder
 >>>
 >>> ont = Ontology("pato.obo") 
 >>> noblecoder_jarfile_path = "../lib/NobleCoder-1.0.jar"      
->>> annots = annotate_using_noble_coder(descriptions, "../lib/NobleCoder-1.0.jar", "pato", precise=1)
+>>> annots = annotate_using_noble_coder(descriptions, "NobleCoder-1.0.jar", "pato", precise=1)
 >>> annots
 ```
 ```
@@ -181,7 +179,7 @@ Pairwise distance matrix between descriptions using topic modeling.
 Pairwise distance matrix between descriptions using a Doc2Vec model.
 ```
 >>> import gensim
->>> model = gensim.models.Doc2Vec.load("../gensim/enwiki_dbow/doc2vec.bin" )
+>>> model = gensim.models.Doc2Vec.load("doc2vec.bin" )
 >>> dists = pw.pairwise_square_doc2vec(model=model, ids_to_texts=descriptions, metric="cosine")    
 >>> dists.array
 ```
