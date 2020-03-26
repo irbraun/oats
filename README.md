@@ -22,20 +22,20 @@ Loading a dataset with plant genes, phenotype descriptions, and ontology terms.
 ```
   id  species    gene_names           gene_synonyms                                   description                                                                            term_ids               sources
 ----  ---------  -------------------  ----------------------------------------------  -------------------------------------------------------------------------------------  ---------------------  ---------
-   0  ath        At1g74030            F2P9_10                                         Decreased root hair density. Distorted trichomes.                                      GO:0009507|PO:0001170
-   1  ath        At1g74030|ENO1       F2P9_10|AT1G74030.1                             Trichomes are less turgescent and are distorted with respect to the wild type.         GO:0009735
-   2  ath        ENO1|enolase 1       F2P9_10|AT1G74030.1                             Plants also have fewer root hairs with respect to wild type.                           GO:0009735
-   3  ath        At3g56960|PIP5K4     phosphatidyl inositol monophosphate 5 kinase 4  Decreased stomatal opening.                                                            PO:0009046
-   4  ath        At3g56960            T8M16.6                                         Delayed stomatal opening.                                                              GO:0009860
-   5  ath        At1g74920|ALDH10A8   aldehyde dehydrogenase 10A8                     Sensitive to drought. Sensitive to mannitol.                                           GO:0005618|GO:0009516
-   6  ath        At1g74920            F25A4_11                                        Sensitive to salt.                                                                     PO:0007123
-   7  zma        nec4|GRMZM5G870342   nec4|cpx1                                       Necrotic leaf. Affected tissue dies.
-   8  zma        GRMZM5G870342        cpx1|dks8                                       Pale green seedling.  Yellow green leaf.
-   9  zma        GRMZM2G117878|ufgt2                                                  Salt stress intolerant.
-  10  zma        GRMZM2G117878        UDP-glycosyltransferase 76C1                    Drought susceptible.
-  11  zma        ccd8                 Zmccd8                                          A plant with a thin culm, giving the plant an overall slender appearance. Small ears.  GO:0010311|GO:0022622
-  12  zma        ccd8|GRMZM2G446858   ccd8-trDs|ccd8                                  Short plant.                                                                           GO:1901601
-  13  zma        ccd8|Zm00001d043442  ccd8|ccd8a                                      Slender plant.                                                                         GO:0010016
+   0  ath        At1g74030            F2P9_10                                         Decreased root hair density. Distorted trichomes.                                      GO:0009507|PO:0001170  example
+   1  ath        At1g74030|ENO1       F2P9_10|AT1G74030.1                             Trichomes are less turgescent and are distorted with respect to the wild type.         GO:0009735             example
+   2  ath        ENO1|enolase 1       F2P9_10|AT1G74030.1                             Plants also have fewer root hairs with respect to wild type.                           GO:0009735             example
+   3  ath        At3g56960|PIP5K4     phosphatidyl inositol monophosphate 5 kinase 4  Decreased stomatal opening.                                                            PO:0009046             example
+   4  ath        At3g56960            T8M16.6                                         Delayed stomatal opening.                                                              GO:0009860             example
+   5  ath        At1g74920|ALDH10A8   aldehyde dehydrogenase 10A8                     Sensitive to drought. Sensitive to mannitol.                                           GO:0005618|GO:0009516  example
+   6  ath        At1g74920            F25A4_11                                        Sensitive to salt.                                                                     PO:0007123             example
+   7  zma        nec4|GRMZM5G870342   nec4|cpx1                                       Necrotic leaf. Affected tissue dies.                                                                          example
+   8  zma        GRMZM5G870342        cpx1|dks8                                       Pale green seedling.  Yellow green leaf.                                                                      example
+   9  zma        GRMZM2G117878|ufgt2                                                  Salt stress intolerant.                                                                                       example
+  10  zma        GRMZM2G117878        UDP-glycosyltransferase 76C1                    Drought susceptible.                                                                                          example
+  11  zma        ccd8                 Zmccd8                                          A plant with a thin culm, giving the plant an overall slender appearance. Small ears.  GO:0010311|GO:0022622  example
+  12  zma        ccd8|GRMZM2G446858   ccd8-trDs|ccd8                                  Short plant.                                                                           GO:1901601             example
+  13  zma        ccd8|Zm00001d043442  ccd8|ccd8a                                      Slender plant.                                                                         GO:0010016             example
 ```
 
 
@@ -48,14 +48,7 @@ Merging the dataset so that each row and unique ID represents a single gene.
 >>> data.to_pandas()
 ```
 ```
-  id  species    gene_names                         gene_synonyms                                           description                                                                                                                                                                                    term_ids                                     sources
-----  ---------  ---------------------------------  ------------------------------------------------------  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  -------------------------------------------  ---------
-   0  ath        At1g74030|ENO1|enolase 1           F2P9_10|AT1G74030.1                                     Decreased root hair density. Distorted trichomes. Trichomes are less turgescent and are distorted with respect to the wild type. Plants also have fewer root hairs with respect to wild type.  GO:0009507|PO:0001170|GO:0009735
-   1  ath        At3g56960|PIP5K4                   phosphatidyl inositol monophosphate 5 kinase 4|T8M16.6  Decreased stomatal opening. Delayed stomatal opening.                                                                                                                                          PO:0009046|GO:0009860
-   2  ath        At1g74920|ALDH10A8                 aldehyde dehydrogenase 10A8|F25A4_11                    Sensitive to drought. Sensitive to mannitol. Sensitive to salt.                                                                                                                                GO:0005618|GO:0009516|PO:0007123
-   3  zma        nec4|GRMZM5G870342                 nec4|cpx1|dks8                                          Necrotic leaf. Affected tissue dies. Pale green seedling.  Yellow green leaf.
-   4  zma        GRMZM2G117878|ufgt2                UDP-glycosyltransferase 76C1                            Salt stress intolerant. Drought susceptible.
-   5  zma        ccd8|GRMZM2G446858|Zm00001d043442  Zmccd8|ccd8-trDs|ccd8|ccd8a                             A plant with a thin culm, giving the plant an overall slender appearance. Small ears. Short plant. Slender plant.                                                                              GO:0010311|GO:0022622|GO:1901601|GO:0010016
+
 ```
 
 
@@ -63,19 +56,14 @@ Merging the dataset so that each row and unique ID represents a single gene.
 
 Relating those unique IDs for each gene to biochemical pathways from PlantCyc.
 ```
->>> from oats.datasets.groupings import Groupings
->>> pathway_species_files = {"ath":"aracyc_pathways.20180702", "zma":"corncyc_pathways.20180702"}
->>> groupings = Groupings(pathway_species_files, "pmn")
->>> id_to_groups, group_to_ids = groupings.get_groupings_for_dataset(data)
->>> id_to_groups
-```
-```
-{0: ['PWY-1042', 'PWY-5723', 'PWY66-399', 'PWY-5484', 'GLUCONEO-PWY', 'GLYCOLYSIS'],
- 1: ['PWY-6351', 'PWY-6352'],
- 2: ['PWY-2', 'PWY1F-353'],
- 3: [],
- 4: [],
- 5: ['PWY-7101', 'PWY-6806']}
+  id  species    gene_names                         gene_synonyms                                           description                                                                                                                                                                                    term_ids                                     sources
+----  ---------  ---------------------------------  ------------------------------------------------------  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  -------------------------------------------  ---------
+   0  ath        At1g74030|ENO1|enolase 1           F2P9_10|AT1G74030.1                                     Decreased root hair density. Distorted trichomes. Trichomes are less turgescent and are distorted with respect to the wild type. Plants also have fewer root hairs with respect to wild type.  GO:0009507|PO:0001170|GO:0009735             example
+   1  ath        At3g56960|PIP5K4                   phosphatidyl inositol monophosphate 5 kinase 4|T8M16.6  Decreased stomatal opening. Delayed stomatal opening.                                                                                                                                          PO:0009046|GO:0009860                        example
+   2  ath        At1g74920|ALDH10A8                 aldehyde dehydrogenase 10A8|F25A4_11                    Sensitive to drought. Sensitive to mannitol. Sensitive to salt.                                                                                                                                GO:0005618|GO:0009516|PO:0007123             example
+   3  zma        nec4|GRMZM5G870342                 nec4|cpx1|dks8                                          Necrotic leaf. Affected tissue dies. Pale green seedling.  Yellow green leaf.                                                                                                                                                               example
+   4  zma        GRMZM2G117878|ufgt2                UDP-glycosyltransferase 76C1                            Salt stress intolerant. Drought susceptible.                                                                                                                                                                                                example
+   5  zma        ccd8|GRMZM2G446858|Zm00001d043442  Zmccd8|ccd8-trDs|ccd8|ccd8a                             A plant with a thin culm, giving the plant an overall slender appearance. Small ears. Short plant. Slender plant.                                                                              GO:0010311|GO:0022622|GO:1901601|GO:0010016  example
 ```
 
 
