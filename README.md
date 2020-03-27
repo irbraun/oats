@@ -2,7 +2,7 @@
 
 ### Description
 
-`oats` is a python package created to provide functions for evaluting similarity between text, using a wide variety of approaches including natural language processing, machine learning, and semantic annotation using ontologies. This package was specifically created to be used in a project to assess similarity between phenotype descriptions across plant species in order to better organize this data and make biological predictions. For this reason, some of the subpackages are specifically oriented towards working with biological datasets, although many of the functions are applicable outside of this domain. In general, the purpose of this package is to provide useful wrappers or shortcut functions on top of a number of existing packages and tools for working with biological datasets, ontologies, or natural language in order to make analysis of this kind of data easier. 
+`oats` is a python package created to provide functions for evaluting similarity between text using a wide variety of approaches including natural language processing, machine learning, and semantic annotation using ontologies. This package was specifically created to be used in a project to assess similarity between phenotype descriptions across plant species in order to better organize this data and make biological predictions. For this reason, some of the subpackages are specifically oriented towards working with biological datasets, although many of the functions are applicable outside of this domain. In general, the purpose of this package is to provide useful wrappers or shortcut functions on top of a number of existing packages and tools for working with biological datasets, ontologies, or natural language in order to make analysis of this kind of data easier. 
 
 
 ### Setup
@@ -19,7 +19,7 @@ Available on Read the Docs [here](https://irbraun-oats.readthedocs.io/en/latest/
 
 
 
-### Subpackage specific to biological datasets (oats.biodata)
+### 1. Biological Datasets
 
 Loading a dataset with plant genes, phenotype descriptions, and ontology terms.
 ```
@@ -90,7 +90,7 @@ Relating those unique IDs for each gene to biochemical pathways from PlantCyc.
 
 
 
-### Subpackage for ontologies and annotations (oats.annotations)
+### 2. Ontologies and Annotations
 
 
 Get a dictionary that relates unique IDs to phenotype descriptions.
@@ -145,12 +145,28 @@ Look at the labels of the terms that were annotated to the descriptions.
 ```
 
 
-### Subpackage for finding distances between text (oats.distances)
+### 3. Text Distances
+
+
+Pairwise distance matrix between descriptions using the ontology term annotations assigned above.
+```
+>>> from oats.graphs import pairwise as pw
+>>> dists = dists = pw.pairwise_square_annotations(annots, ont, metric="jaccard")  
+>>> dists.array
+```
+```
+[['0.0000', '0.5714', '0.8333', '0.7500', '0.8462', '0.6842'],
+ ['0.5714', '0.0000', '0.9286', '0.9000', '0.9333', '0.8182'],
+ ['0.8333', '0.9286', '0.0000', '0.8462', '0.3333', '0.8889'],
+ ['0.7500', '0.9000', '0.8462', '0.0000', '0.8571', '0.8696'],
+ ['0.8462', '0.9333', '0.3333', '0.8571', '0.0000', '0.8947'],
+ ['0.6842', '0.8182', '0.8889', '0.8696', '0.8947', '0.0000']]
+```
+
 
 
 Pairwise distance matrix between descriptions using n-grams.
 ```
->>> from oats.graphs import pairwise as pw
 >>> dists = pw.pairwise_square_ngrams(ids_to_texts=descriptions, binary=True, metric="jaccard")    
 >>> dists.array
 ```
