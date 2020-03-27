@@ -117,8 +117,7 @@ Create an ontology object and annotate descriptions with terms using NOBLE Coder
 >>> from oats.annotation.ontology import Ontology
 >>> from oats.annotation.annotation import annotate_using_noble_coder
 >>>
->>> ont = Ontology("pato.obo") 
->>> noblecoder_jarfile_path = "../lib/NobleCoder-1.0.jar"      
+>>> ont = Ontology("pato.obo")    
 >>> annots = annotate_using_noble_coder(descriptions, "NobleCoder-1.0.jar", "pato", precise=1)
 >>> annots
 ```
