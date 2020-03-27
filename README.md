@@ -7,7 +7,10 @@
 
 ### Setup
 
-Run `pip install dist/oats-0.0.1-py3-none-any.whl` to install.
+Use pip to install with
+```
+$ pip install dist/oats-0.0.1-py3-none-any.whl
+```
 
 
 
