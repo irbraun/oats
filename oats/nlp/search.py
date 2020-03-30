@@ -1,5 +1,5 @@
-from fuzzywuzzy import fuzz
-from fuzzywuzzy import process
+from rapidfuzz import fuzz
+from rapidfuzz import process
 
 
 
@@ -138,7 +138,7 @@ def search_for_any_fuzzy(patterns, text, threshold, local=1):
 def search_for_all_fuzzy(patterns, txt, threshold, local=1):
 	"""
 	Searches for occurences of any of the patterns in the longer string (slow).
-	The method process.extractBests() returns a list of tuples where the first
+	The method process.extract() returns a list of tuples where the first
 	item is the pattern string and the second item is the alignment score for 
 	that pattern.
 	
@@ -156,7 +156,7 @@ def search_for_all_fuzzy(patterns, txt, threshold, local=1):
 		method = fuzz.partial_ratio
 	else:
 		method = fuzz.ratio
-	best_matches = process.extractBests(query=txt, choices=patterns, scorer=method, score_cutoff=threshold)
+	best_matches = process.extract(query=txt, choices=patterns, scorer=method, score_cutoff=threshold)
 	patterns_found = [match[0] for match in best_matches]
 	return(patterns_found)
 
