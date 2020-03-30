@@ -20,14 +20,6 @@ oats.nlp.search module
    :undoc-members:
    :show-inheritance:
 
-oats.nlp.synonyms module
-------------------------
-
-.. automodule:: oats.nlp.synonyms
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 oats.nlp.vocabulary module
 --------------------------
 

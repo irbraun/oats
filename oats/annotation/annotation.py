@@ -4,7 +4,7 @@ import os
 import sys
 import glob
 
-from oats.nlp.search import binary_search_rabin_karp, binary_search_fuzzy
+from oats.nlp.search import binary_robinkarp_match, binary_fuzzy_match
 
 
 
@@ -37,7 +37,7 @@ def annotate_using_rabin_karp(ids_to_texts, ontology, fixcase=1):
 			if fixcase==1:
 				word = word.lower()
 				description = description.lower()
-			if binary_search_rabin_karp(word, description, prime):
+			if binary_robinkarp_match(word, description, prime):
 				annotations[identifer].extend(term_list)
 	return(annotations)
 
@@ -74,7 +74,7 @@ def annotate_using_fuzzy_matching(ids_to_texts, ontology, threshold=0.90, fixcas
 			if fixcase==1:
 				word = word.lower()
 				description = description.lower()
-			if binary_search_fuzzy(word, description, threshold, local):
+			if binary_fuzzy_match(word, description, threshold, local):
 				annotations[identifier].extend(term_list)
 	return(annotations)
 

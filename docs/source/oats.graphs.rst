@@ -4,6 +4,14 @@ oats.graphs package
 Submodules
 ----------
 
+oats.graphs.editing module
+--------------------------
+
+.. automodule:: oats.graphs.editing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 oats.graphs.indexed module
 --------------------------
 
