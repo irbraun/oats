@@ -42,27 +42,27 @@ This subpackage contains classes and methods for reading in ontology files using
 
 
 
-**Biological Datasets** (see :doc:`oats.datasets`)
+**Biological Datasets** (see :doc:`oats.biology`)
 
 This subpackage contains classes and methods for reading, creating, manipulating, combining, and saving datasets that are based on the relationships between genes and either ontology term annotations or natural language descriptions or both. The dataset class includes methods for creating and adding to such a dataset from csv files, or manipulating and filtering the dataset. Methods for obtaining dictionaries related to this data are provided. The groupings class provides methods for creating or determining relationships between genes from a dataset and any arbitrary group, such as a biochemical pathway, or functional group. These groups can be specified arbitrarily using csv files or can be obtained through existing bioinformatics resources such as `KEGG <https://www.genome.jp/kegg/>`_ or `PlantCyc <https://www.plantcyc.org/>`_. The main purpose of this subpackage in general is to provided methods for reading in data related to genes, annotations, and text descriptions, and to provide methods for filtering and accessing them as a means of organizing this data for later input into the vectorizing methods or distance matrix methods provided in the other subpackages.
 
 .. toctree::
    :maxdepth: 5
 
-   oats.datasets
+   oats.biology
 
 
 
 
 
-**Text Distances** (see :doc:`oats.graphs`)
+**Text Distances** (see :doc:`oats.distances`)
 
 This subpackage contaings classes and methods for translating strings into numerical vectors, and calculating distance matrices between pairs of text strings that have been translated in this way. The distance module contains methods for handling the embedding by several different approaches, which are wrappers around functions provided by a variety of data science, natural language processing, and machine learning libraries such as `sklearn <https://scikit-learn.org/stable/>`_ and `gensim <https://radimrehurek.com/gensim/>`_. The approaches include using ontology term annotations, n-grams, word embeddings, document embeddings, topic models, and transformer neural networks. For each of these approaches, this subpackage provideds methods for using them to translate text strings to numerical vectors, including control over many parameter choices, and for calculating distance matrices between lists of text strings using these approaches. The main purpose of this subpackage in general is to provide a straight-forward way to obtain distance matrices from collections of text, using a wide range of natural langauge processing techniques so that they can be directly compared.
 
 .. toctree::
    :maxdepth: 5
 
-   oats.graphs
+   oats.distances
 
 
 
