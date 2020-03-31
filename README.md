@@ -26,7 +26,7 @@ Available on Read the Docs [here](https://irbraun-oats.readthedocs.io/en/latest/
 
 Loading a dataset with plant genes, phenotype descriptions, and ontology terms.
 ```
->>> from oats.datasets.dataset import Dataset
+>>> from oats.biology.dataset import Dataset
 >>> data = Dataset("example.csv")
 >>> data.to_pandas()
 ```
@@ -74,7 +74,7 @@ Merging the dataset so that each row and unique ID represents a single gene.
 
 Relating those unique IDs for each gene to biochemical pathways from PlantCyc.
 ```
->>> from oats.datasets.groupings import Groupings
+>>> from oats.biology.groupings import Groupings
 >>> pathway_species_files = {"ath":"aracyc_pathways.20180702", "zma":"corncyc_pathways.20180702"}
 >>> groupings = Groupings(pathway_species_files, "plantcyc")
 >>> id_to_groups, group_to_ids = groupings.get_groupings_for_dataset(data)
@@ -152,7 +152,7 @@ Look at the labels of the terms that were annotated to the descriptions.
 
 Pairwise distance matrix between descriptions using the ontology term annotations assigned above.
 ```
->>> from oats.graphs import pairwise as pw
+>>> from oats.distances import pairwise as pw
 >>> dists = dists = pw.pairwise_square_annotations(annots, ont, metric="jaccard")  
 >>> dists.array
 ```
