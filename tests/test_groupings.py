@@ -13,7 +13,7 @@ import oats
 def small_dataset():
 	with open("tests/data/small_dataset.csv") as f:
 		df = pd.read_csv(f)
-		from oats.datasets.dataset import Dataset
+		from oats.biology.dataset import Dataset
 		dataset = Dataset()
 		dataset.add_data(df)
 		return(dataset)
@@ -50,7 +50,7 @@ def test_make_groupings(small_dataset):
 	# Group3			C
 	# Group4			C|D
 
-	from oats.datasets.groupings import Groupings
+	from oats.biology.groupings import Groupings
 	d = {"sp1":"tests/data/small_dataset_groupings_sp1.csv", "sp2":"tests/data/small_dataset_groupings_sp2.csv"}
 	g = Groupings(d, source="csv", name_mapping={})
 	d1,d2 = g.get_groupings_for_dataset(small_dataset)

@@ -3,7 +3,7 @@ import pandas as pd
 import itertools
 import networkx as nx
 
-from oats.datasets.gene import Gene
+from oats.biology.gene import Gene
 from oats.nlp.preprocess import concatenate_descriptions
 from oats.nlp.preprocess import concatenate_with_bar_delim
 

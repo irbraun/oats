@@ -5,19 +5,19 @@ from sklearn.decomposition import NMF
 from sklearn.decomposition import LatentDirichletAllocation as LDA
 
 from oats.utils.utils import flatten
-from oats.graphs.pwgraph import SquarePairwiseDistances
-from oats.graphs.pwgraph import RectangularPairwiseDistances
+from oats.distances.distances import SquarePairwiseDistances
+from oats.distances.distances import RectangularPairwiseDistances
 
-from oats.graphs._utils import _square_adjacency_matrix_to_edgelist
-from oats.graphs._utils import _rectangular_adjacency_matrix_to_edgelist
-from oats.graphs._utils import _strings_to_count_vectors				
-from oats.graphs._utils import _strings_to_tfidf_vectors
-from oats.graphs._utils import _infer_document_vector_from_bert			# Is actually called when finding distance matrices.
-from oats.graphs._utils import _infer_document_vector_from_word2vec		# Is actually called when finding distance matrices.
-from oats.graphs._utils import _infer_document_vector_from_doc2vec		# Is actually called when finding distance matrices.
-from oats.graphs._utils import _get_ngrams_vector						# Not called, just a wrapper function to remember a vectorization scheme.
-from oats.graphs._utils import _get_annotations_vector					# Not called, just a wrapper function to remember a vectorization scheme.
-from oats.graphs._utils import _get_topic_model_vector 					# Not called, just a wrapper function to remember a vectorization scheme.
+from oats.distances._utils import _square_adjacency_matrix_to_edgelist
+from oats.distances._utils import _rectangular_adjacency_matrix_to_edgelist
+from oats.distances._utils import _strings_to_count_vectors
+from oats.distances._utils import _strings_to_tfidf_vectors
+from oats.distances._utils import _infer_document_vector_from_bert			# Is actually called when finding distance matrices.
+from oats.distances._utils import _infer_document_vector_from_word2vec		# Is actually called when finding distance matrices.
+from oats.distances._utils import _infer_document_vector_from_doc2vec		# Is actually called when finding distance matrices.
+from oats.distances._utils import _get_ngrams_vector						# Not called, just a wrapper function to remember a vectorization scheme.
+from oats.distances._utils import _get_annotations_vector					# Not called, just a wrapper function to remember a vectorization scheme.
+from oats.distances._utils import _get_topic_model_vector 					# Not called, just a wrapper function to remember a vectorization scheme.
 
 
 

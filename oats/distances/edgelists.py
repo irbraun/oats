@@ -32,11 +32,6 @@ def merge_edgelists(dfs_dict, default_value=None):
 
 
 
-
-
-
-
-
 def make_undirected(df):
 	"""
 	The dataframe passed in must be in the form {from, to, [other...]}.
@@ -79,7 +74,7 @@ def remove_self_loops(df):
 
 
 
-def subset_edgelist_with_ids(df, ids):
+def subset_with_ids(df, ids):
 	""" 
 	Removes all edges from an edgelist that connects two nodes where one or two of the
 	nodes are not present in the passed in list of nodes to retain. This results in an

@@ -83,13 +83,13 @@ def test_get_all_rectanglular_distance_matrices(word2vec_model, doc2vec_model, b
 	    unfit_lda_topic_model (TYPE): Description
 	    unfit_nmf_topic_model (TYPE): Description
 	"""
-	from oats.graphs.pairwise import pairwise_rectangular_precomputed_vectors
-	from oats.graphs.pairwise import pairwise_rectangular_ngrams
-	from oats.graphs.pairwise import pairwise_rectangular_word2vec
-	from oats.graphs.pairwise import pairwise_rectangular_doc2vec
-	from oats.graphs.pairwise import pairwise_rectangular_bert
-	from oats.graphs.pairwise import pairwise_rectangular_annotations
-	from oats.graphs.pairwise import pairwise_rectangular_topic_model
+	from oats.distances.pairwise import pairwise_rectangular_precomputed_vectors
+	from oats.distances.pairwise import pairwise_rectangular_ngrams
+	from oats.distances.pairwise import pairwise_rectangular_word2vec
+	from oats.distances.pairwise import pairwise_rectangular_doc2vec
+	from oats.distances.pairwise import pairwise_rectangular_bert
+	from oats.distances.pairwise import pairwise_rectangular_annotations
+	from oats.distances.pairwise import pairwise_rectangular_topic_model
 
 
 	# Reading data from the json file.
@@ -134,13 +134,13 @@ def test_get_all_square_distance_matrices(word2vec_model, doc2vec_model, bert_mo
 	    unfit_lda_topic_model (TYPE): Description
 	    unfit_nmf_topic_model (TYPE): Description
 	"""
-	from oats.graphs.pairwise import pairwise_square_precomputed_vectors
-	from oats.graphs.pairwise import pairwise_square_ngrams
-	from oats.graphs.pairwise import pairwise_square_word2vec
-	from oats.graphs.pairwise import pairwise_square_doc2vec
-	from oats.graphs.pairwise import pairwise_square_bert
-	from oats.graphs.pairwise import pairwise_square_annotations
-	from oats.graphs.pairwise import pairwise_square_topic_model
+	from oats.distances.pairwise import pairwise_square_precomputed_vectors
+	from oats.distances.pairwise import pairwise_square_ngrams
+	from oats.distances.pairwise import pairwise_square_word2vec
+	from oats.distances.pairwise import pairwise_square_doc2vec
+	from oats.distances.pairwise import pairwise_square_bert
+	from oats.distances.pairwise import pairwise_square_annotations
+	from oats.distances.pairwise import pairwise_square_topic_model
 
 
 	# Reading data from the json file.
@@ -184,12 +184,12 @@ def test_get_all_distance_lists(word2vec_model, doc2vec_model, bert_model, bert_
 	    bert_tokenizer (TYPE): Description
 	    ontology (TYPE): Description
 	"""
-	from oats.graphs.pairwise import elemwise_list_precomputed_vectors
-	from oats.graphs.pairwise import elemwise_list_ngrams
-	from oats.graphs.pairwise import elemwise_list_word2vec
-	from oats.graphs.pairwise import elemwise_list_doc2vec
-	from oats.graphs.pairwise import elemwise_list_bert
-	from oats.graphs.pairwise import elemwise_list_annotations
+	from oats.distances.pairwise import elemwise_list_precomputed_vectors
+	from oats.distances.pairwise import elemwise_list_ngrams
+	from oats.distances.pairwise import elemwise_list_word2vec
+	from oats.distances.pairwise import elemwise_list_doc2vec
+	from oats.distances.pairwise import elemwise_list_bert
+	from oats.distances.pairwise import elemwise_list_annotations
 	
 	from scipy.spatial.distance import euclidean, cosine, jaccard
 	

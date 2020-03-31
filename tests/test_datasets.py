@@ -37,7 +37,7 @@ datasets = {
     (datasets["simple_dataset"], 10),      
 ])
 def test_reading_in_data(input_data, expected):
-	from oats.datasets.dataset import Dataset
+	from oats.biology.dataset import Dataset
 	dataset = Dataset()
 	dataset.add_data(input_data)
 	assert dataset.to_pandas().shape[0] == expected
@@ -53,7 +53,7 @@ def test_reading_in_data(input_data, expected):
     (datasets["simple_dataset"], 4),       
 ])
 def test_collapsing_by_all_gene_names(input_data, expected):
-	from oats.datasets.dataset import Dataset
+	from oats.biology.dataset import Dataset
 	dataset = Dataset()
 	dataset.add_data(input_data)
 	dataset.collapse_by_all_gene_names()

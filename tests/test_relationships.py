@@ -13,7 +13,7 @@ import oats
 def small_dataset():
 	with open("tests/data/small_dataset.csv") as f:
 		df = pd.read_csv(f)
-		from oats.datasets.dataset import Dataset
+		from oats.biology.dataset import Dataset
 		dataset = Dataset()
 		dataset.add_data(df)
 		return(dataset)
@@ -41,7 +41,7 @@ def test_read_relationships(small_dataset):
 	# D		E	0.111
 	# D		F	0.975
 
-	from oats.datasets.relationships import AnyInteractions
+	from oats.biology.relationships import AnyInteractions
 	path = "tests/data/small_dataset_relationships.txt"
 	interactions = AnyInteractions(name_to_id, path)
 	df = interactions.get_df()
