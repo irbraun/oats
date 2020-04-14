@@ -100,8 +100,6 @@ class Ontology:
 
 
 
-
-
 	def _get_inherited_term_ids(self, term_id):
 		"""Gets all the terms inherited by a given term.
 		
@@ -118,7 +116,7 @@ class Ontology:
 			term = self.pronto_ontology_obj[term_id]
 		except:
 			raise KeyError("this identifier matches no terms in the ontology")
-		inherited_terms = [x.id for x in term.rparents()]
+		inherited_terms = [x.id for x in term.superclasses(with_self=False)]
 		return(inherited_terms)
 
 
@@ -139,7 +137,7 @@ class Ontology:
 		    dict: The dictionary mapping ontology term IDs to a list of ontology term IDs.
 		"""
 		subclass_dict = {}
-		for term in self.pronto_ontology_obj:
+		for term in self.pronto_ontology_obj.terms():
 			subclass_dict[term.id] = self._get_inherited_term_ids(term.id)
 		return(subclass_dict)
 
@@ -160,10 +158,10 @@ class Ontology:
 		"""
 		forward_dict = {}
 		reverse_dict = defaultdict(list)
-		for term in self.pronto_ontology_obj:
-			if "obsolete" not in term.name:
+		for term in self.pronto_ontology_obj.terms():
+			if (term.name is not None) and ("obsolete" not in term.name):  
 				words = [term.name]
-				words.extend([x.desc for x in list(term.synonyms)])			# Add all the synonyms
+				words.extend([x.description for x in list(term.synonyms)])			# Add all the synonyms
 				words = [re.sub(r" ?\([^)]+\)", "", x) for x in words]		# Replace parenthetical text.
 				forward_dict[term.id] = words
 				for word in words:
@@ -247,9 +245,9 @@ class Ontology:
 
 		ic_dict = {}
 		num_terms_in_ontology = len(self.pronto_ontology_obj)
-		for term in self.pronto_ontology_obj:
+		for term in self.pronto_ontology_obj.terms():
 			depth = self.depth_dict[term.id]
-			num_descendants = len(term.rchildren())
+			num_descendants = len(list(term.subclasses(with_self=False)))
 			ic_value = float(depth)*(1-(math.log(num_descendants+1)/math.log(num_terms_in_ontology)))
 			ic_dict[term.id] = ic_value
 		return(ic_dict)
@@ -273,17 +271,17 @@ class Ontology:
 		    dict of str:int: Mapping between term IDs and their depth in the DAG.
 		"""
 		depth_dict = {}
-		for term in self.pronto_ontology_obj:
+		for term in self.pronto_ontology_obj.terms():
 			depth_dict[term.id] = self._get_depth_recursive(term, 0)
 		return(depth_dict)
 
 
 	def _get_depth_recursive(self, term, depth):
-		if len(term.parents) == 0:
+		if len(list(term.superclasses(distance=1, with_self=False))) == 0:
 			return(depth)
 		else:
 			depths = []
-			for parent in term.parents:
+			for parent in term.superclasses(distance=1, with_self=False):
 				depths.append(self._get_depth_recursive(parent, depth+1))
 			return(min(depths))
 

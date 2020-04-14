@@ -1,0 +1,18 @@
+! This ontology is set up to contain two branches below the root.
+!
+!
+!                                                 --> 2       --> 5
+! The first branch of the ontology goes like:   1       --> 4 
+!                                                 --> 3       --> 6
+!
+!
+! The second branch of the ontology goes like:  1 --> 7 --> 8 --> 9 
+!
+!
+! This is done to model different aspects of a DAG, such as one term having
+! two different parents but those parents then being subclasses of a single
+! common term. The second branch just includes a linear set of terms that
+! subclasses of one another going back up to the root term. This ontology
+! is very small so that properties like subclasses, superclases, Jaccard
+! similarity, and information can be calculated by hand and checked inside
+! of tests.

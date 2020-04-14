@@ -193,7 +193,7 @@ class AnyInteractions:
 
 
 
-	def _get_edge_values_from_file(self, name_to_id_dictionary, filename):
+	def _get_edge_values_from_file(self, name_to_id_dictionary, filename, ignore_case=True):
 		"""
 		This method is for producing a dataframe of known similarity values that can be merged
 		with a dataframe representing an edgelist created from some dataset. The input is a 
@@ -214,10 +214,32 @@ class AnyInteractions:
 		# Reading in the dataframe specified by this file.
 		df = pd.read_table(filename, delim_whitespace=True, usecols=[0,1,2], header=None)
 
+
+		# Account for the rows that use multiple genes names separated by a bar.
+		new_row_tuples = []
+		for row in df.itertuples():
+			gene_1_names = row[1].split("|")
+			gene_2_names = row[2].split("|")
+			value = row[3]
+			for g1 in gene_1_names:
+				for g2 in gene_2_names:
+					new_row_tuples.append((g1,g2,value))
+		df = pd.DataFrame(new_row_tuples)
+
+
+
 		# Generate new columns that reflect object IDs rather than protein names from STRING.
-		df["from"] = df.iloc[:,0].map(name_to_id_dictionary)
-		df["to"] = df.iloc[:,1].map(name_to_id_dictionary)
-		df["value"] = df.iloc[:,2]
+		if ignore_case:
+			name_to_id_dictionary = {k.lower():v for k,v in name_to_id_dictionary.items()}
+			df["from"] = df.iloc[:,0].str.casefold().map(name_to_id_dictionary)
+			df["to"] = df.iloc[:,1].str.casefold().map(name_to_id_dictionary)
+			df["value"] = df.iloc[:,2]
+		else:
+			df["from"] = df.iloc[:,0].map(name_to_id_dictionary)
+			df["to"] = df.iloc[:,1].map(name_to_id_dictionary)
+			df["value"] = df.iloc[:,2]
+
+
 
 		# The previous step introduces NaN's into the ID columns because there could be proteins mentioned
 		# in the STRING database file that are not present at all in the dataset being worked with. We want
