@@ -45,7 +45,7 @@ def bert_tokenizer():
 @pytest.fixture
 def ontology():
 	from oats.annotation.ontology import Ontology
-	ontology_filename = "../phenologs-with-oats/ontologies/go.obo"   
+	ontology_filename = "../phenologs-with-oats/ontologies/po.obo"   
 	ontology = Ontology(ontology_filename)
 	return(ontology)
 
