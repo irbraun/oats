@@ -44,16 +44,15 @@ def ontology():
 def test_ontology_term_depths(ontology):
 	"""Are the depths of each term what are expected?
 	"""
-	depths = ontology.depth_dict
-	assert depths["TO:0000001"] == 0
-	assert depths["TO:0000002"] == 1
-	assert depths["TO:0000003"] == 1
-	assert depths["TO:0000004"] == 2
-	assert depths["TO:0000005"] == 3
-	assert depths["TO:0000006"] == 3
-	assert depths["TO:0000007"] == 1
-	assert depths["TO:0000008"] == 2
-	assert depths["TO:0000009"] == 3
+	assert ontology.depth("TO:0000001") == 0
+	assert ontology.depth("TO:0000002") == 1
+	assert ontology.depth("TO:0000003") == 1
+	assert ontology.depth("TO:0000004") == 2
+	assert ontology.depth("TO:0000005") == 3
+	assert ontology.depth("TO:0000006") == 3
+	assert ontology.depth("TO:0000007") == 1
+	assert ontology.depth("TO:0000008") == 2
+	assert ontology.depth("TO:0000009") == 3
 
 
 
@@ -61,16 +60,15 @@ def test_ontology_term_depths(ontology):
 def test_ontology_term_graph_based_information_content(ontology):
 	"""Is the information content calculated from the graph structure what is expected?
 	"""
-	ic = ontology.graph_based_ic_dict
-	assert ic["TO:0000001"] == 0.000
-	assert ic["TO:0000002"] == 0.3690702464285426
-	assert ic["TO:0000003"] == 0.3690702464285426
-	assert ic["TO:0000004"] == 1.000
-	assert ic["TO:0000005"] == 3.000
-	assert ic["TO:0000006"] == 3.000
-	assert ic["TO:0000007"] == 0.500
-	assert ic["TO:0000008"] == 1.3690702464285427
-	assert ic["TO:0000009"] == 3.000
+	assert ontology.ic("TO:0000001") == 0.000
+	assert ontology.ic("TO:0000002") == 0.3690702464285426
+	assert ontology.ic("TO:0000003") == 0.3690702464285426
+	assert ontology.ic("TO:0000004") == 1.000
+	assert ontology.ic("TO:0000005") == 3.000
+	assert ontology.ic("TO:0000006") == 3.000
+	assert ontology.ic("TO:0000007") == 0.500
+	assert ontology.ic("TO:0000008") == 1.3690702464285427
+	assert ontology.ic("TO:0000009") == 3.000
 
 
 
@@ -79,16 +77,15 @@ def test_ontology_term_graph_based_information_content(ontology):
 def test_ontology_term_inheritance(ontology):
 	"""Is the number of inherited terms of each term in the graph as expected?
 	"""
-	inherited = ontology.subclass_dict
-	assert len(inherited["TO:0000001"]) == 0
-	assert len(inherited["TO:0000002"]) == 1
-	assert len(inherited["TO:0000003"]) == 1
-	assert len(inherited["TO:0000004"]) == 3
-	assert len(inherited["TO:0000005"]) == 4
-	assert len(inherited["TO:0000006"]) == 4
-	assert len(inherited["TO:0000007"]) == 1
-	assert len(inherited["TO:0000008"]) == 2
-	assert len(inherited["TO:0000009"]) == 3
+	assert len(ontology.inherited("TO:0000001")) == 0
+	assert len(ontology.inherited("TO:0000002")) == 1
+	assert len(ontology.inherited("TO:0000003")) == 1
+	assert len(ontology.inherited("TO:0000004")) == 3
+	assert len(ontology.inherited("TO:0000005")) == 4
+	assert len(ontology.inherited("TO:0000006")) == 4
+	assert len(ontology.inherited("TO:0000007")) == 1
+	assert len(ontology.inherited("TO:0000008")) == 2
+	assert len(ontology.inherited("TO:0000009")) == 3
 
 
 

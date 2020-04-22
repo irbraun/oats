@@ -215,7 +215,9 @@ def get_overrepresented_tokens(interesting_text, background_text, max_features):
 	
 	Args:
 		interesting_text (str): A string of many tokesn coming form examples of interest.
+		
 		background_text (str): A string of many tokens coming from some background examples.
+		
 		max_features (int): The maximum number of features (tokens) in the returned vocabulary.
 	
 	Returns:
@@ -317,16 +319,17 @@ def reduce_vocab_connected_components(descriptions, tokens, distance_matrix, thr
 
 def reduce_vocab_linares_pontes(descriptions, tokens, distance_matrix, n):
 	"""
-	Implementation of the algorithm described in this paper. In short, this returns the descriptions
-	with each word replaced by the most frequently used token in the set of tokens that consists of 
-	that word and the n most similar words as given by the distance matrix provided. Some values of 
-	n that are used in the papers are 1, 2, and 3. Note that the descriptions in the passed in 
-	dictionary should already be preprocessed in whatever way is necessary, but they should atleast
+	Implementation of the algorithm described in the paper cited below. In short, this returns the 
+	descriptions with each word replaced by the most frequently used token in the set of tokens that 
+	consists of that word and the n most similar words as given by the distance matrix provided. Some 
+	values of n that are used in the papers are 1, 2, and 3. Note that the descriptions in the passed 
+	in dictionary should already be preprocessed in whatever way is necessary, but they should atleast
 	be formatted as lowercase tokens that are separated by a single space in each description. The
 	tokens in the list of tokens should be pulled directly from those descriptions and be found
-	by splitting by a single space. They are passed in as a separate list thought because the index
+	by splitting by a single space. They are passed in as a separate list though because the index
 	of the token in the list has to correspond to the index of that token in the distance matrix. 
-	The descriptions should not contain any tokens which are not present in the tokens list.
+	If the descriptions contain any tokens that are not present in the tokens list will not be affected
+	when altering the tokens that are present in the descriptions.
 
 	Elvys Linhares Pontes, Stéphane Huet, Juan-Manuel Torres-Moreno, Andréa Carneiro Linhares. 
 	Automatic Text Summarization with a Reduced Vocabulary Using Continuous Space Vectors. 
@@ -371,7 +374,8 @@ def reduce_vocab_linares_pontes(descriptions, tokens, distance_matrix, n):
 	# Do the replacements in each input description and return the modified dictionary of them.
 	reduced_descriptions = {}
 	for i,description in descriptions.items():
-		reduced_description = " ".join([token_to_reduced_vocab_token[token] for token in description.split()])
+		#reduced_description = " ".join([token_to_reduced_vocab_token[token] for token in description.split()])
+		reduced_description = " ".join([token_to_reduced_vocab_token.get(token,token) for token in description.split()])
 		reduced_descriptions[i] = reduced_description
 	return(reduced_descriptions, token_to_reduced_vocab_token, reduced_vocab_token_to_tokens)
 			

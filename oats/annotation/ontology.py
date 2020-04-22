@@ -12,20 +12,15 @@ from oats.utils.utils import flatten
 
 
 
-class Ontology:
+class Ontology(pronto.Ontology):
 
 	"""A wrapper class for pronto.Ontology to provide some extra NLP-centric functions.
 	
 	Attributes:
-	    forward_term_dict (dict of str:list of str): Mapping between ontology term IDs and lists of words that are related to those terms.
-
-	    ic_dict (dict of str:float): Mapping between ontology term IDs and the information content of that term in the context of the ontology graph.
-	    
-	    pronto_ontology_obj (pronto.Ontology): The ontology object from the pronto package that this object is wrapping.
-	    
-	    reverse_term_dict (dict of str:list of str): Mapping between words and the lists of ontology term IDs that are related to those words.
-	    
-	    subclass_dict (dict of str:list of str): Mapping between ontology term IDs and a list of ontology term IDs of all terms inherited by the key term.
+	    term_to_tokens (dict of str:list of str): Mapping between ontology term IDs and lists of words that are related to those terms.
+	
+	    token_to_terms (dict of str:list of str): Mapping between words and the lists of ontology term IDs that are related to those words.
+	
 	"""
 	
 
@@ -37,18 +32,20 @@ class Ontology:
 		
 		Args:
 		    ontology_obo_file (str): Path of the .obo file of the ontology to build this object from.
-
+		
 		"""
+		super(Ontology, self).__init__(ontology_obo_file)
 		
 		# Generate all the data structures that are accessible from instances of the ontology class.
-		self.pronto_ontology_obj = pronto.Ontology(ontology_obo_file)
-		self.subclass_dict = self._get_subclass_dict()
-		self.depth_dict = self._get_term_depth_dictionary()
-		self.graph_based_ic_dict = self._get_graph_based_ic_dictionary()
 		forward_term_dict, reverse_term_dict = self._get_term_dictionaries()
-		self.forward_term_dict = forward_term_dict
-		self.reverse_term_dict = reverse_term_dict
+		self.term_to_tokens = forward_term_dict
+		self.token_to_terms = reverse_term_dict
 
+		# Create dictionaries that are used by some of the internal methods for this class.
+		self._inherited_dict = self._get_inherited_dict()
+		self._depth_dict = self._get_term_depth_dictionary()
+		self._graph_based_ic_dict = self._get_graph_based_ic_dictionary()
+		
 
 
 
@@ -61,13 +58,15 @@ class Ontology:
 	# because this splits labels and synonyms that contain multiple words into seperate tokens 
 	# at the description of the tokenizer function. Additional processing might be needed to turn
 	# this set of tokens into a useful vocabulary. 
-	def get_tokens(self):
-		""" Gets the tokens (words) which appear in this ontology.
-
+	def tokens(self):
+		"""
+		Get a list of the tokens or words that appear in this ontology. 
+		This is intented to be useful for treating the ontology as a vocabulary source.
+		
 		Returns:
 		    list of str: Lists of words in the set of words present in all term labels and synonyms in this ontology.
 		"""
-		labels_and_synonyms = list(itertools.chain.from_iterable(list(self.forward_term_dict.values())))
+		labels_and_synonyms = list(itertools.chain.from_iterable(list(self.term_to_tokens.values())))
 		tokens = set(list(itertools.chain.from_iterable([word_tokenize(x) for x in labels_and_synonyms])))
 		return(list(tokens))
 
@@ -75,49 +74,61 @@ class Ontology:
 
 
 
-
-	def get_label_from_id(self, term_id):
-		"""Gets the label corresponding to an ontology term ID.
+	def depth(self, term_id):
+		"""
+		Given an ontology term ID, return the depth of that term in the hierarchial ontology graph.
+		The depth provided is an integer that indicates the shortest possible path from that term to a root term.
 		
 		Args:
-		    term_id (str): The ID string for some term.
+		    term_id (str): The ID for a particular ontology term.
 		
 		Returns:
-		    str: The label corresponding to that term ID.
-		
-		Raises:
-		    KeyError: This ID does not refer to a term in the ontology.
+		    int: The depth of the term.
 		"""
-		try:
-			return(self.pronto_ontology_obj[term_id].name)
-		except:
-			raise KeyError("this identifier matches no terms in the ontology")
+		return(self._depth_dict.get(term_id, None))
 
 
 
 
 
-
-
-
-	def _get_inherited_term_ids(self, term_id):
-		"""Gets all the terms inherited by a given term.
+	def ic(self, term_id):
+		"""
+		Given an ontology term ID, return the information content of that term from the structure of the 
+		hierarchical ontology graph. This information content value takes into account the depth of the
+		term in the graph, as well as what proportion of the total graph is a descendent of this term.
+		The equation used for information content here is based on the depth of the term
+		which is multiplied by the term [1 - log(descendants+1)/log(total)]. This works so
+		that information content is proportional to depth (increases as terms get more
+		specific), but if the number of descendants is very high that value is decreased.
+		This is an alternative to calculating information content directly from the ontology graph rather 
+		than using the frequencies of terms appearing in data. This is useful when no such resource is 
+		available.
 		
 		Args:
-		    term_id (TYPE): The ID string for some term.
+		    term_id (str): The ID for a particular ontology term.
 		
 		Returns:
-		    TYPE: A list of additional term IDs which are inherited by this term.
-		
-		Raises:
-		    KeyError: This ID does not refer to a term in the ontology.
+		    float: The information content of the term.
 		"""
-		try:
-			term = self.pronto_ontology_obj[term_id]
-		except:
-			raise KeyError("this identifier matches no terms in the ontology")
-		inherited_terms = [x.id for x in term.superclasses(with_self=False)]
-		return(inherited_terms)
+		return(self._graph_based_ic_dict.get(term_id, None))
+
+
+
+
+	def inherited(self, term_id):
+		"""
+		Given an ontology term ID, return a list of the term IDs for all the terms that are inherited
+		by this particular term, not including the term itself. The list is prepopulated using the pronto 
+		superclases method. The only difference is that a list of term ID strings is provided instead of a
+		generator of term objects, which was useful for other methods in this class.
+
+		Args:
+		    term_id (str): The ID for a particular ontology term.
+		
+		Returns:
+		    TYPE: Description
+		"""
+		return(self._inherited_dict.get(term_id, None))
 
 
 
@@ -125,7 +136,14 @@ class Ontology:
 
 
 
-	def _get_subclass_dict(self):
+
+
+
+
+
+
+
+	def _get_inherited_dict(self):
 		"""
 		Produces a mapping between ontology term IDs and a list of other IDs which include
 		the key ID and all the IDs of every ontology term that that term is a subclass of.
@@ -134,11 +152,11 @@ class Ontology:
 		similarity between ontology terms or sets of them in annotations made.
 		
 		Returns:
-		    dict: The dictionary mapping ontology term IDs to a list of ontology term IDs.
+			dict: The dictionary mapping ontology term IDs to a list of ontology term IDs.
 		"""
 		subclass_dict = {}
-		for term in self.pronto_ontology_obj.terms():
-			subclass_dict[term.id] = self._get_inherited_term_ids(term.id)
+		for term in self.terms():
+			subclass_dict[term.id] = [t.id for t in self[term.id].superclasses(with_self=False)]
 		return(subclass_dict)
 
 
@@ -154,14 +172,14 @@ class Ontology:
 		strings were associated with, which is the reverse mapping.
 		
 		Returns:
-		    (dict, dict): The forward and reverse mapping dictionaries.
+			(dict, dict): The forward and reverse mapping dictionaries.
 		"""
 		forward_dict = {}
 		reverse_dict = defaultdict(list)
-		for term in self.pronto_ontology_obj.terms():
+		for term in self.terms():
 			if (term.name is not None) and ("obsolete" not in term.name):  
 				words = [term.name]
-				words.extend([x.description for x in list(term.synonyms)])			# Add all the synonyms
+				words.extend([x.description for x in list(term.synonyms)])	# Add all the synonyms
 				words = [re.sub(r" ?\([^)]+\)", "", x) for x in words]		# Replace parenthetical text.
 				forward_dict[term.id] = words
 				for word in words:
@@ -173,54 +191,10 @@ class Ontology:
 
 	
 
-	def _get_corpus_based_ic_dictionary_from_annotations(self, annotations_dict):
-		"""
-		Create a dictionary of information content values for each term in the ontology.
-		Use the frequency of term IDs included in any text file (such as an annotation)
-		file in order to accomplish this. This method accounts for subclass relationships
-		between terms so that if a some term and one of its children are both mentioned
-		in the text file, the original term is counted twice and the child is counted once.
-		
-		Args:
-		    annotations_dict (dict): Mapping between identifiers and lists of ontology terms.
-		
-		Returns:
-		    dict: Mapping between term IDs and information content values.
-		"""
-
-		# TODO write this
-		return(ic_dict)
 
 
 
 
-
-
-	def _get_corpus_based_ic_dictionary_from_raw_counts_in_text(self, corpus_filename):
-		"""
-		Create a dictionary of information content values for each term in the ontology.
-		Use the frequency of term IDs included in any text file (such as an annotation)
-		file in order to accomplish this. This method accounts for subclass relationships
-		between terms so that if a some term and one of its children are both mentioned
-		in the text file, the original term is counted twice and the child is counted once.
-		
-		Args:
-		    corpus_filename (str): Path to the file to be used as the corpus.
-		
-		Returns:
-		    dict: Mapping between term IDs and information content values.
-		"""
-
-		occurence_count_dict = {}
-		corpus = open(corpus_filename, "r").read()
-		for term_id in self.subclass_dict.keys():
-			count = corpus.count(term_id)
-			occurence_count_dict[term_id] = count
-
-		ic_dict = {}	
-
-		# TODO go from counts to information content.
-		return(ic_dict)
 
 
 
@@ -238,19 +212,23 @@ class Ontology:
 		specific), but if the number of descendants is very high that value is decreased.
 
 		Returns:
-		    dict: Mapping between term IDs and information content values.
+			dict: Mapping between term IDs and information content values.
 		"""
 
 		# TODO find the literature reference or presentation where this equation is from.
 
 		ic_dict = {}
-		num_terms_in_ontology = len(self.pronto_ontology_obj)
-		for term in self.pronto_ontology_obj.terms():
-			depth = self.depth_dict[term.id]
+		num_terms_in_ontology = len(self)
+		for term in self.terms():
+			depth = self._depth_dict[term.id]
 			num_descendants = len(list(term.subclasses(with_self=False)))
 			ic_value = float(depth)*(1-(math.log(num_descendants+1)/math.log(num_terms_in_ontology)))
 			ic_dict[term.id] = ic_value
 		return(ic_dict)
+
+
+
+
 
 
 
@@ -268,22 +246,52 @@ class Ontology:
 		the minimum path length out of all of the possible paths.
 		
 		Returns:
-		    dict of str:int: Mapping between term IDs and their depth in the DAG.
+			dict of str:int: Mapping between term IDs and their depth in the DAG.
 		"""
-		depth_dict = {}
-		for term in self.pronto_ontology_obj.terms():
-			depth_dict[term.id] = self._get_depth_recursive(term, 0)
-		return(depth_dict)
 
 
-	def _get_depth_recursive(self, term, depth):
-		if len(list(term.superclasses(distance=1, with_self=False))) == 0:
-			return(depth)
-		else:
-			depths = []
-			for parent in term.superclasses(distance=1, with_self=False):
-				depths.append(self._get_depth_recursive(parent, depth+1))
-			return(min(depths))
+
+		# Find the root term(s) of the ontology.
+		root_term_ids = []
+		for term in self.terms():
+			# Check if this term has no inherited terms (is a root), discounting terms that are obsolete.
+			inherited_terms = [t for t in term.superclasses(with_self=False)]
+			if (len(inherited_terms)==0) and (term.name is not None) and ("obsolete" not in term.name):
+				root_term_ids.append(term.id)
+				
+		# Find the depths of all terms in the ontology below those terms.
+		depths = {i:0 for i in root_term_ids}
+		depth = 1
+		done = False
+		while not done:
+			
+			# Add all the terms immediately below 
+			before = len(depths)
+			new_terms = []
+			for old_term_id in [i for i in depths.keys() if depths[i] == depth-1]:
+				for new_term_id in [t.id for t in self[old_term_id].subclasses(with_self=False,distance=1)]:
+					if new_term_id not in depths:
+						depths[new_term_id] = depth
+			
+			# Increment the depth and see if any new terms were added to the distance dictionary during this pass.
+			depth = depth + 1
+			after = len(depths)
+			if before == after:
+				done = True
+				
+		# Add any other remaining terms to the dictionary with a depth of 0 indicating minimal specificity.
+		for term in self.terms():
+			if term.id not in depths:
+				depths[term.id] = 0
+		
+		# Return the dictionary mapping term IDs to their depth in the hierarchy.
+		return(depths)
+
+
+
+
+
+
 
 
 
@@ -298,21 +306,21 @@ class Ontology:
 		the terms present in each list. 
 		
 		Args:
-		    term_id_list_1 (TYPE): Description
+			term_id_list_1 (list of str): A list of ontology term IDs.
 
-		    term_id_list_2 (TYPE): Description
+			term_id_list_2 (list of str): A list of ontology term IDs.
 
-		    inherited (bool, optional): Description
+			inherited (bool, optional): Should other terms inherited by these terms be accounted for.
 		
 		Returns:
-		    TYPE: Description
+			float: The jaccard similarity between the two lists of terms.
 		"""
 		if inherited:
 			term_id_set_1 = set(term_id_list_1)
 			term_id_set_2 = set(term_id_list_2)
 		else:
-			inherited_term_list_1 = flatten(self.subclass_dict[term_id] for term_id in term_id_list_1)
-			inherited_term_list_2 = flatten(self.subclass_dict[term_id] for term_id in term_id_list_2)
+			inherited_term_list_1 = flatten(self._inherited_dict[term_id] for term_id in term_id_list_1)
+			inherited_term_list_2 = flatten(self._inherited_dict[term_id] for term_id in term_id_list_2)
 			inherited_term_list_1.extend(term_id_list_1)
 			inherited_term_list_2.extend(term_id_list_2)
 			term_id_set_1 = set(inherited_term_list_1)
@@ -325,7 +333,7 @@ class Ontology:
 
 
 
-	
+
 
 	def info_content_similarity(self, term_id_list_1, term_id_list_2, inherited=True):
 		"""
@@ -334,28 +342,28 @@ class Ontology:
 		by all terms in each list. 
 
 		Args:
-		    term_id_list_1 (TYPE): Description
+			term_id_list_1 (list of str): A list of ontology term IDs.
 
-		    term_id_list_2 (TYPE): Description
+			term_id_list_2 (list of str): A list of ontology term IDs.
 
-		    inherited (bool, optional): Description
+			inherited (bool, optional): Should other terms inherited by these terms be accounted for.
 		
 		Returns:
-		    TYPE: Description
+			float: The maximum information content of any common ancestor between the two term lists.
 		"""
 		if inherited:
 			term_id_set_1 = set(term_id_list_1)
 			term_id_set_2 = set(term_id_list_2)
 		else:
-			inherited_term_list_1 = flatten(self.subclass_dict[term_id] for term_id in term_id_list_1)
-			inherited_term_list_2 = flatten(self.subclass_dict[term_id] for term_id in term_id_list_2)
+			inherited_term_list_1 = flatten(self._inherited_dict[term_id] for term_id in term_id_list_1)
+			inherited_term_list_2 = flatten(self._inherited_dict[term_id] for term_id in term_id_list_2)
 			inherited_term_list_1.extend(term_id_list_1)
 			inherited_term_list_2.extend(term_id_list_2)
 			term_id_set_1 = set(inherited_term_list_1)
 			term_id_set_2 = set(inherited_term_list_2)
 
 		intersection = list(term_id_set_1.intersection(term_id_set_2))
-		intersection_ic_values = [self.graph_based_ic_dict[term_id] for term_id in intersection]
+		intersection_ic_values = [self._graph_based_ic_dict[term_id] for term_id in intersection]
 		if len(intersection_ic_values) == 0:
 			return(0.000)
 		return(max(intersection_ic_values))
