@@ -79,6 +79,8 @@ master_doc = 'index'
 add_module_names = False
 autoclass_content = 'both'
 
+autodoc_default_flags = ['members', 'inherited-members']
+
 
 
 
