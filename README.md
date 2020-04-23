@@ -7,17 +7,13 @@
 
 ### Setup
 
-Use pip to install with
-```
-$ pip install dist/oats-0.0.1-py3-none-any.whl
-```
+`pip install dist/oats-0.0.1-py3-none-any.whl`
 
 
 
 ### Documentation
 
 Available on Read the Docs [here](https://irbraun-oats.readthedocs.io/en/latest/).
-
 
 
 
@@ -134,7 +130,7 @@ Create an ontology object and annotate descriptions with terms using NOBLE Coder
 
 Look at the labels of the terms that were annotated to the descriptions.
 ```
->>> annot_labels = {i:[ont.get_label_from_id(t) for t in terms] for i,terms in annots.items()}
+>>> annot_labels = {i:[ont[t].name for t in terms] for i,terms in annots.items()}
 >>> annot_labels
 ```
 ```
