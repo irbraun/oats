@@ -17,7 +17,10 @@ from oats.nlp.search import binary_robinkarp_match, binary_fuzzy_match
 
 
 def annotate_using_rabin_karp(ids_to_texts, ontology, fixcase=1):
-	"""Build a dictionary of annotations using the Rabin Karp algorithm.
+	"""
+	Build a dictionary of annotations using the Rabin Karp algorithm. This is useful for finding
+	instances of ontology terms in 
+
 
 	Args:
 		ids_to_texts (dict of int:str): Mapping from unique integer IDs to natural language text strings.
@@ -33,7 +36,7 @@ def annotate_using_rabin_karp(ids_to_texts, ontology, fixcase=1):
 	prime = 193
 	for identifer,description in ids_to_texts.items():
 		annotations[identifer].extend([])
-		for word,term_list in ontology.reverse_term_dict.items():
+		for word,term_list in ontology.token_to_terms.items():
 			if fixcase==1:
 				word = word.lower()
 				description = description.lower()
@@ -70,7 +73,7 @@ def annotate_using_fuzzy_matching(ids_to_texts, ontology, threshold=0.90, fixcas
 	annotations = defaultdict(list)
 	for identifier,description in ids_to_texts.items():
 		annotations[identifier].extend([])
-		for word, term_list in ontology.reverse_term_dict.items():
+		for word, term_list in ontology.token_to_terms.items():
 			if fixcase==1:
 				word = word.lower()
 				description = description.lower()

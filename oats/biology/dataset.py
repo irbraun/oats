@@ -27,6 +27,15 @@ class Dataset:
 
 	def __init__(self, data=None):
 		"""
+		Args:
+		    data (pandas.DataFrame or str, optional): A dataframe containing the data to be added to this dataset.
+		   	The columns of this dataframe must contain the columns used by this object which are "species",
+			"gene_names", "gene_synonyms", "description", "term_ids", and "sources". Any of those columns 
+			can contain any number of missing values but the columns must exist. Any columns that are 
+			outside of that list of column names are ignored. Gene names, symbols, or identifiers in the 
+			"gene_names" column should be pipe delimited, as should multiple ontology term IDs in the 
+			"term_ids" column.
+
 		"""
 		self._col_names = ["id", "species", "gene_names", "gene_synonyms", "description", "term_ids", "sources"]
 		self._col_names_without_id = self._col_names
@@ -45,12 +54,13 @@ class Dataset:
 		"""Add additional data to this dataset.
 		
 		Args:
-			new_data (pandas.DataFrame): A dataframe containing the data to be added to this dataset.
+			new_data (pandas.DataFrame or str): A dataframe containing the data to be added to this dataset.
 			The columns of this dataframe must contain the columns used by this object which are "species",
-			"gene_names", "description", and "term_ids". Any of those columns can contain any number of 
-			missing values but the columns must exist. Any columns that are outside of that list of column 
-			names are ignored. Gene names, symbols, or identifiers in the "gene_names" column should be 
-			pipe delimited, as should multiple ontology term IDs in the "term_ids" column.
+			"gene_names", "gene_synonyms", "description", "term_ids", and "sources". Any of those columns 
+			can contain any number of missing values but the columns must exist. Any columns that are 
+			outside of that list of column names are ignored. Gene names, symbols, or identifiers in the 
+			"gene_names" column should be pipe delimited, as should multiple ontology term IDs in the 
+			"term_ids" column.
 		
 		"""
 
@@ -512,7 +522,7 @@ class Dataset:
 
 
 	def describe(self):
-		"""Prints a quick summary of the dataset contents.
+		"""Returns a summarizing dataframe for this dataset.
 		"""
 
 		#print("Number of rows in the dataframe: {}".format(len(self.df)))

@@ -12,9 +12,17 @@ from oats.utils.utils import flatten
 
 
 
+
+
+
+
 class Ontology(pronto.Ontology):
 
-	"""A wrapper class for pronto.Ontology to provide some extra NLP-centric functions.
+
+	"""A wrapper class for pronto.ontology.Ontology to provided some extra functions that may be 
+	useful for natural language processing problems. Note that the inherited attributes and methods
+	aren't documented here, only the additional ones added for this derived class.
+
 	
 	Attributes:
 	    term_to_tokens (dict of str:list of str): Mapping between ontology term IDs and lists of words that are related to those terms.
@@ -27,14 +35,14 @@ class Ontology(pronto.Ontology):
 
 
 
-	def __init__(self, ontology_obo_file):
-		"""Initiates an object of this class.
-		
-		Args:
-		    ontology_obo_file (str): Path of the .obo file of the ontology to build this object from.
-		
+	def __init__(self, path):
 		"""
-		super(Ontology, self).__init__(ontology_obo_file)
+		Args:
+		    path (str): Path for the .obo file of the ontology to build this object from.
+		"""
+
+		# Run the parent class constructor. 
+		super(Ontology, self).__init__(path)
 		
 		# Generate all the data structures that are accessible from instances of the ontology class.
 		forward_term_dict, reverse_term_dict = self._get_term_dictionaries()
@@ -64,7 +72,7 @@ class Ontology(pronto.Ontology):
 		This is intented to be useful for treating the ontology as a vocabulary source.
 		
 		Returns:
-		    list of str: Lists of words in the set of words present in all term labels and synonyms in this ontology.
+		    list of str: Lists of words in the set of all words present in all term labels and synonyms in this ontology.
 		"""
 		labels_and_synonyms = list(itertools.chain.from_iterable(list(self.term_to_tokens.values())))
 		tokens = set(list(itertools.chain.from_iterable([word_tokenize(x) for x in labels_and_synonyms])))
@@ -196,13 +204,6 @@ class Ontology(pronto.Ontology):
 
 
 
-
-
-
-
-
-
-
 	def _get_graph_based_ic_dictionary(self):
 		"""
 		Create a dictionary of information content value for each term in the ontology.
@@ -299,7 +300,7 @@ class Ontology(pronto.Ontology):
 
 
 
-	def jaccard_similarity(self, term_id_list_1, term_id_list_2, inherited=True):
+	def similarity_jaccard(self, term_id_list_1, term_id_list_2, inherited=True):
 		"""
 		Find the similarity between two lists of ontology terms, by finding the Jaccard
 		similarity between the two sets of all the terms that are inherited by each of
@@ -335,11 +336,12 @@ class Ontology(pronto.Ontology):
 
 
 
-	def info_content_similarity(self, term_id_list_1, term_id_list_2, inherited=True):
+	def similarity_ic(self, term_id_list_1, term_id_list_2, inherited=True):
 		"""
 		Find the similarity between two lists of ontology terms, by finding the information 
 		content of the most specific term that is shared by the sets of all terms inherited
-		by all terms in each list. 
+		by all terms in each list. In this case, the most specific term is the term with
+		maximum information content.
 
 		Args:
 			term_id_list_1 (list of str): A list of ontology term IDs.

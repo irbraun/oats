@@ -1,2 +1,3 @@
 sphinx_bootstrap_theme
 mock
+pronto==2.1.0
