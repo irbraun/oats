@@ -77,15 +77,15 @@ def test_ontology_term_graph_based_information_content(ontology):
 def test_ontology_term_inheritance(ontology):
 	"""Is the number of inherited terms of each term in the graph as expected?
 	"""
-	assert len(ontology.inherited("TO:0000001")) == 0
-	assert len(ontology.inherited("TO:0000002")) == 1
-	assert len(ontology.inherited("TO:0000003")) == 1
-	assert len(ontology.inherited("TO:0000004")) == 3
-	assert len(ontology.inherited("TO:0000005")) == 4
-	assert len(ontology.inherited("TO:0000006")) == 4
-	assert len(ontology.inherited("TO:0000007")) == 1
-	assert len(ontology.inherited("TO:0000008")) == 2
-	assert len(ontology.inherited("TO:0000009")) == 3
+	assert len(ontology.inherited("TO:0000001")) == 1
+	assert len(ontology.inherited("TO:0000002")) == 2
+	assert len(ontology.inherited("TO:0000003")) == 2
+	assert len(ontology.inherited("TO:0000004")) == 4
+	assert len(ontology.inherited("TO:0000005")) == 5
+	assert len(ontology.inherited("TO:0000006")) == 5
+	assert len(ontology.inherited("TO:0000007")) == 2
+	assert len(ontology.inherited("TO:0000008")) == 3
+	assert len(ontology.inherited("TO:0000009")) == 4
 
 
 
@@ -95,38 +95,38 @@ def test_ontology_term_inheritance(ontology):
 def test_ontology_ic_similarity(ontology):
 	"""Is the information content of the most informative common ancestor term as expected for these lists of terms?
 	"""
-	assert ontology.info_content_similarity(["TO:0000001"],["TO:0000002"], inherited=False) == 0
-	assert ontology.info_content_similarity(["TO:0000001"],["TO:0000003"], inherited=False) == 0
-	assert ontology.info_content_similarity(["TO:0000002"],["TO:0000003"], inherited=False) == 0
-	assert ontology.info_content_similarity(["TO:0000003"],["TO:0000005"], inherited=False) == 0.3690702464285426
-	assert ontology.info_content_similarity(["TO:0000007"],["TO:0000008"], inherited=False) == 0.5
-	assert ontology.info_content_similarity(["TO:0000005"],["TO:0000009"], inherited=False) == 0
+	assert ontology.similarity_ic(["TO:0000001"],["TO:0000002"], inherited=False) == 0
+	assert ontology.similarity_ic(["TO:0000001"],["TO:0000003"], inherited=False) == 0
+	assert ontology.similarity_ic(["TO:0000002"],["TO:0000003"], inherited=False) == 0
+	assert ontology.similarity_ic(["TO:0000003"],["TO:0000005"], inherited=False) == 0.3690702464285426
+	assert ontology.similarity_ic(["TO:0000007"],["TO:0000008"], inherited=False) == 0.5
+	assert ontology.similarity_ic(["TO:0000005"],["TO:0000009"], inherited=False) == 0
 
-	assert ontology.info_content_similarity(["TO:0000001"],["TO:0000002","TO:0000001"], inherited=False) == 0
-	assert ontology.info_content_similarity(["TO:0000003"],["TO:0000001","TO:0000009"], inherited=False) == 0
-	assert ontology.info_content_similarity(["TO:0000002"],["TO:0000003","TO:0000002"], inherited=False) == 0.3690702464285426
-	assert ontology.info_content_similarity(["TO:0000003"],["TO:0000005","TO:0000002"], inherited=False) == 0.3690702464285426
-	assert ontology.info_content_similarity(["TO:0000008"],["TO:0000008","TO:0000007"], inherited=False) == 1.3690702464285427
-	assert ontology.info_content_similarity(["TO:0000005"],["TO:0000009","TO:0000002"], inherited=False) == 0.3690702464285426
+	assert ontology.similarity_ic(["TO:0000001"],["TO:0000002","TO:0000001"], inherited=False) == 0
+	assert ontology.similarity_ic(["TO:0000003"],["TO:0000001","TO:0000009"], inherited=False) == 0
+	assert ontology.similarity_ic(["TO:0000002"],["TO:0000003","TO:0000002"], inherited=False) == 0.3690702464285426
+	assert ontology.similarity_ic(["TO:0000003"],["TO:0000005","TO:0000002"], inherited=False) == 0.3690702464285426
+	assert ontology.similarity_ic(["TO:0000008"],["TO:0000008","TO:0000007"], inherited=False) == 1.3690702464285427
+	assert ontology.similarity_ic(["TO:0000005"],["TO:0000009","TO:0000002"], inherited=False) == 0.3690702464285426
 
 
 @pytest.mark.fast
-def test_ontology_jaccard_similarity(ontology):
+def test_ontology_similarity_jaccard(ontology):
 	"""Is the Jaccard similarity between the given lists of terms as expected?
 	"""
-	assert ontology.jaccard_similarity(["TO:0000001"],["TO:0000002"], inherited=False) == 1/2
-	assert ontology.jaccard_similarity(["TO:0000001"],["TO:0000003"], inherited=False) == 1/2
-	assert ontology.jaccard_similarity(["TO:0000002"],["TO:0000003"], inherited=False) == 1/3
-	assert ontology.jaccard_similarity(["TO:0000003"],["TO:0000005"], inherited=False) == 2/5
-	assert ontology.jaccard_similarity(["TO:0000007"],["TO:0000008"], inherited=False) == 2/3
-	assert ontology.jaccard_similarity(["TO:0000005"],["TO:0000009"], inherited=False) == 1/8
+	assert ontology.similarity_jaccard(["TO:0000001"],["TO:0000002"], inherited=False) == 1/2
+	assert ontology.similarity_jaccard(["TO:0000001"],["TO:0000003"], inherited=False) == 1/2
+	assert ontology.similarity_jaccard(["TO:0000002"],["TO:0000003"], inherited=False) == 1/3
+	assert ontology.similarity_jaccard(["TO:0000003"],["TO:0000005"], inherited=False) == 2/5
+	assert ontology.similarity_jaccard(["TO:0000007"],["TO:0000008"], inherited=False) == 2/3
+	assert ontology.similarity_jaccard(["TO:0000005"],["TO:0000009"], inherited=False) == 1/8
 
-	assert ontology.jaccard_similarity(["TO:0000001"],["TO:0000002","TO:0000001"], inherited=False) == 1/2
-	assert ontology.jaccard_similarity(["TO:0000003"],["TO:0000001","TO:0000009"], inherited=False) == 1/5
-	assert ontology.jaccard_similarity(["TO:0000002"],["TO:0000003","TO:0000002"], inherited=False) == 2/3 
-	assert ontology.jaccard_similarity(["TO:0000003"],["TO:0000005","TO:0000002"], inherited=False) == 2/5
-	assert ontology.jaccard_similarity(["TO:0000008"],["TO:0000008","TO:0000007"], inherited=False) == 3/3
-	assert ontology.jaccard_similarity(["TO:0000005"],["TO:0000009","TO:0000002"], inherited=False) == 2/8
+	assert ontology.similarity_jaccard(["TO:0000001"],["TO:0000002","TO:0000001"], inherited=False) == 1/2
+	assert ontology.similarity_jaccard(["TO:0000003"],["TO:0000001","TO:0000009"], inherited=False) == 1/5
+	assert ontology.similarity_jaccard(["TO:0000002"],["TO:0000003","TO:0000002"], inherited=False) == 2/3 
+	assert ontology.similarity_jaccard(["TO:0000003"],["TO:0000005","TO:0000002"], inherited=False) == 2/5
+	assert ontology.similarity_jaccard(["TO:0000008"],["TO:0000008","TO:0000007"], inherited=False) == 3/3
+	assert ontology.similarity_jaccard(["TO:0000005"],["TO:0000009","TO:0000002"], inherited=False) == 2/8
 
 
 

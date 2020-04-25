@@ -440,7 +440,7 @@ def pairwise_square_annotations(ids_to_annotations, ontology, metric, tfidf=Fals
 	index_in_matrix_to_id = {}
 	id_to_index_in_matrix = {}
 	for identifier,term_list in ids_to_annotations.items():
-		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
+		term_list = [ontology.inherited(x) for x in term_list]
 		term_list = flatten(term_list)
 		term_list = list(set(term_list))
 		joined_term_string = " ".join(term_list).strip()
@@ -881,7 +881,7 @@ def pairwise_rectangular_annotations(ids_to_annotations_1, ids_to_annotations_2,
 
 	row_in_matrix = 0
 	for identifier,term_list in ids_to_annotations_1.items():
-		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
+		term_list = [ontology.inherited(x) for x in term_list]
 		term_list = flatten(term_list)
 		term_list = list(set(term_list))
 		joined_term_string = " ".join(term_list).strip()
@@ -892,7 +892,7 @@ def pairwise_rectangular_annotations(ids_to_annotations_1, ids_to_annotations_2,
 
 	col_in_matrix = 0
 	for identifier,term_list in ids_to_annotations_2.items():
-		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
+		term_list = [ontology.inherited(x) for x in term_list]
 		term_list = flatten(term_list)
 		term_list = list(set(term_list))
 		joined_term_string = " ".join(term_list).strip()
@@ -1058,7 +1058,7 @@ def elemwise_list_annotations(annotations_list_1, annotations_list_2, ontology, 
 	all_annotations_lists.extend(annotations_list_1)
 	all_annotations_lists.extend(annotations_list_2)
 	for term_list in all_annotations_lists:
-		term_list = [ontology.subclass_dict.get(x, x) for x in term_list]
+		term_list = [ontology.inherited(x) for x in term_list]
 		term_list = flatten(term_list)
 		term_list = list(set(term_list))
 		joined_term_string = " ".join(term_list).strip()

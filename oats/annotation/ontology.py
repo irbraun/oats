@@ -126,9 +126,9 @@ class Ontology(pronto.Ontology):
 	def inherited(self, term_id):
 		"""
 		Given an ontology term ID, return a list of the term IDs for all the terms that are inherited
-		by this particular term, not including the term itself. The list is prepopulated using the pronto 
-		superclases method. The only difference is that a list of term ID strings is provided instead of a
-		generator of term objects, which was useful for other methods in this class.
+		by this particular term, including the term itself. The list is prepopulated using the pronto 
+		superclases method. The only difference is that a list of term ID strings is provided instead 
+		of a generator of term objects, which was useful for other methods in this class.
 
 		Args:
 		    term_id (str): The ID for a particular ontology term.
@@ -136,7 +136,7 @@ class Ontology(pronto.Ontology):
 		Returns:
 		    TYPE: Description
 		"""
-		return(self._inherited_dict.get(term_id, None))
+		return(self._inherited_dict.get(term_id, term_id))
 
 
 
@@ -164,7 +164,7 @@ class Ontology(pronto.Ontology):
 		"""
 		subclass_dict = {}
 		for term in self.terms():
-			subclass_dict[term.id] = [t.id for t in self[term.id].superclasses(with_self=False)]
+			subclass_dict[term.id] = [t.id for t in self[term.id].superclasses(with_self=True)]
 		return(subclass_dict)
 
 
@@ -322,8 +322,6 @@ class Ontology(pronto.Ontology):
 		else:
 			inherited_term_list_1 = flatten(self._inherited_dict[term_id] for term_id in term_id_list_1)
 			inherited_term_list_2 = flatten(self._inherited_dict[term_id] for term_id in term_id_list_2)
-			inherited_term_list_1.extend(term_id_list_1)
-			inherited_term_list_2.extend(term_id_list_2)
 			term_id_set_1 = set(inherited_term_list_1)
 			term_id_set_2 = set(inherited_term_list_2)
 
@@ -359,8 +357,6 @@ class Ontology(pronto.Ontology):
 		else:
 			inherited_term_list_1 = flatten(self._inherited_dict[term_id] for term_id in term_id_list_1)
 			inherited_term_list_2 = flatten(self._inherited_dict[term_id] for term_id in term_id_list_2)
-			inherited_term_list_1.extend(term_id_list_1)
-			inherited_term_list_2.extend(term_id_list_2)
 			term_id_set_1 = set(inherited_term_list_1)
 			term_id_set_2 = set(inherited_term_list_2)
 
