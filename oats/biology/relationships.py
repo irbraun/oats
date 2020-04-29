@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+from itertools import product
+from collections import defaultdict
 
 
 
@@ -23,11 +25,15 @@ class ProteinInteractions:
 	def __init__(self, gene_to_id_dict, name_mapping_file, *string_data_files):		
 		"""
 		Args:
-			gene_to_id_dict (dict of oats.biodata.gene.Gene:int): Mapping between gene objects and unique integer IDs from a dataset.
-
-			name_mapping_file (str): The path to a file linking gene names with protein names used in STRING, available from STRING.
-
-			*string_data_files (str): Any number of paths to protein-protein interaction files obtained from STRING.
+		    gene_to_id_dict (dict of oats.biodata.gene.Gene:int): Mapping between gene objects and unique integer IDs from a dataset.
+		
+		    name_mapping_file (str): The path to a file linking gene names with protein names used in STRING, available from STRING.
+		
+		    *string_data_files (str): Any number of paths to protein-protein interaction files obtained from STRING.
+		
+		Deleted Parameters:
+		    default (float): What numerical value should used for a missing relationship.
+		
 		"""
 		self.name_map = pd.read_table(name_mapping_file)
 		self.df, self.ids = self._process_interaction_files(gene_to_id_dict, string_data_files)
@@ -60,11 +66,16 @@ class ProteinInteractions:
 		"""Summary
 		
 		Args:
-			gene_to_id_dict (TYPE): Description
-			string_data_files (TYPE): Description
+		    gene_to_id_dict (TYPE): Description
+		
+		    string_data_files (TYPE): Description
 		
 		Returns:
-			TYPE: Description
+		    TYPE: Description
+		
+		Deleted Parameters:
+		    default (TYPE): Description
+		
 		"""
 		# Need to produce a mapping between STRING names and our IDs. Having this will allow for replacing
 		# the protein names that are in the STRING database files with IDs that are relevant to this data-
@@ -101,6 +112,7 @@ class ProteinInteractions:
 		df["from"] = df["protein1"].map(string_name_to_id_dict)
 		df["to"] = df["protein2"].map(string_name_to_id_dict)
 
+
 		# The previous step introduces NaN's into the ID columns because there could be proteins mentioned
 		# in the STRING database file that are not present at all in the dataset being worked with. We want
 		# to remove the lines that have NaN's in them in order to return a table where the rows correspond
@@ -108,9 +120,37 @@ class ProteinInteractions:
 		# the current dataset. However, we also want to keep track of how many proteins were in the STRING
 		# data table and the current dataset but had interactions with proteins not in the current dataset.
 		# These are the IDs that would be removed when removing all rows with NaN, so remember them first.
-		ids_mentioned_in_string = pd.unique(df[["from","to"]].dropna().values.ravel('K'))
+		l1 = list(pd.unique(df[["from"]].dropna().values.ravel('K')))
+		l2 = list(pd.unique(df[["to"]].dropna().values.ravel('K')))
+		ids_mentioned_in_string = list(set(l1+l2))
+		
 		df.dropna(axis=0, inplace=True)
 		df = df[["from","to", "combined_score"]]
+
+
+
+
+
+		# Part for adding default rows for all the missing associations (which are assumed to have some minimal score like 0).
+		# This value should indicate that although the genes for these 2 IDs were seen in STRING, no interaction was marked between.
+		# This should be interpreted as missing data, not a true negataive interaction, which might just have a low score, not a minimal one.
+		#print("creating the n squared dataframe")
+		#row_tuples = []
+		#for id1,id2 in product(ids_mentioned_in_string, repeat=2):
+		#	row_tuples.append((id1,id2,default))
+		#df_default_rows = pd.DataFrame(row_tuples)
+		#df = pd.concat([df, df_default_rows])
+
+		# The df now has duplicate rows, with values of 0 for the default version, and higher values where interactions were noted.
+		# Sort the dataframe in ascending order of interaction scores, and then remove duplicates keeping the last to remove those defaults and keep the rest.
+		#print("sorting")
+		#df.sort_values(by=["from","to"], ascending=True, inplace=True)
+		#print("dropping duplicates")
+		#df.drop_duplicates(subset=["to","from"], keep="last", inplace=True)
+		#print("done droppping dups")
+
+
+
 
 		# The dataframe right now is specifying directed edges rather than undirected edges.
 		# We need to introduce redundancy to enforce undirected nature, so including i,j and
@@ -124,6 +164,18 @@ class ProteinInteractions:
 		df.drop_duplicates(keep="first", inplace=True)
 
 		return(df, ids_mentioned_in_string)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -158,14 +210,16 @@ class AnyInteractions:
 
 
 
-	def __init__(self, name_to_id_dictionary, filename):		
+	def __init__(self, name_to_id_dictionary, filename, default):		
 		"""
 		Args:
-			name_to_id_dictionary (dict of str:int): Mapping between gene name strings and unique integer IDs from a dataset.
+		    name_to_id_dictionary (dict of str:int): Mapping between gene name strings and unique integer IDs from a dataset.
 		
-			filename (str): Path to a csv file containing lines that identify edges between strings mentioned in the dictionary.
+		    filename (str): Path to a csv file containing lines that identify edges between strings mentioned in the dictionary.
+		    
+		    default (float): What numerical value should used for a missing relationship.
 		"""
-		self.df,self.ids = self._get_edge_values_from_file(name_to_id_dictionary, filename)
+		self.df,self.ids = self._get_edge_values_from_file(name_to_id_dictionary, filename, default)
 
 
 
@@ -189,6 +243,7 @@ class AnyInteractions:
 			list: The list of IDs.
 		"""
 		return(self.ids)
+
 
 
 
@@ -267,6 +322,9 @@ class AnyInteractions:
 		df = pd.concat([df, df_flipped])
 		df.drop_duplicates(keep="first", inplace=True)
 		return(df, ids_mentioned_in_this_file)
+
+
+
 
 
 
