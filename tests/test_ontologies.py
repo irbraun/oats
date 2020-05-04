@@ -87,6 +87,13 @@ def test_ontology_term_inheritance(ontology):
 	assert len(ontology.inherited("TO:0000008")) == 3
 	assert len(ontology.inherited("TO:0000009")) == 4
 
+	assert len(ontology.inherited(["TO:0000002","TO:0000003"])) == 3
+	assert len(ontology.inherited(["TO:0000009","TO:0000005"])) == 8
+	assert len(ontology.inherited(["TO:0000004","TO:0000003"])) == 4
+	assert len(ontology.inherited(["TO:0000002"])) == 2
+	assert len(ontology.inherited([])) == 0
+
+
 
 
 

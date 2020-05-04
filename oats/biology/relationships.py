@@ -210,16 +210,14 @@ class AnyInteractions:
 
 
 
-	def __init__(self, name_to_id_dictionary, filename, default):		
+	def __init__(self, name_to_id_dictionary, filename):		
 		"""
 		Args:
 		    name_to_id_dictionary (dict of str:int): Mapping between gene name strings and unique integer IDs from a dataset.
 		
 		    filename (str): Path to a csv file containing lines that identify edges between strings mentioned in the dictionary.
-		    
-		    default (float): What numerical value should used for a missing relationship.
 		"""
-		self.df,self.ids = self._get_edge_values_from_file(name_to_id_dictionary, filename, default)
+		self.df,self.ids = self._get_edge_values_from_file(name_to_id_dictionary, filename)
 
 
 

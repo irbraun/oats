@@ -123,20 +123,32 @@ class Ontology(pronto.Ontology):
 
 
 
-	def inherited(self, term_id):
+	def inherited(self, term_ids):
 		"""
 		Given an ontology term ID, return a list of the term IDs for all the terms that are inherited
 		by this particular term, including the term itself. The list is prepopulated using the pronto 
 		superclases method. The only difference is that a list of term ID strings is provided instead 
-		of a generator of term objects, which was useful for other methods in this class.
-
+		of a generator of term objects, which was useful for other methods in this class. This also
+		accepts a list of one or more term IDs in which the union of the terms inherited by all terms
+		in the list are returned, including every term in the passed in list.
+		
 		Args:
-		    term_id (str): The ID for a particular ontology term.
+		    term_ids (list of str or str): The ID for a particular ontology, or a list of ID(s).
 		
 		Returns:
 		    TYPE: Description
 		"""
-		return(self._inherited_dict.get(term_id, term_id))
+
+		if isinstance(term_ids, str):
+			term_ids = [term_ids]
+
+		inherited_ids = []
+		for term_id in term_ids:
+			inherited_ids.extend(self._inherited_dict.get(term_id, term_id))
+
+		return(list(set(inherited_ids)))
+		
+
 
 
 

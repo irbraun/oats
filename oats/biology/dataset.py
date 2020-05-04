@@ -205,16 +205,21 @@ class Dataset:
 
 
 
-	def get_annotations_dictionary(self):
+	def get_annotations_dictionary(self, ontology_name=None):
 		"""Get a mapping from IDs to lists of ontology term IDs.
 		
 		Returns:
-			dict of int:list of str: Mapping between record IDs and lists of ontology term IDs.
+		    dict of int:list of str: Mapping between record IDs and lists of ontology term IDs.
+		
+		Args:
+		    ontology_name (str, optional): The name of on ontology.
 		"""
 		annotations_dict = {}
 		for row in self.df.itertuples():
 			delim = "|"
 			term_ids = row.term_ids.split(delim)
+			if ontology_name is not None:
+				term_ids = [t for t in term_ids if ontology_name.lower() in t.lower()]
 			annotations_dict[row.id] = term_ids
 		return(annotations_dict)
 
