@@ -125,10 +125,13 @@ class ProteinInteractions:
 		ids_mentioned_in_string = list(set(l1+l2))
 		
 		df.dropna(axis=0, inplace=True)
-		df = df[["from","to", "combined_score"]]
 
 
 
+
+		df["known_associations"] = df["experimental"] + df["database"]
+		df["predicted_associations"] = df["neighborhood"] + df["fusion"] + df["cooccurence"]
+		df = df[["from", "to", "known_associations", "predicted_associations"]]
 
 
 		# Part for adding default rows for all the missing associations (which are assumed to have some minimal score like 0).
@@ -158,8 +161,8 @@ class ProteinInteractions:
 		# merged with edgelists from elsewhere in the package without worrying about the order
 		# of the genes mentioned. Drop duplicates after doing this in case both directions of
 		# particular edge were already specified in the STRING dataset anyway.
-		df_flipped = df[["to","from","combined_score"]]
-		df_flipped.columns = ["from","to","combined_score"]
+		df_flipped = df[["to","from","known_associations", "predicted_associations"]]
+		df_flipped.columns = ["from","to","known_associations", "predicted_associations"]
 		df = pd.concat([df, df_flipped])
 		df.drop_duplicates(keep="first", inplace=True)
 

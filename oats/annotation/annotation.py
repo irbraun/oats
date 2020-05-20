@@ -89,22 +89,23 @@ def annotate_using_fuzzy_matching(ids_to_texts, ontology, threshold=0.90, fixcas
 
 
 
-def annotate_using_noble_coder(ids_to_texts, jar_path, *ontology_names, precise=1):
+def annotate_using_noble_coder(ids_to_texts, jar_path, ontology_name, precise=1, output=None):
 	"""Build a dictionary of annotations using NOBLE Coder (Tseytlin et al., 2016).
-
+	
 	Args:
 		ids_to_texts (dict of int:str): Mapping from unique integer IDs to natural language text strings.
-		
+	
 		jar_path (str): Path of the NOBLE Coder jar file.
-
-		ontology_names (list of str): Names of the ontologies (e.g., "pato", "po") used to find matching NOBLE Coder 
-		terminology files (e.g., pato.term, po.term) in ~/.noble/terminologies.
-
+	
+		ontology_name (str): Name of the ontology (e.g., "pato", "po") used to find matching a NOBLE Coder terminology file (e.g., pato.term, po.term) in ~/.noble/terminologies.
+	
 		precise (int, optional): Set to 1 to do precise matching, set to 0 to accept partial matches.
-
+	
+		output (str, optional): Path to a text file where the stdout from running NOBLE Coder should be redirected. If not provided, this output is redirected to a temporary file and deleted. 
+	
 	Returns:
 		dict of int:list of str: Mapping from unique integer IDs to lists of ontology term IDs.
-
+	
 	Raises:
 		FileNotFoundError: NOBLE Coder cannot find the terminology file matching this ontology.
 	"""
@@ -114,8 +115,17 @@ def annotate_using_noble_coder(ids_to_texts, jar_path, *ontology_names, precise=
 	# Configuration for running the NOBLE Coder script.
 	tempfiles_directory = "temp_textfiles"
 	output_directory = "temp_output"
+	
 	if not os.path.exists(tempfiles_directory):
 		os.makedirs(tempfiles_directory)
+
+	if not os.path.exists(output_directory):
+		os.makedirs(output_directory)
+
+
+
+
+
 	default_results_filename = "RESULTS.tsv"
 	default_results_path = os.path.join(output_directory,default_results_filename)
 	if precise == 1:
@@ -134,20 +144,23 @@ def annotate_using_noble_coder(ids_to_texts, jar_path, *ontology_names, precise=
 
 	# Use all specified ontologies to annotate each text file. 
 	# Also NOBLE Coder will check for a terminology file matching this ontology, make sure it's there.
-	for ontology_name in ontology_names:
-		expected_terminology_file = os.path.expanduser(os.path.join("~",".noble", "terminologies", f"{ontology_name}.term"))
-		if not os.path.exists(expected_terminology_file):
-			raise FileNotFoundError(expected_terminology_file)
-		os.system(f"java -jar {jar_path} -terminology {ontology_name} -input {tempfiles_directory} -output {output_directory} -search '{specificity}' -score.concepts")
-		default_results_filename = "RESULTS.tsv"		
-		for identifier,term_list in _parse_noble_coder_results(default_results_path).items():
-			# Need to convert identifier back to an integer because it's being read from a file name.
-			# NOBLE Coder finds every occurance of a matching, reduce this to form a set.
-			identifier = int(identifier)
-			term_list = list(set(term_list))
-			term_list = [term_id.replace("_",":") for term_id in term_list]
-			annotations[identifier].extend(term_list)
+	expected_terminology_file = os.path.expanduser(os.path.join("~",".noble", "terminologies", f"{ontology_name}.term"))
+	if not os.path.exists(expected_terminology_file):
+		raise FileNotFoundError(expected_terminology_file)
 
+	if output is not None:
+		stdout_path = output
+	else:
+		stdout_path = os.path.join(output_directory,"nc_stdout.txt")
+
+	os.system(f"java -jar {jar_path} -terminology {ontology_name} -input {tempfiles_directory} -output {output_directory} -search '{specificity}' -score.concepts > {stdout_path}")	
+	for identifier,term_list in _parse_noble_coder_results(default_results_path).items():
+		# Need to convert identifier back to an integer because it's being read from a file name.
+		# NOBLE Coder finds every occurance of a matching, reduce this to form a set.
+		identifier = int(identifier)
+		term_list = list(set(term_list))
+		term_list = [term_id.replace("_",":") for term_id in term_list]
+		annotations[identifier].extend(term_list)
 
 
 	# Cleanup and return the annotation dictionary.
@@ -205,12 +218,15 @@ def _cleanup_noble_coder_results(output_directory, textfiles_directory):
 	"""
 
 	# Expected paths to each object that should be removed.
+	stdout_file = os.path.join(output_directory,"nc_stdout.txt")
 	html_file = os.path.join(output_directory,"index.html")
 	results_file = os.path.join(output_directory,"RESULTS.tsv")
 	properties_file = os.path.join(output_directory,"search.properties")
 	reports_directory = os.path.join(output_directory,"reports")
 
 	# Safely remove everything in the output directory.
+	if os.path.isfile(stdout_file):
+		os.remove(stdout_file)
 	if os.path.isfile(html_file):
 		os.remove(html_file)
 	if os.path.isfile(results_file):
