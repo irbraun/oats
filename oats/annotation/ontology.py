@@ -141,11 +141,9 @@ class Ontology(pronto.Ontology):
 
 		if isinstance(term_ids, str):
 			term_ids = [term_ids]
-
 		inherited_ids = []
 		for term_id in term_ids:
-			inherited_ids.extend(self._inherited_dict.get(term_id, term_id))
-
+			inherited_ids.extend(self._inherited_dict.get(term_id, [term_id]))
 		return(list(set(inherited_ids)))
 		
 

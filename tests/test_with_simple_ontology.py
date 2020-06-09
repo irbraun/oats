@@ -39,7 +39,6 @@ def ontology():
 
 
 
-
 @pytest.mark.fast
 def test_ontology_term_depths(ontology):
 	"""Are the depths of each term what are expected?

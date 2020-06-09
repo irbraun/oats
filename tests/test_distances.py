@@ -54,6 +54,10 @@ def ontology():
 
 
 
+
+
+
+
 with open("tests/data/small_dataset.json") as f:
   data = json.load(f)
 
@@ -159,10 +163,6 @@ def test_get_all_square_distance_matrices(word2vec_model, doc2vec_model, bert_mo
 	g = pairwise_square_annotations(ids_to_annotations=b_terms, ontology=ontology, metric="jaccard")
 	g = pairwise_square_topic_model(ids_to_texts=b_strings, metric="euclidean", num_topics=4, algorithm="lda")
 	g = pairwise_square_topic_model(ids_to_texts=b_strings, metric="euclidean", num_topics=4, algorithm="nmf")
-
-
-
-
 
 
 

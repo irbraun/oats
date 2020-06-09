@@ -881,9 +881,19 @@ def pairwise_rectangular_annotations(ids_to_annotations_1, ids_to_annotations_2,
 
 	row_in_matrix = 0
 	for identifier,term_list in ids_to_annotations_1.items():
+
+		print(term_list)
+
 		term_list = [ontology.inherited(x) for x in term_list]
+
+		print(term_list)
+
 		term_list = flatten(term_list)
+
+		print(term_list)
 		term_list = list(set(term_list))
+
+		print(term_list)
 		joined_term_string = " ".join(term_list).strip()
 		joined_term_strings.append(joined_term_string)
 		row_index_in_matrix_to_id[row_in_matrix] = identifier

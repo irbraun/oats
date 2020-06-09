@@ -12,14 +12,14 @@ import oats
 
 # species	gene_names   gene_synonyms	description	term_ids
 # ath	A	Z   sentence from line 1	XO:0000111
-# ath	A	Z   sentence from line 2	XO:0000111
+# ath	a	Z   sentence from line 2	XO:0000111
 # ath	B	Z   sentence from line 3	XO:0000111
 # ath	B	Z   sentence from line 4	XO:0000111
 # zma	C	Z   sentence from line 5	XO:0000111
 # zma	C	Z   sentence from line 6	XO:0000111
 # zma	C	Z   sentence from line 7	XO:0000111
 # zma	C	Z   sentence from line 8	XO:0000111
-# zma	D	Z   sentence from line 9	XO:0000111
+# zma	d	Z   sentence from line 9	XO:0000111
 # zma	D	Z   sentence from line 10	XO:0000111
 
 
@@ -49,14 +49,15 @@ def test_reading_in_data(input_data, expected):
 
 
 @pytest.mark.small
-@pytest.mark.parametrize("input_data, expected", [
-    (datasets["simple_dataset"], 4),       
+@pytest.mark.parametrize("input_data, expected, case_sensitive", [
+    (datasets["simple_dataset"], 6, True),
+    (datasets["simple_dataset"], 4, False),      
 ])
-def test_collapsing_by_all_gene_names(input_data, expected):
+def test_collapsing_by_all_gene_names(input_data, expected, case_sensitive):
 	from oats.biology.dataset import Dataset
 	dataset = Dataset()
 	dataset.add_data(input_data)
-	dataset.collapse_by_all_gene_names()
+	dataset.collapse_by_all_gene_names(case_sensitive)
 	assert dataset.to_pandas().shape[0] == expected
 	print(dataset.describe())
 

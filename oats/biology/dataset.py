@@ -68,6 +68,7 @@ class Dataset:
 			new_data = new_data[self._col_names_without_id]
 			new_data.loc[:,"id"] = None
 			new_data.fillna("", inplace=True)
+			new_data["description"] = new_data["description"].map(lambda x: x.replace(";","."))
 			self.df = self.df.append(new_data, ignore_index=True, sort=False)
 			self.df = self.df.drop_duplicates(keep="first", inplace=False)
 			self._reset_ids()
@@ -77,6 +78,7 @@ class Dataset:
 			new_data = new_data[self._col_names_without_id]
 			new_data.loc[:,"id"] = None
 			new_data.fillna("", inplace=True)
+			new_data["description"] = new_data["description"].map(lambda x: x.replace(";","."))
 			self.df = self.df.append(new_data, ignore_index=True, sort=False)
 			self.df = self.df.drop_duplicates(keep="first", inplace=False)
 			self._reset_ids()
@@ -408,7 +410,7 @@ class Dataset:
 
 
 	@staticmethod
-	def _generate_edges(row):
+	def _generate_edges(row, case_sensitive):
 		"""
 		Given a row in a dataframe that matches the column signature of the one used here, generate
 		a list of edges between the entry's ID and each of the gene names mentioned for that entry.
@@ -418,23 +420,30 @@ class Dataset:
 		as a connected components problem, see the description in the function to collapse by all 
 		gene names below.
 		"""
-		names = row["gene_names"].split("|")
+		
+		if case_sensitive:
+			names = row["gene_names"].split("|")
+		else:
+			names = row["gene_names"].lower().split("|")
+
 		edges = [(row["id"],"{}.{}".format(row["species"],name)) for name in names]
 		return(edges)
 
 
 
 
-
-
-	def collapse_by_all_gene_names(self):
+	def collapse_by_all_gene_names(self, case_sensitive=False):
 		"""Merges all the records where the species and any of the listed gene names or identifiers match. Text descriptions 
 		are concatenated and a union of the gene names and ontology term IDs are retained.
+		
+		Args:
+		    case_sensitive (bool, optional): Set to true if gene names that only differ in terms of case
+		    should be treated as different genes, by default these genes are considered to be the same gene.
 		"""
 
 		# Build the graph model of this data where nodes are gene names or IDs.
 		g = nx.Graph()
-		edges = self.df.apply(Dataset._generate_edges, axis=1)
+		edges = self.df.apply(Dataset._generate_edges, case_sensitive=case_sensitive, axis=1)
 		edges = list(chain.from_iterable(edges.values))
 		g.add_edges_from(edges)
 
