@@ -83,7 +83,7 @@ def _rectangular_adjacency_matrix_to_edgelist(matrix, row_indices_to_ids, col_in
 
 
 
-def _strings_to_count_vectors(*strs, **kwargs):
+def _strings_to_count_vectors(texts, training_texts=None, **kwargs):
 	"""
 	https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
 	What are the important keyword arguments that can be passed to the count vectorizer to specify how the 
@@ -106,17 +106,19 @@ def _strings_to_count_vectors(*strs, **kwargs):
 	vocabulary_: mapping between terms and feature indices
 	stop_words_: set of terms that were considered stop words
 	"""
-	text = [t for t in strs]
-	vectorizer = CountVectorizer(text, **kwargs)
-	vectorizer.fit(text)
-	vectors = vectorizer.transform(text).toarray()
+	vectorizer = CountVectorizer(**kwargs)
+	if training_texts is not None:
+		vectorizer.fit(training_texts)
+	else:
+		vectorizer.fit(texts)
+	vectors = vectorizer.transform(texts).toarray()
 	return(vectors, vectorizer)
 
 
 
 
 
-def _strings_to_tfidf_vectors(*strs, **kwargs):
+def _strings_to_tfidf_vectors(texts, training_texts=None, **kwargs):
 	"""
 	https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html
 	What are the important keyword arguments that can be passed to the TFIDF (term-frequency inverse-
@@ -141,10 +143,12 @@ def _strings_to_tfidf_vectors(*strs, **kwargs):
 	idf_: the inverse document frequency vector used in weighting
 	stop_words_: set of terms that were considered stop words
 	"""
-	text = [t for t in strs]
-	vectorizer = TfidfVectorizer(text, **kwargs)
-	vectorizer.fit(text)
-	vectors = vectorizer.transform(text).toarray()
+	vectorizer = TfidfVectorizer(**kwargs)
+	if training_texts is not None:
+		vectorizer.fit(training_texts)
+	else:
+		vectorizer.fit(texts)
+	vectors = vectorizer.transform(texts).toarray()
 	return(vectors, vectorizer)
 
 

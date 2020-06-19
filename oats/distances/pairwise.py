@@ -62,25 +62,25 @@ from oats.distances._utils import _get_topic_model_vector 					# Not called, jus
 
 
 
-def strings_to_numerical_vectors(*strs, tfidf=False, **kwargs):
+def strings_to_numerical_vectors(strs, training_texts=None, tfidf=False, **kwargs):
 	"""Create a vector embedding for each passed in text string.
 	
 	Args:
-	    strs (list of str): All of the string arguments to find numerical embeddings for.
-		
-		lowercase (bool, optional). A keyword arg for sklearn.feature_extraction.text.TfidfVectorizer and sklearn.feature_extraction.text.CountVectorizer.
-		True by default. All the text is normalized to lowercase.
-
-	    tfidf (bool, optional): Description
-	    **kwargs: Description
+	    strs (list of str): A list of text strings that will each be translated into a numerical vector.
+	    
+	    training_texts (list of str, optional): If provided, this is the list of texts that will be used to the determine the vocabulary and weights for each token.
+	    
+	    tfidf (bool, optional): This value is false by default, set to true to use term-frequency inverse-document-frequency weighting instead of raw counts.
+	    
+	    **kwargs: Any other applicable keyword arguments that will be passed to the sklearn vectorization function.
 	
 	Returns:
-	    TYPE: Description
+	    list of numpy.array, object: A list of the numerical vector arrays that is the same length as the input list of text strings, and the vectorizing object.
 	"""
 	if tfidf:
-		return(_strings_to_tfidf_vectors(*strs, **kwargs))
+		return(_strings_to_tfidf_vectors(strs, training_texts, **kwargs))
 	else:
-		return(_strings_to_count_vectors(*strs, **kwargs))
+		return(_strings_to_count_vectors(strs, training_texts, **kwargs))
 
 
 
@@ -140,7 +140,9 @@ def pairwise_square_doc2vec(model, ids_to_texts, metric):
 	
 	Args:
 	    model (gensim.models.doc2vec): An already loaded Doc2Vec model from a file or training.
+
 	    ids_to_texts (dict): A mapping between IDs and strings of text.
+	    
 	    metric (str): A string indicating which distance metric should be used (e.g., cosine). 
 	
 	Returns:
@@ -193,8 +195,11 @@ def pairwise_square_word2vec(model, ids_to_texts, metric, method="mean"):
 	
 	Args:
 	    model (gensim.models.word2vec): An already loaded Word2Vec model from a file or training.
+	    
 	    ids_to_texts (dict): A mapping between IDs and strings of text.
+	    
 	    metric (str): A string indicating which distance metric should be used (e.g., cosine). 
+	    
 	    method (str, optional): Should the word embeddings be combined with mean or max.
 	
 	Returns:
@@ -250,10 +255,15 @@ def pairwise_square_bert(model, tokenizer, ids_to_texts, metric, method, layers)
 	
 	Args:
 	    model (pytorch model): An already loaded BERT PyTorch model from a file or other source.
+	    
 	    tokenizer (bert tokenizer): Object which handles how tokenization specific to BERT is done. 
+	    
 	    ids_to_texts (dict): A mapping between IDs and strings of text.
+	    
 	    metric (str): A string indicating which distance metric should be used (e.g., cosine).
+	    
 	    method (str): A string indicating how layers for a token should be combined (concat or sum).
+	    
 	    layers (int): An integer saying how many layers should be used for each token.
 	
 	Returns:
@@ -297,7 +307,7 @@ def pairwise_square_bert(model, tokenizer, ids_to_texts, metric, method, layers)
 
 
 
-def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
+def pairwise_square_ngrams(ids_to_texts, metric, training_texts=None, tfidf=False, **kwargs):
 	"""
 	Find distance between strings of text in some input data using n-grams. Note that only 
 	very simple preprocessing is done after this point (splitting on whitespace only) so 
@@ -305,8 +315,13 @@ def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 	
 	Args:
 	    ids_to_texts (dict): A mapping between IDs and strings of text.
+	    
 	    metric (str): A string indicating which distance metric should be used (e.g., cosine).
-	    tfidf (bool, optional): Whether to use TFIDF weighting or not.
+	    
+	    training_texts (None, optional): Description
+	    
+	    tfidf (bool, optional): Whether to use TFIDF weighting or' not.
+	    
 	    **kwargs: All the keyword arguments that can be passed to sklearn.feature_extraction.CountVectorizer().
 	
 	Returns:
@@ -325,7 +340,7 @@ def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 
 
 	# Apply distance metric over all the vectors to yield a matrix.
-	vectors,vectorizer = strings_to_numerical_vectors(*descriptions, tfidf=tfidf, **kwargs)
+	vectors,vectorizer = strings_to_numerical_vectors(descriptions, training_texts, tfidf=tfidf, **kwargs)
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = _square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
@@ -349,16 +364,21 @@ def pairwise_square_ngrams(ids_to_texts, metric, tfidf=False, **kwargs):
 
 
 
-def pairwise_square_topic_model(ids_to_texts, metric, seed=124134, num_topics=10, algorithm="lda", **kwargs):
+def pairwise_square_topic_model(ids_to_texts, metric, training_texts=None, seed=124134, num_topics=10, algorithm="lda", **kwargs):
 	"""
 	docstring
 	
 	Args:
 	    ids_to_texts (TYPE): Description
+	    
 	    metric (TYPE): Description
+	    
 	    seed (int, optional): Description
+	    
 	    num_topics (TYPE): Description
+	    
 	    algorithm (str, optional): Description
+	    
 	    **kwargs: Description
 	
 	Returns:
@@ -389,7 +409,16 @@ def pairwise_square_topic_model(ids_to_texts, metric, seed=124134, num_topics=10
 		id_to_index_in_matrix[identifier] = index_in_matrix
 
 	# Apply distance metric over all the vectors to yield a matrix.
-	ngram_vectors = vectorizer.fit_transform(descriptions).toarray()
+	if training_texts is not None:
+		vectorizer.fit(training_texts)
+	else:
+		vectorizer.fit(descriptions)
+
+
+	ngram_vectors = vectorizer.transform(descriptions).toarray()
+
+
+	#ngram_vectors = vectorizer.fit_transform(descriptions).toarray()
 	topic_vectors = model.fit_transform(ngram_vectors)
 	matrix = squareform(pdist(topic_vectors,metric))
 	edgelist = _square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
@@ -425,9 +454,13 @@ def pairwise_square_annotations(ids_to_annotations, ontology, metric, tfidf=Fals
 	
 	Args:
 	    ids_to_annotations (dict): A mapping between IDs and a list of ontology term ID strings.
+	    
 	    ontology (Ontology): Ontology object with all necessary fields.
+	    
 	    metric (str): A string indicating which distance metric should be used (e.g., cosine).
+	    
 	    tfidf (bool, optional): Whether to use TFIDF weighting or not.
+	    
 	    **kwargs: All the keyword arguments that can be passed to sklearn.feature_extraction.CountVectorizer()
 	
 	Returns:
@@ -450,7 +483,7 @@ def pairwise_square_annotations(ids_to_annotations, ontology, metric, tfidf=Fals
 		id_to_index_in_matrix[identifier] = index_in_matrix
 
 	# Apply distance metric over all the vectors to yield a matrix.
-	vectors,vectorizer = strings_to_numerical_vectors(*joined_term_strings, tfidf=tfidf, **kwargs)
+	vectors,vectorizer = strings_to_numerical_vectors(joined_term_strings, tfidf=tfidf, **kwargs)
 	matrix = squareform(pdist(vectors,metric))
 	edgelist = _square_adjacency_matrix_to_edgelist(matrix, index_in_matrix_to_id)
 	id_to_vector_dict = {index_in_matrix_to_id[i]:vector for i,vector in enumerate(vectors)}
@@ -753,7 +786,7 @@ def pairwise_rectangular_ngrams(ids_to_texts_1, ids_to_texts_2, metric, tfidf=Fa
 		id_to_col_index_in_matrix[identifier] = col_in_matrix 
 		col_in_matrix = col_in_matrix+1
 
-	all_vectors,vectorizer = strings_to_numerical_vectors(*descriptions, tfidf=tfidf, **kwargs)
+	all_vectors,vectorizer = strings_to_numerical_vectors(descriptions, tfidf=tfidf, **kwargs)
 	row_vectors = all_vectors[:len(ids_to_texts_1)]
 	col_vectors = all_vectors[len(ids_to_texts_1):]
 
@@ -912,7 +945,7 @@ def pairwise_rectangular_annotations(ids_to_annotations_1, ids_to_annotations_2,
 		col_in_matrix = col_in_matrix+1
 
 	# Find all the pairwise values for the distance matrix.
-	all_vectors,vectorizer = strings_to_numerical_vectors(*joined_term_strings, tfidf=tfidf, **kwargs)
+	all_vectors,vectorizer = strings_to_numerical_vectors(joined_term_strings, tfidf=tfidf, **kwargs)
 	row_vectors = all_vectors[:len(ids_to_annotations_1)]
 	col_vectors = all_vectors[len(ids_to_annotations_1):]
 
@@ -1045,7 +1078,7 @@ def elemwise_list_ngrams(text_list_1, text_list_2, metric_function, tfidf=False,
 	descriptions = []
 	descriptions.extend(text_list_1)
 	descriptions.extend(text_list_2)
-	all_vectors,vectorizer = strings_to_numerical_vectors(*descriptions, **kwargs)
+	all_vectors,vectorizer = strings_to_numerical_vectors(descriptions, **kwargs)
 	list_1_vectors = all_vectors[:len(text_list_1)]
 	list_2_vectors = all_vectors[len(text_list_1):]
 	assert len(list_1_vectors) == len(list_2_vectors)
@@ -1074,7 +1107,7 @@ def elemwise_list_annotations(annotations_list_1, annotations_list_2, ontology, 
 		joined_term_string = " ".join(term_list).strip()
 		joined_term_strings.append(joined_term_string)
 
-	all_vectors,vectorizer = strings_to_numerical_vectors(*joined_term_strings, tfidf=tfidf, **kwargs)
+	all_vectors,vectorizer = strings_to_numerical_vectors(joined_term_strings, tfidf=tfidf, **kwargs)
 	list_1_vectors = all_vectors[:len(annotations_list_1)]
 	list_2_vectors = all_vectors[len(annotations_list_1):]
 	assert len(list_1_vectors) == len(list_2_vectors)

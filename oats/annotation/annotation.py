@@ -1,10 +1,13 @@
 from collections import defaultdict
+from scipy.stats import fisher_exact
 import pandas as pd
 import os
 import sys
 import glob
 
+
 from oats.nlp.search import binary_robinkarp_match, binary_fuzzy_match
+from oats.utils.utils import flatten
 
 
 
@@ -294,6 +297,77 @@ def read_annotations_from_file(annotations_input_path, sep="\t"):
 		term_ids = row_values[1:len(row_values)]
 		annotations_dict[identifer] = term_ids
 	return(annotations_dict)
+
+
+
+
+
+
+
+
+
+
+
+
+def _get_term_name(i, ontology):
+    """ Small helper function for the function below.
+    """
+    try: 
+    	return(ontology[i].name)
+    except: 
+    	return("") 
+
+
+
+def term_enrichment(all_ids_to_annotations, group_ids, ontology, inherited=False):
+    """ Obtain a dataframe with the results of a term enrichment analysis using Fisher exact test with the results sorted by p-value.
+    
+    Args:
+        all_ids_to_annotations (dict of int:list of str): A mapping between unique integer IDs (for genes) and list of ontology term IDs annotated to them.
+
+        group_ids (list of int): The IDs which should be a subset of the dictionary argument that refer to those belonging to the group to be tested.
+        
+        ontology (oats.annotation.ontology.Ontology): An ontology object that shoud match the ontology from which the annotations are drawn.
+        
+        inherited (bool, optional): By default this is false to indicate that the lists of ontology term IDs have not already be pre-populated to include the terms that are 
+        superclasses of the terms annotated to that given ID. Set to true to indicate that these superclasses are already accounted for and the process of inheriting additional
+        terms should be skipped.
+    
+    Returns:
+        pandas.DataFrame: A dataframe sorted by p-value that contains the results of the enrichment analysis with one row per ontology term.
+    """
+    
+    # If it has not already been performed for this data, using the ontology structure to inherit additional terms from these annotations.
+    if inherited:
+    	all_ids_to_inherited_annotations = all_ids_to_annotations
+    else:
+    	all_ids_to_inherited_annotations = {i:ontology.inherited(terms) for i,terms in all_ids_to_annotations.items()}
+    
+
+    # Find the list of all the unique ontology term IDs that appear anywhere in the annotations.
+    unique_term_ids = list(set(flatten(all_ids_to_inherited_annotations.values())))
+         
+    # For each term, determine the total number of (gene) IDs that it is annotated to.
+    num_ids_annot_with_term_t = lambda t,id_to_terms: [(t in terms) for i,terms in id_to_terms.items()].count(True) 
+    term_id_to_gene_count = {t:num_ids_annot_with_term_t(t,all_ids_to_inherited_annotations) for t in unique_term_ids}
+    total_num_of_genes = len(all_ids_to_inherited_annotations)
+    df = pd.DataFrame(unique_term_ids, columns=["term_id"])
+    df["term_label"] = df["term_id"].map(lambda x: _get_term_name(x,ontology))
+    df["genes_with"] = df["term_id"].map(lambda x: term_id_to_gene_count[x])
+    df["genes_without"] = total_num_of_genes-df["genes_with"] 
+    
+    # For each term, determine the total nubmer of (gene) IDs within the group to be tested that it is annotated to.
+    num_of_genes_in_group = len(group_ids)
+    ids_in_group_to_inherited_annotations = {i:terms for i,terms in all_ids_to_inherited_annotations.items() if i in group_ids}
+    term_id_to_gene_in_group_count = {t:num_ids_annot_with_term_t(t,ids_in_group_to_inherited_annotations) for t in unique_term_ids}
+    df["group_genes_with"] = df["term_id"].map(lambda x: term_id_to_gene_in_group_count[x])
+    df["group_genes_without"] = num_of_genes_in_group-df["group_genes_with"] 
+    
+    # Using those values, perform the Fisher exact test to obtain a p-value for each term, sort the results, and return.
+    df["p_value"] = df.apply(lambda row: fisher_exact([[row["group_genes_with"],row["genes_with"]],[row["group_genes_without"],row["genes_without"]]])[1], axis=1)
+    df.sort_values(by="p_value", inplace=True)
+    df.reset_index(inplace=True, drop=True)
+    return(df)
 
 
 

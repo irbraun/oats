@@ -2,11 +2,14 @@ from sklearn.feature_extraction.text import CountVectorizer
 from nltk.probability import FreqDist
 from collections import defaultdict
 from nltk.corpus import wordnet
+from nltk.tokenize import word_tokenize
 from pywsd.lesk import cosine_lesk
+from scipy.stats import fisher_exact
 import itertools
 import itertools
 import numpy as np
 import networkx as nx
+
 
 from oats.utils.utils import flatten
 from oats.nlp.preprocess import get_clean_token_list
@@ -379,6 +382,51 @@ def reduce_vocab_linares_pontes(descriptions, tokens, distance_matrix, n):
 		reduced_descriptions[i] = reduced_description
 	return(reduced_descriptions, token_to_reduced_vocab_token, reduced_vocab_token_to_tokens)
 			
+
+
+
+
+
+
+
+
+def token_enrichment(all_ids_to_texts, group_ids):
+    """ Obtain a dataframe with the results of a token enrichment analysis using Fisher exact test with the results sorted by p-value.
+    
+    Args:
+        all_ids_to_texts (dict of int:str): A mapping between unique integer IDs (for genes) and some string of text.
+
+        group_ids (list of int): The IDs which should be a subset of the dictionary argument that refer to those belonging to the group to be tested.
+    
+    Returns:
+        pandas.DataFrame: A dataframe sorted by p-value that contains the results of the enrichment analysis with one row per token.
+    """
+    
+    # Tokenize the strings of text to identify individual words and find all the unique tokens that appear anywhere in the texts.
+    all_ids_to_token_lists = {i:word_tokenize(text) for i,text in all_ids_to_texts.items()}
+    unique_tokens = list(set(flatten(all_ids_to_token_lists.values())))
+    
+    # For each token, determine the total number of texts that it is present in.
+    num_ids_with_token_t = lambda t,id_to_tokens: [(t in tokens) for i,tokens in id_to_tokens.items()].count(True) 
+    token_to_gene_count = {t:num_ids_with_token_t(t,all_ids_to_token_lists) for t in unique_tokens}
+    total_num_of_genes = len(all_ids_to_token_lists)
+    df = pd.DataFrame(unique_tokens, columns=["token"])
+    df["genes_with"] = df["token"].map(lambda x: token_to_gene_count[x])
+    df["genes_without"] = total_num_of_genes-df["genes_with"] 
+    
+    # For each token, determine the total number of texts that belong to the group to be tested that it is present in.
+    num_of_genes_in_group = len(group_ids)
+    ids_in_group_to_token_lists = {i:tokens for i,tokens in all_ids_to_token_lists.items() if i in group_ids}
+    token_to_gene_in_group_count = {t:num_ids_with_token_t(t,ids_in_group_to_token_lists) for t in unique_tokens}
+    df["group_genes_with"] = df["token"].map(lambda x: token_to_gene_in_group_count[x])
+    df["group_genes_without"] = num_of_genes_in_group-df["group_genes_with"] 
+    
+    # Using those values, perform the Fisher exact test to obtain a p-value for each term, sort the results, and return.
+    df["p_value"] = df.apply(lambda row: fisher_exact([[row["group_genes_with"],row["genes_with"]],[row["group_genes_without"],row["genes_without"]]])[1], axis=1)
+    df.sort_values(by="p_value", inplace=True)
+    df.reset_index(inplace=True, drop=True)
+    return(df)
+    
 
 
 	

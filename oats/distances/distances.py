@@ -6,17 +6,25 @@ import pandas as pd
 
 class SquarePairwiseDistances:
 
-	"""Summary
+	""" An object that contains the results of doing a pairwise comparison within one group of texts.
 	
 	Attributes:
 	    array (TYPE): Description
+	    
 	    edgelist (TYPE): Description
+	    
 	    id_to_index (TYPE): Description
+	    
 	    index_to_id (TYPE): Description
+	    
 	    metric_str (TYPE): Description
+	    
 	    vector_dictionary (TYPE): Description
+	    
 	    vectorizer_object (TYPE): Description
+	    
 	    vectorizing_function (TYPE): Description
+	    
 	    vectorizing_function_kwargs (TYPE): Description
 	"""
 	
@@ -31,7 +39,7 @@ class SquarePairwiseDistances:
 		vectorizing_function_kwargs=None,
 		vectorizer_object=None): 
 		"""
-		This class is for creating objects to hold the specifications for a pairwise similarity or distance graph 
+		This class is for creating objects to hold the specifications for a pairwise similarity or distance matrax 
 		between a set of objects with IDs (such as genes in some dataset), as well as remembering certain information 
 		about how the graph was constructed so that a new object of some text or annotations could be placed within 
 		the context of this graph without rebuilding the entire graph. To this end, this class also provides a method
@@ -41,18 +49,24 @@ class SquarePairwiseDistances:
 		needs to be preprocessed in order to be fully compatible with these vectors, only how the vectorization is
 		done once the text has been preprocessed. 
 		
-		TODO provide these methods without building the full pairwise distance matrix, if it's not needed.
-		
 		Args:
 		    metric_str (str): A string indicating which distance metric was/should be used, compatible with sklearn.
+		    
 		    vectorizing_function (function): A function to call to convert text to vector compatible with this graph.
-		    vectorizing_function_kwargs (TYPE): Description
-		    edgelist (pandas.DataFrame): Each row is an edge in the graph with format {from,to,value}.
-		    vector_dictionary (dict): A mapping between node IDs and vector representation.
-		    vectorizer_object (None, optional): The vectorizer (scipy) object used for embedding each node.
-		    id_to_index (None, optional): Description
-		    index_to_id (None, optional): Description
-		    array (None, optional): A numpy array containing all the distance values that were calculated.
+		    
+		    vectorizing_function_kwargs (dict of str:obj): A dictionary of keyword arguments that are passed to the vectorizing function.
+		    
+		    edgelist (pandas.DataFrame): Each row is an edge in the graph with format (from,to,value).
+		    
+		    vector_dictionary (dict of int:int): A mapping between node IDs and vector representation.
+		    
+		    vectorizer_object (None, optional): The vectorizer object used for embedding each node.
+		    
+		    id_to_index (dict of int:int): A mapping between node IDs and indices in the distance matrix.
+		    
+		    index_to_id (dict of int:int): A mapping between indices in the distance matrix and node IDs.
+		    
+		    array (numpy.array): A numpy array containing all the distance values that were calculated.
 		"""
 		self.metric_str = metric_str
 		self.vectorizing_function = vectorizing_function
@@ -79,13 +93,9 @@ class SquarePairwiseDistances:
 
 
 
-
-
-
-
-
 	def get_vector(self, text):
 		return(self.vectorizing_function(text, **self.vectorizing_function_kwargs))
+
 
 
 
@@ -94,9 +104,12 @@ class SquarePairwiseDistances:
 		Returns a list of k IDs which are the closest to a given string of text. Currently written
 		to accept a single string of text, not a list of strings. Also generates the KNN model
 		inside this method, TODO move this outside of this method if it it's too slow.
+		
 		Args:
 		    text (str): Any string of text.
+		    
 		    k (int): The number of neighbor IDs to return.
+
 		Returns:
 		    list: A list of the IDs for the nearest neighbors to the input text.
 		"""
@@ -127,20 +140,31 @@ class SquarePairwiseDistances:
 
 class RectangularPairwiseDistances:
 
-	"""Summary
+	""" An object that contains the results of doing a pairwise comparison between two groups of texts.
 	
 	Attributes:
 	    array (TYPE): Description
+	    
 	    col_index_to_id (TYPE): Description
+	    
 	    col_vector_dictionary (TYPE): Description
+	    
 	    edgelist (TYPE): Description
+	    
 	    id_to_col_index (TYPE): Description
+	    
 	    id_to_row_index (TYPE): Description
+	    
 	    metric_str (TYPE): Description
+	    
 	    row_index_to_id (TYPE): Description
+	    
 	    row_vector_dictionary (TYPE): Description
+	    
 	    vectorizer_object (TYPE): Description
+	    
 	    vectorizing_function (TYPE): Description
+	    
 	    vectorizing_function_kwargs (TYPE): Description
 	"""
 	
@@ -168,21 +192,30 @@ class RectangularPairwiseDistances:
 		needs to be preprocessed in order to be fully compatible with these vectors, only how the vectorization is
 		done once the text has been preprocessed. 
 		
-		TODO provide these methods without building the full pairwise distance matrix, if it's not needed.
-		
 		Args:
 		    metric_str (str): A string indicating which distance metric was/should be used, compatible with sklearn.
+		
+		    edgelist (pandas.DataFrame): Each row is an edge in the graph with format (from,to,value).
+		
+		    row_vector_dictionary (dict of int:numpy.array): A mapping between row node IDs and vector representations.
+		
+		    col_vector_dictionary (dict of int:numpy.array): A mappign between column node IDs and vector representations.
+		
+		    id_to_row_index (dict of int:int): A mapping between ID integers and row indices in the array.
+		
+		    id_to_col_index (dict of int:int): A mapping between ID integers and column indices in the array.
+		
+		    row_index_to_id (dict of int:int): A mapping between row indices in the array and ID integers.
+		
+		    col_index_to_id (dict of int:int): A mapping between column indices in the array and ID integers.
+		
+		    array (numpy.array): A numpy array containing all the distance values that were calculated.
+
 		    vectorizing_function (function): A function to call to convert text to vector compatible with this graph.
-		    vectorizing_function_kwargs (TYPE): Description
-		    edgelist (pandas.DataFrame): Each row is an edge in the graph with format {from,to,value}.
-		    row_vector_dictionary (None, optional): A mapping between row node IDs and vector representations.
-		    col_vector_dictionary (None, optional): A mappign between column node IDs and vector representations.
-		    vectorizer_object (None, optional): The vectorizer (scipy) object used for embedding each node.
-		    id_to_row_index (None, optional): A mapping between ID integers and row indices in the array.
-		    id_to_col_index (None, optional): A mapping between ID integers and column indices in the array.
-		    row_index_to_id (None, optional): A mapping between row indices in the array and ID integers.
-		    col_index_to_id (None, optional): A mapping between column indices in the array and ID integers.
-		    array (None, optional): A numpy array containing all the distance values that were calculated.
+		
+		    vectorizing_function_kwargs (dict of str:obj): A dictionary of keyword arguments that are passed to the vectorizing function.
+		
+		    vectorizer_object (None, optional): The vectorizer object used for embedding each node.
 		
 		"""
 		self.metric_str = metric_str
@@ -221,10 +254,6 @@ class RectangularPairwiseDistances:
 
 
 
-
-
-
-
 	def get_vector(self, text):
 		return(self.vectorizing_function(text, **self.vectorizing_function_kwargs))
 
@@ -237,7 +266,9 @@ class RectangularPairwiseDistances:
 		inside this method, TODO move this outside of this method if it it's too slow.
 		Args:
 		    text (str): Any string of text.
+		    
 		    k (int): The number of neighbor IDs to return.
+		
 		Returns:
 		    list: A list of the IDs for the nearest neighbors to the input text.
 		"""
