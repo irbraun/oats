@@ -88,7 +88,8 @@ class ProteinInteractions:
 			"sly":4081,
 			"mtr":3880,
 			"osa":4530,
-			"gmx":3847} # Update this line when adding new species.
+			"gmx":3847,
+			"hsa":9606,} # Update this line when adding new species.
 		self.name_map = self.name_map.loc[list(species_name_to_ncbi_taxid_mapping.values())]
 		string_name_to_id_dict = {}
 		for identifier,gene in gene_to_id_dict.items():

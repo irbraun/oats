@@ -22,7 +22,7 @@ from oats.utils.utils import flatten
 def annotate_using_rabin_karp(ids_to_texts, ontology, fixcase=1):
 	"""
 	Build a dictionary of annotations using the Rabin Karp algorithm. This is useful for finding
-	instances of ontology terms in 
+	instances of ontology terms in larger text strings.
 
 
 	Args:
@@ -56,7 +56,9 @@ def annotate_using_rabin_karp(ids_to_texts, ontology, fixcase=1):
 
 
 def annotate_using_fuzzy_matching(ids_to_texts, ontology, threshold=0.90, fixcase=1, local=1):
-	"""Build a dictionary of annotations using fuzzy string matching.
+	"""
+	Build a dictionary of annotations using fuzzy string matching. This is useful for finding 
+	instances of ontology terms in larger text strings.
 	
 	Args:
 		ids_to_texts (dict of int:str): Mapping from unique integer IDs to natural language text strings.
@@ -93,18 +95,21 @@ def annotate_using_fuzzy_matching(ids_to_texts, ontology, threshold=0.90, fixcas
 
 
 def annotate_using_noble_coder(ids_to_texts, jar_path, ontology_name, precise=1, output=None):
-	"""Build a dictionary of annotations using NOBLE Coder (Tseytlin et al., 2016).
+	"""
+	Build a dictionary of annotations using NOBLE Coder (Tseytlin et al., 2016).
 	
 	Args:
 		ids_to_texts (dict of int:str): Mapping from unique integer IDs to natural language text strings.
 	
 		jar_path (str): Path of the NOBLE Coder jar file.
 	
-		ontology_name (str): Name of the ontology (e.g., "pato", "po") used to find matching a NOBLE Coder terminology file (e.g., pato.term, po.term) in ~/.noble/terminologies.
+		ontology_name (str): Name of the ontology (e.g., "pato", "po") used to find matching a NOBLE Coder 
+		terminology file (e.g., pato.term, po.term) in ~/.noble/terminologies. This name is not case-sensitive.
 	
 		precise (int, optional): Set to 1 to do precise matching, set to 0 to accept partial matches.
 	
-		output (str, optional): Path to a text file where the stdout from running NOBLE Coder should be redirected. If not provided, this output is redirected to a temporary file and deleted. 
+		output (str, optional): Path to a text file where the stdout from running NOBLE Coder should be 
+		redirected. If not provided, this output is redirected to a temporary file and deleted. 
 	
 	Returns:
 		dict of int:list of str: Mapping from unique integer IDs to lists of ontology term IDs.
@@ -263,7 +268,10 @@ def _cleanup_noble_coder_results(output_directory, textfiles_directory):
 
 
 def write_annotations_to_file(annotations_dict, annotations_output_path, sep="\t"):
-	""" Write a dictionary of annotations to a file.
+	""" 
+	Write a dictionary of annotations to a file. The produces file format of IDs followed by delimited 
+	ontology term IDs is used as input and output formats for some other packages, so this is included
+	as an option for interfacing with other steps in a pipeline if necessary. 
 	
 	Args:
 		annotations_dict (dict of int:list of str): Mapping from unique integer IDs to lists of ontology term IDs.
@@ -280,8 +288,13 @@ def write_annotations_to_file(annotations_dict, annotations_output_path, sep="\t
 
 
 
+
+
 def read_annotations_from_file(annotations_input_path, sep="\t"):
-	""" Read a file of annotations and produce a dictionary. 
+	""" 
+	Read a file of annotations and produce a dictionary. This is intended to be able to read the types
+	of files that are produced by the functions that write dictionaries of annotations to files. This 
+	does the reverse process of producing a dictionary from those files.
 
 	Args:
 		annotations_input_file (str): Path of the input annotations file to read.
@@ -297,8 +310,6 @@ def read_annotations_from_file(annotations_input_path, sep="\t"):
 		term_ids = row_values[1:len(row_values)]
 		annotations_dict[identifer] = term_ids
 	return(annotations_dict)
-
-
 
 
 

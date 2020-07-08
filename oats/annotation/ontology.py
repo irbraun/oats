@@ -21,7 +21,8 @@ class Ontology(pronto.Ontology):
 
 	"""A wrapper class for pronto.ontology.Ontology to provided some extra functions that may be 
 	useful for natural language processing problems. Note that the inherited attributes and methods
-	aren't documented here, only the additional ones added for this derived class.
+	are not documented here, only the additional ones added for this derived class. See the
+	documentation for the pronto package for information about the inherited class and its methods.
 
 	
 	Attributes:
@@ -226,7 +227,7 @@ class Ontology(pronto.Ontology):
 			dict: Mapping between term IDs and information content values.
 		"""
 
-		# TODO find the literature reference or presentation where this equation is from.
+		# TODO find the literature reference or presentation where this equation is from instead of just the presentation.
 
 		ic_dict = {}
 		num_terms_in_ontology = len(self)
@@ -310,7 +311,7 @@ class Ontology(pronto.Ontology):
 
 
 
-	def similarity_jaccard(self, term_id_list_1, term_id_list_2, inherited=True):
+	def similarity_jaccard(self, term_id_list_1, term_id_list_2, inherited=False):
 		"""
 		Find the similarity between two lists of ontology terms, by finding the Jaccard
 		similarity between the two sets of all the terms that are inherited by each of
@@ -321,7 +322,9 @@ class Ontology(pronto.Ontology):
 
 			term_id_list_2 (list of str): A list of ontology term IDs.
 
-			inherited (bool, optional): Should other terms inherited by these terms be accounted for.
+			inherited (bool, optional): Setting to true indicates that the lists already include all inherited terms. By default
+			this is set to false indicating that the ontology graph structure should be used to find the additional terms inherited
+			by terms in each of the passed in sets.
 		
 		Returns:
 			float: The jaccard similarity between the two lists of terms.
@@ -344,7 +347,7 @@ class Ontology(pronto.Ontology):
 
 
 
-	def similarity_ic(self, term_id_list_1, term_id_list_2, inherited=True):
+	def similarity_ic(self, term_id_list_1, term_id_list_2, inherited=False):
 		"""
 		Find the similarity between two lists of ontology terms, by finding the information 
 		content of the most specific term that is shared by the sets of all terms inherited
@@ -356,7 +359,9 @@ class Ontology(pronto.Ontology):
 
 			term_id_list_2 (list of str): A list of ontology term IDs.
 
-			inherited (bool, optional): Should other terms inherited by these terms be accounted for.
+			inherited (bool, optional): Setting to true indicates that the lists already include all inherited terms. By default
+			this is set to false indicating that the ontology graph structure should be used to find the additional terms inherited
+			by terms in each of the passed in sets.
 		
 		Returns:
 			float: The maximum information content of any common ancestor between the two term lists.
@@ -375,37 +380,6 @@ class Ontology(pronto.Ontology):
 		if len(intersection_ic_values) == 0:
 			return(0.000)
 		return(max(intersection_ic_values))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
