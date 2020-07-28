@@ -229,7 +229,7 @@ class Groupings:
 		"""
 		group_ids = []
 		species = gene_obj.species
-		gene_names = gene_obj.names
+		gene_names = gene_obj.unique_identifiers
 		if not self._case_sensitive:
 			group_ids.extend(list(itertools.chain.from_iterable([self._species_to_rev_gene_mappings.get(species,{}).get(name.lower(),[]) for name in gene_names])))
 		else:

@@ -1,4 +1,5 @@
 from sklearn.neighbors import NearestNeighbors
+from scipy.spatial.distance import cdist
 import numpy as np
 import pandas as pd
 
@@ -77,13 +78,21 @@ class SquarePairwiseDistances:
 		self.id_to_index = id_to_index
 		self.index_to_id = index_to_id
 		self.array = array 
+		self.ids = list(self.id_to_index.keys())
+		
 
 
+		# Make sure that the relationships between the dictionaries and arrays are as expected.
+		assert len(self.ids) == len(self.id_to_index)
+		assert len(self.ids) == len(self.index_to_id)
+		assert len(self.ids) == len(self.vector_dictionary)
+		assert len(self.ids) == self.array.shape[0]
+		assert len(self.ids) == self.array.shape[1]
 
 		# Making sure the shape of all the required passed in objects are as expected.
-		ids = pd.unique(self.edgelist[["from","to"]].dropna().values.ravel('K'))  				# Get a list of all the IDs mentioned as nodes in the edgelist.
+		ids_in_edgelist = pd.unique(self.edgelist[["from","to"]].dropna().values.ravel('K'))  	# Get a list of all the IDs mentioned as nodes in the edgelist.
 		assert (self.array.shape[0] == self.array.shape[1])										# Check that the produced distance matrix is square.
-		assert (self.array.shape[0] == len(ids))												# Check that there is one ID per row and column of the matrix.
+		assert (self.array.shape[0] == len(ids_in_edgelist))									# Check that there is one ID per row and column of the matrix.
 		assert (self.array.shape[0] == len(self.vector_dictionary.keys()))						# Check that there is one ID per key in the vector dictionary.
 		assert (self.array.shape[0] == len(self.id_to_index.keys()))							# Check that there is one ID per key in the array index dictionary.
 
@@ -95,6 +104,40 @@ class SquarePairwiseDistances:
 
 	def get_vector(self, text):
 		return(self.vectorizing_function(text, **self.vectorizing_function_kwargs))
+
+
+
+
+
+
+
+	# Simple convenience function so you don't have to get the dictionaries from this object to lookup distances.
+	def get_distance(self, id1, id2):
+		distance = self.array[self.id_to_index[id1], self.id_to_index[id2]]
+		return(distance)
+
+
+
+
+	# What if we have a new string of text, and we want to know what the distance of it to everything in this array?
+	# Essentially get a new 1 by n slice of the array for just this new text compared to the all the ones that were done here.
+	# Note, this does NOT include preprocessing of the string, making sure it's compatible has to be done outside this class.
+	def get_distances(self, text):
+
+		# Get the vector representation of this new text.
+		new_vector = self.get_vector(text)
+
+		# Produce a 1 by n distance matrix that has one row for the new text, and where the columns match existing matrix.
+		dim = len(self.vector_dictionary)
+		old_vectors = [self.vector_dictionary[self.index_to_id[idx]] for idx in np.arange(dim)]
+		one_by_n_matrix = cdist([new_vector], old_vectors, self.metric_str)
+
+		# Produce and return a mapping between these internal IDs and the distance to the new text.
+		id_to_distance = {i:one_by_n_matrix[0,idx] for i,idx in self.id_to_index.items()}
+		return(id_to_distance)
+
+
+
 
 
 
@@ -125,6 +168,13 @@ class SquarePairwiseDistances:
 		neighbor_indices = knn.kneighbors([vector],return_distance=False)[0]
 		neighbor_ids = [ids[i] for i in neighbor_indices]
 		return(neighbor_ids)
+
+
+
+
+
+
+
 
 
 

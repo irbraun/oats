@@ -121,6 +121,24 @@ def test_get_all_rectanglular_distance_matrices(word2vec_model, doc2vec_model, b
 
 
 
+@pytest.mark.quick
+def test_something():
+	from oats.distances.pairwise import pairwise_square_ngrams
+
+	b_strings = data["data_group_2"]["descriptions_dictionary"]
+
+	g = pairwise_square_ngrams(ids_to_texts=b_strings, metric="cosine")
+
+	print(g.ids)
+
+	# TODO fix all these tests to use integer IDs not strings, that's not how they're used everywhere else, should enforce it.
+
+	print(g.get_distances("some words here"))
+
+	print(g.get_distance('1','2'))
+	print(g.get_distance('2','1'))
+
+
 
 
 

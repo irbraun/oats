@@ -1,4 +1,5 @@
 from itertools import chain
+from collections import defaultdict
 import pandas as pd
 import itertools
 import networkx as nx
@@ -13,10 +14,11 @@ from oats.nlp.preprocess import concatenate_with_bar_delim
 
 class Dataset:
 
-	"""A class that wraps a dataframe containing gene names, natural language, and ontology annotations.
+	"""A class that wraps a dataframe containing gene names, text, and ontology annotations.
 	
 	Attributes:
-		df (pandas.DataFrame): The dataframe containing the dataset accessed through this class.
+		df (pandas.DataFrame): The dataframe containing the dataset accessed through this class or the path
+		to a csv file that can be loaded as a comparable dataframe. 
 
 	"""
 	
@@ -28,21 +30,22 @@ class Dataset:
 	def __init__(self, data=None):
 		"""
 		Args:
-		    data (pandas.DataFrame or str, optional): A dataframe containing the data to be added to this dataset.
-		   	The columns of this dataframe must contain the columns used by this object which are "species",
-			"gene_names", "gene_synonyms", "description", "term_ids", and "sources". Any of those columns 
-			can contain any number of missing values but the columns must exist. Any columns that are 
-			outside of that list of column names are ignored. Gene names, symbols, or identifiers in the 
-			"gene_names" column should be pipe delimited, as should multiple ontology term IDs in the 
-			"term_ids" column.
+		    data (pandas.DataFrame or str, optional): A dataframe containing the data to be added to this
+		    dataset, or the path to a csv file that can be loaded as a comparable dataframe. The columns
+		    of this dataframe must contain "species", "gene_names", "gene_synonyms", "description", "term_ids",
+		    and "sources". Any of those columns can contain any number of missing values but the columns must 
+		    exist. Any columns that are outside of that list of column names are ignored. Gene names, symbols,
+		    and ontology term IDS in the "gene_names", "gene_synonyms", and "term_ids" columns should be pipe 
+			delimited.
 
 		"""
-		self._col_names = ["id", "species", "gene_names", "gene_synonyms", "description", "term_ids", "sources"]
+		self._col_names = ["id", "species", "unique_gene_identifiers", "other_gene_identifiers", "gene_models", "descriptions", "annotations", "sources"]
 		self._col_names_without_id = self._col_names
 		self._col_names_without_id.remove("id")
 		self.df = pd.DataFrame(columns=self._col_names)
 		if data is not None:
 			self.add_data(data)
+		self._update_dictionaries()
 
 
 
@@ -54,13 +57,13 @@ class Dataset:
 		"""Add additional data to this dataset.
 		
 		Args:
-			new_data (pandas.DataFrame or str): A dataframe containing the data to be added to this dataset.
-			The columns of this dataframe must contain the columns used by this object which are "species",
-			"gene_names", "gene_synonyms", "description", "term_ids", and "sources". Any of those columns 
-			can contain any number of missing values but the columns must exist. Any columns that are 
-			outside of that list of column names are ignored. Gene names, symbols, or identifiers in the 
-			"gene_names" column should be pipe delimited, as should multiple ontology term IDs in the 
-			"term_ids" column.
+			new_data (pandas.DataFrame or str): A dataframe containing the data to be added to this 
+			dataset, or the path to a csv file that can be loaded as a comparable dataframe. The columns 
+			of this dataframe must contain "species", "gene_names", "gene_synonyms", "description", "term_ids", 
+			and "sources". Any of those columns can contain any number of missing values but the columns must 
+			exist. Any columns that are outside of that list of column names are ignored. Gene names, symbols,
+			and ontology term IDS in the "gene_names", "gene_synonyms", and "term_ids" columns should be pipe 
+			delimited.
 		
 		"""
 
@@ -68,20 +71,22 @@ class Dataset:
 			new_data = new_data[self._col_names_without_id]
 			new_data.loc[:,"id"] = None
 			new_data.fillna("", inplace=True)
-			new_data["description"] = new_data["description"].map(lambda x: x.replace(";","."))
+			new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
 			self.df = self.df.append(new_data, ignore_index=True, sort=False)
 			self.df = self.df.drop_duplicates(keep="first", inplace=False)
 			self._reset_ids()
+			self._update_dictionaries()
 
 		elif isinstance(new_data, str):
 			new_data = pd.read_csv(new_data)
 			new_data = new_data[self._col_names_without_id]
 			new_data.loc[:,"id"] = None
 			new_data.fillna("", inplace=True)
-			new_data["description"] = new_data["description"].map(lambda x: x.replace(";","."))
+			new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
 			self.df = self.df.append(new_data, ignore_index=True, sort=False)
 			self.df = self.df.drop_duplicates(keep="first", inplace=False)
 			self._reset_ids()
+			self._update_dictionaries()
 
 		else:
 			raise ValueError("the data argument should be filename string or a pandas dataframe object")
@@ -101,7 +106,7 @@ class Dataset:
 		"""
 		self.df.reset_index(drop=True,inplace=True)
 		self.df.id = [int(i) for i in self.df.index.values]
-		self.df = self.df[["id", "species", "gene_names", "gene_synonyms", "description", "term_ids", "sources"]]
+		self.df = self.df[["id", "species", "unique_gene_identifiers", "other_gene_identifiers", "gene_models", "descriptions", "annotations", "sources"]]
 
 
 
@@ -126,16 +131,18 @@ class Dataset:
 			seed (int, optional): A seed value for the random subsampling.
 		"""
 		self.df = self.df.sample(n=k, random_state=seed)
+		self._update_dictionaries()
 
 
 
-	def filter_by_species(self, *species):
+	def filter_by_species(self, species):
 		"""Remove all records not related to these species.
 		
 		Args:
-			*species: Strings referring to species names.
+		    species (list of str): A list of strings referring the species names.
 		"""
 		self.df = self.df[self.df["species"].isin(species)]
+		self._update_dictionaries()
 
 
 
@@ -144,7 +151,8 @@ class Dataset:
 	def filter_has_description(self):
 		"""Remove all records that don't have a related text description.
 		"""
-		self.df = self.df[self.df["description"] != ""] 
+		self.df = self.df[self.df["descriptions"] != ""] 
+		self._update_dictionaries()
 
 
 
@@ -159,9 +167,10 @@ class Dataset:
 			filtering the dataset.
 		"""
 		if ontology_name is not None:
-			self.df = self.df[self.df["term_ids"].str.contains(ontology_name)]
+			self.df = self.df[self.df["annotations"].str.contains(ontology_name)]
 		else:
-			self.df = self.df[self.df["term_ids"] != ""]
+			self.df = self.df[self.df["annotations"] != ""]
+		self._update_dictionaries()
 
 
 
@@ -173,6 +182,86 @@ class Dataset:
 			ids (list of int): A list of the unique integer IDs for the records to retain.
 		"""
 		self.df = self.df[self.df["id"].isin(ids)]
+		self._update_dictionaries()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	####### Generating the dictionaries that are useful for accessing this data ##########
+
+	def _update_dictionaries(self):
+		self._species_to_name_to_ids_dictionary_with_synonyms = self._make_species_to_name_to_ids_dictionary(nonuniques=True, lowercase=False)
+		self._species_to_name_to_ids_dictionary_without_synonyms = self._make_species_to_name_to_ids_dictionary(nonuniques=False, lowercase=False)
+		self._species_to_name_to_ids_dictionary_with_synonyms_lowercased = self._make_species_to_name_to_ids_dictionary(nonuniques=True, lowercase=True)
+		self._species_to_name_to_ids_dictionary_without_synonyms_lowercased = self._make_species_to_name_to_ids_dictionary(nonuniques=False, lowercase=True)
+		self._gene_object_dictionary = self._make_gene_dictionary()
+
+
+
+
+
+
+	def _make_species_to_name_to_ids_dictionary(self, nonuniques=False, lowercase=False):
+		"""Summary
+		
+		Args:
+		    include_synonyms (bool, optional): Description
+		
+		Returns:
+		    TYPE: Description
+		"""
+		species_to_name_to_ids_dictionary = defaultdict(lambda: defaultdict(list))
+		for row in self.df.itertuples():
+			delim = "|"
+			names = row.unique_gene_identifiers.split(delim)
+			if nonuniques:
+				names.extend(row.other_gene_identifiers.split(delim))
+			if lowercase:
+				names = [name.lower() for name in names]
+			for name in names:
+				species_to_name_to_ids_dictionary[row.species][name].append(row.id)
+		return(species_to_name_to_ids_dictionary)
+
+
+
+
+
+
+	def _make_gene_dictionary(self):
+		"""Summary
+		
+		Returns:
+		    TYPE: Description
+		"""
+		gene_dict = {}
+		for row in self.df.itertuples():
+			delim = "|"
+
+			# Parse the different types of identifiers into lists, making sure to create empty lists if there's nothing there, NOT lists with empty strings.
+			species = row.species
+			unique_identifiers = row.unique_gene_identifiers.split(delim)
+			other_identifiers = [x for x in row.other_gene_identifiers.split(delim) if x != ""]
+			gene_models = [x for x in row.gene_models.split(delim) if x != ""]
+			gene_obj = Gene(species, unique_identifiers, other_identifiers, gene_models)
+			gene_dict[row.id] = gene_obj
+		return(gene_dict)
+
+
+
+
+
+
+
 
 
 
@@ -195,14 +284,7 @@ class Dataset:
 		Returns:
 			dict of int:oats.datasets.gene.Gene: Mapping from record IDs to gene objects.
 		"""
-		gene_dict = {}
-		for row in self.df.itertuples():
-			delim = "|"
-			gene_names = row.gene_names.split(delim)
-			gene_obj = Gene(names=gene_names, species=row.species)
-			gene_dict[row.id] = gene_obj
-		return(gene_dict)
-
+		return(self._gene_object_dictionary)
 
 
 
@@ -236,7 +318,7 @@ class Dataset:
 		Returns:
 			dict of int:str: Mapping between record IDs and text descriptions.
 		"""
-		description_dict = {identifier:description for (identifier,description) in zip(self.df.id, self.df.description)}
+		description_dict = {identifier:description for (identifier,description) in zip(self.df.id, self.df.descriptions)}
 		return(description_dict)
 
 
@@ -307,13 +389,41 @@ class Dataset:
 		name_to_id_dict = {}
 		for row in self.df.itertuples():
 			delim = "|"
-			names = row.gene_names.split(delim)
+			names = row.unique_gene_identifiers.split(delim)
 			for name in names:
 				if unambiguous and name not in name_to_id_dict:
 					name_to_id_dict[name] = row.id
 				else:
 					name_to_id_dict[name] = row.id
 		return(name_to_id_dict) 
+
+
+	
+
+
+
+
+	def get_species_to_name_to_ids_dictionary(self, include_synonyms=False, lowercase=False):
+		"""Summary
+		
+		Args:
+		    include_synonyms (bool, optional): Description
+		    lowercase (bool, optional): Description
+		
+		Returns:
+		    TYPE: Description
+		"""
+		if include_synonyms:
+			if lowercase:
+				return(self._species_to_name_to_ids_dictionary_with_synonyms_lowercased)
+			else:
+				return(self._species_to_name_to_ids_dictionary_without_synonyms)
+		else:
+			if lowercase:
+				return(self._species_to_name_to_ids_dictionary_without_synonyms_lowercased)
+			else:
+				return(self._species_to_name_to_ids_dictionary_without_synonyms)
+
 
 
 
@@ -422,12 +532,49 @@ class Dataset:
 		"""
 		
 		if case_sensitive:
-			names = row["gene_names"].split("|")
+			names = row["unique_gene_identifiers"].split("|")
 		else:
-			names = row["gene_names"].lower().split("|")
+			names = row["unique_gene_identifiers"].lower().split("|")
 
 		edges = [(row["id"],"{}.{}".format(row["species"],name)) for name in names]
 		return(edges)
+
+
+
+
+
+	# A method necessary for cleaning up lists of gene identifiers after merging.
+	@staticmethod
+	def _remove_duplicate_names(row):
+		"""Removes synonyms that are already listed as gene names.
+
+		Args:
+		    row (TYPE): Description
+		"""
+		gene_names = row["unique_gene_identifiers"].split("|")
+		gene_synonyms = row["other_gene_identifiers"].split("|")
+		updated_gene_synonyms = [x for x in gene_synonyms if x not in gene_names]
+		gene_synonyms_str = concatenate_with_bar_delim(*updated_gene_synonyms)
+		return(gene_synonyms_str)
+
+
+	# Another method necessary for cleaning up lists of gene identifiers after merging.
+	@staticmethod
+	def reorder_unique_gene_identifers(row):
+		unique_identifiers = row["unique_gene_identifiers"].split("|")
+		gene_models = row["gene_models"].split("|")
+		reordered_unique_identifiers = [x for x in unique_identifiers if x not in gene_models]
+		reordered_unique_identifiers.extend(gene_models)
+		reordered_unique_identifiers_str = concatenate_with_bar_delim(*reordered_unique_identifiers)
+		return(reordered_unique_identifiers_str)
+
+
+
+
+
+
+
+
 
 
 
@@ -472,15 +619,25 @@ class Dataset:
 
 		# Groupy by the connected component column and merge the other fields appropriately.
 		self.df = self.df.groupby("component").agg({"species": lambda x: x.values[0],
-															"gene_names": lambda x: concatenate_with_bar_delim(*x),
-															"gene_synonyms": lambda x: concatenate_with_bar_delim(*x),
-															"description":lambda x: concatenate_descriptions(*x),
-															"term_ids":lambda x: concatenate_with_bar_delim(*x),
+															"unique_gene_identifiers": lambda x: concatenate_with_bar_delim(*x),
+															"other_gene_identifiers": lambda x: concatenate_with_bar_delim(*x),
+															"gene_models": lambda x: concatenate_with_bar_delim(*x),
+															"descriptions":lambda x: concatenate_descriptions(*x),
+															"annotations":lambda x: concatenate_with_bar_delim(*x),
 															"sources":lambda x: concatenate_with_bar_delim(*x)})
+
 		
+		# Merging may have resulted in names or identifers being considered by gene names and synonyms.
+		# Remove them from the synonym list if they are in the gene name list.
+		self.df["other_gene_identifiers"] = self.df.apply(lambda x: Dataset._remove_duplicate_names(x), axis=1)
+
+		self.df["unique_gene_identifiers"] = self.df.apply(lambda x: Dataset.reorder_unique_gene_identifers(x), axis=1)
+
+
 		# Reset the ID values in the dataset to reflect this change.
 		self.df["id"] = None
 		self._reset_ids()
+		self._update_dictionaries()
 
 
 
@@ -547,10 +704,10 @@ class Dataset:
 
 		# Generate a dataframe that summarizes how many genes and unique descriptions there are for each species.
 		summary_df = self.df.groupby("species").agg({
-			"gene_names": lambda x: len(x), 
-			"description": lambda x: len(pd.unique(x))
+			"unique_gene_identifiers": lambda x: len(x), 
+			"descriptions": lambda x: len(pd.unique(x))
 			})
-		summary_df.rename(columns={"gene_names":"num_genes", "description":"unique_descriptions"}, inplace=True)
+		summary_df.rename(columns={"gene_names":"num_genes", "descriptions":"unique_descriptions"}, inplace=True)
 		summary_df.loc['total']= summary_df.sum()
 		summary_df.reset_index(drop=False, inplace=True)
 		return(summary_df)

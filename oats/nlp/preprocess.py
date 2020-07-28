@@ -1,5 +1,6 @@
 import itertools
 import re
+import string
 
 from oats.utils.utils import remove_duplicates_retain_order
 
@@ -142,6 +143,27 @@ def concatenate_with_bar_delim(*tokens):
 	return(joined)
 
 
+def remove_occurences_from_bar_delim_lists(dar_delim_string_1, bar_delim_string_2):
+	"""Removes elements from list 1 that are already in list 2 and returns list 1.
+	
+	Args:
+	    dar_delim_string_1 (TYPE): Description
+	    bar_delim_string_2 (TYPE): Description
+	"""
+	tokens1 = dar_delim_string_1.split("|")
+	tokens2 = bar_delim_string_2.split("|")
+	tokens1 = filter(None, tokens1)
+	tokens2 = filter(None, tokens2)
+	tokens1 = [token.strip() for token in tokens1]
+	tokens2 = [token.strip() for token in tokens2]
+	tokens1 = [token for token in tokens1 if token not in tokens2]
+	joined = "|".join(tokens1).strip()
+	joined = remove_newlines(joined)
+	return(joined)
+
+
+
+
 
 def other_delim_to_bar_delim(string, delim):
 	"""Convert string delimited with some character (semicolon, comma, etc) to one delimited with bars.
@@ -164,7 +186,7 @@ def other_delim_to_bar_delim(string, delim):
 	tokens = [token for token in tokens if not token==""]
 	joined = "|".join(tokens)
 	joined = remove_newlines(joined)
-	return(joined)
+	return(joined) 
 
 
 

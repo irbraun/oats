@@ -31,7 +31,7 @@ def test_make_groupings(small_dataset):
 
 	
 	# Need a mapping between 'gene names' of this test dataset and the internal unique IDs used.
-	small_dataset.collapse_by_all_gene_names()
+	small_dataset.collapse_by_all_gene_names(case_sensitive=False)
 	name_to_id = small_dataset.get_name_to_id_dictionary()
 
 
@@ -56,6 +56,7 @@ def test_make_groupings(small_dataset):
 	d1,d2 = g.get_groupings_for_dataset(small_dataset)
 	id_to_groups = d1
 	group_to_ids = d2
+
 
 	# Do the genes present in the dataset map to the right groups?
 	assert set(id_to_groups[name_to_id["A"]]) == set(["Group1", "Group2"])
