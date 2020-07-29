@@ -22,21 +22,17 @@ class ProteinInteractions:
 	"""
 
 
-	def __init__(self, gene_to_id_dict, name_mapping_file, *string_data_files):		
+	def __init__(self, id_to_gene_dict, name_mapping_file, *string_data_files):		
 		"""
 		Args:
-		    gene_to_id_dict (dict of oats.biodata.gene.Gene:int): Mapping between gene objects and unique integer IDs from a dataset.
+		    id_to_gene_dict (dict of oats.biodata.gene.Gene:int): Mapping between gene objects and unique integer IDs from a dataset.
 		
 		    name_mapping_file (str): The path to a file linking gene names with protein names used in STRING, available from STRING.
 		
 		    *string_data_files (str): Any number of paths to protein-protein interaction files obtained from STRING.
-		
-		Deleted Parameters:
-		    default (float): What numerical value should used for a missing relationship.
-		
 		"""
 		self.name_map = pd.read_table(name_mapping_file)
-		self.df, self.ids = self._process_interaction_files(gene_to_id_dict, string_data_files)
+		self.df, self.ids = self._process_interaction_files(id_to_gene_dict, string_data_files)
 
 
 
@@ -62,20 +58,17 @@ class ProteinInteractions:
 
 
 
-	def _process_interaction_files(self, gene_to_id_dict, string_data_files):
+	def _process_interaction_files(self, id_to_gene_dict, string_data_files):
 		"""Summary
 		
 		Args:
-		    gene_to_id_dict (TYPE): Description
-		
+		    id_to_gene_dict (TYPE): Description
+		    
 		    string_data_files (TYPE): Description
 		
 		Returns:
 		    TYPE: Description
-		
-		Deleted Parameters:
-		    default (TYPE): Description
-		
+
 		"""
 		# Need to produce a mapping between STRING names and our IDs. Having this will allow for replacing
 		# the protein names that are in the STRING database files with IDs that are relevant to this data-
@@ -92,10 +85,10 @@ class ProteinInteractions:
 			"hsa":9606,} # Update this line when adding new species.
 		self.name_map = self.name_map.loc[list(species_name_to_ncbi_taxid_mapping.values())]
 		string_name_to_id_dict = {}
-		for identifier,gene in gene_to_id_dict.items():
+		for identifier,gene in id_to_gene_dict.items():
 			string_names = []
 			species = species_name_to_ncbi_taxid_mapping[gene.species]
-			for name in gene.names:
+			for name in gene.all_identifiers:
 				try:
 					string_names.extend(self.name_map.loc[(species, name)].values)
 				except KeyError:
@@ -124,10 +117,7 @@ class ProteinInteractions:
 		l1 = list(pd.unique(df[["from"]].dropna().values.ravel('K')))
 		l2 = list(pd.unique(df[["to"]].dropna().values.ravel('K')))
 		ids_mentioned_in_string = list(set(l1+l2))
-		
 		df.dropna(axis=0, inplace=True)
-
-
 
 
 		df["known_associations"] = df["experimental"] + df["database"]
@@ -152,8 +142,6 @@ class ProteinInteractions:
 		#print("dropping duplicates")
 		#df.drop_duplicates(subset=["to","from"], keep="last", inplace=True)
 		#print("done droppping dups")
-
-
 
 
 		# The dataframe right now is specifying directed edges rather than undirected edges.
