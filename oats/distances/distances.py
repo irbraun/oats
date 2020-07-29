@@ -128,9 +128,11 @@ class SquarePairwiseDistances:
 		new_vector = self.get_vector(text)
 
 		# Produce a 1 by n distance matrix that has one row for the new text, and where the columns match existing matrix.
+		# Also replace nan's in the 1 by n distances matrix with 1. This is important for methods like n-grams when all new tokens are out of vocabulary.
 		dim = len(self.vector_dictionary)
 		old_vectors = [self.vector_dictionary[self.index_to_id[idx]] for idx in np.arange(dim)]
 		one_by_n_matrix = cdist([new_vector], old_vectors, self.metric_str)
+		np.nan_to_num(one_by_n_matrix, copy=False, nan=1.000)
 
 		# Produce and return a mapping between these internal IDs and the distance to the new text.
 		id_to_distance = {i:one_by_n_matrix[0,idx] for i,idx in self.id_to_index.items()}
