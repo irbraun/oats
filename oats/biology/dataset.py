@@ -301,7 +301,7 @@ class Dataset:
 		annotations_dict = {}
 		for row in self.df.itertuples():
 			delim = "|"
-			term_ids = row.term_ids.split(delim)
+			term_ids = row.annotations.split(delim)
 			if ontology_name is not None:
 				term_ids = [t for t in term_ids if ontology_name.lower() in t.lower()]
 			annotations_dict[row.id] = term_ids

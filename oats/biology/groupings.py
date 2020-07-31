@@ -1,8 +1,10 @@
 from Bio.KEGG import REST
 from collections import defaultdict
+from glob import glob
 import pandas as pd
 import numpy as np
 import re
+import os
 import itertools
 
 from oats.nlp.preprocess import concatenate_with_bar_delim
@@ -49,73 +51,51 @@ class Groupings:
 	This is a class for creating and containing mappings between information in the dataset of interest
 	and relationships to other types of information such as biochemical pathways or protein-protein 
 	interactions.
-
+	
+	Attributes:
+	    df (TYPE): Description
+	
 	"""
 	
-	def __init__(self, species_dict, source, name_mapping=None, case_sensitive=False):
+	def __init__(self, path, name_mapping=None, case_sensitive=False):
 		"""
 		Args:
-			species_dict (dict of str:str): A mapping where keys are species names and values are file paths with data for that species.
-			Not every type of grouping object that can be created needs files to be specified in this dictionary. The values can be 
-			missing if KEGG is used for example, because the KEGG REST API is used to obtain the information related to the pathways.
-
-			source (str): Indicates where the information for the groups is pulled from. Can be "kegg", "pmn", "plantcyc", or "csv". If "kegg"
-			is used then the values in species_dict argument are not used, otherwise they are. If "pmn" or "plantcyc" is used the files 
-			should be the PlantCyc files for that particular species. If the "csv" is used the files should be contain a mapping between gene
-			names or identifiers in the first column and strings that represent groups in the second column. Multiple entries can be present
-			in either column by separating with a pipe. All gene listed on given line are considered mapped to all groups listed on a given 
-			line (because genes can belong to more than one group).
-			
-			name_mapping (dict of obj:str, optional): This argument is only necessary if specifying groups using csv files. It should be a 
-			dictionary mapping integers or strings (whatever the datatype of the group IDs are) to strings that represent the full name of those
-			groups, which are useful for outputtting to tables. 
-			
-			case_sensitive (bool, optional): Set to true to account for differences in capitalization between gene names or identifiers in
-			the dataset used and in the databases or files used to create these groups.
+		    path (str): The path to the CSV file that is used to build this instance. 
 		
-		Raises:
-			ValueError: The name of the source to create the groupings from is not recognized or supported.
+		
+		
+		
+		
+		
+		    name_mapping (dict of obj:str, optional): This argument is only necessary if specifying groups using csv files. It should be a 
+		    
+		    case_sensitive (bool, optional): Set to true to account for differences in capitalization between gene names or identifiers in
+		    Not every type of grouping object that can be created needs files to be specified in this dictionary. The values can be 
+		    missing if KEGG is used for example, because the KEGG REST API is used to obtain the information related to the pathways.
+		
+		    is used then the values in species_dict argument are not used, otherwise they are. If "pmn" or "plantcyc" is used the files 
+		    should be the PlantCyc files for that particular species. If the "csv" is used the files should be contain a mapping between gene
+		    names or identifiers in the first column and strings that represent groups in the second column. Multiple entries can be present
+		    in either column by separating with a pipe. All gene listed on given line are considered mapped to all groups listed on a given 
+		    line (because genes can belong to more than one group).
+		
+		    dictionary mapping integers or strings (whatever the datatype of the group IDs are) to strings that represent the full name of those
+		    groups, which are useful for outputtting to tables. 
+		
+		    the dataset used and in the databases or files used to create these groups.
+		
 		"""
-		# Create one dataframe and pair of dictionaries for each species code.
-		self._species_list = list(species_dict.keys())
-		self._species_to_df_dict = {}
-		self._species_to_fwd_gene_mappings = {}
-		self._species_to_rev_gene_mappings = {}
-		self._readable_name_mappings = {}
+
+		self.df = pd.read_csv(path)
+		self._species_list = self.df["species"].unique()
 		self._case_sensitive = case_sensitive
-		for species,path in species_dict.items():
-			
-
-			# Use the PlantCyc files from PMN as the source of the groupings.
-			if source.lower() == "plantcyc" or source.lower() == "pmn":
-				df = self._get_dataframe_from_pmn(species, path, self._case_sensitive)
-				fwd_mapping, rev_mapping = self._get_gene_mappings_from_pmn(species, df)
-				self._readable_name_mappings.update(self._get_id_to_readable_pmn_name_mapping(df))
-			
-
-			# Use the KEGG REST API to obtain the groupings.
-			elif source.lower() == "kegg":
-				df = self._get_dataframe_from_kegg(species, self._case_sensitive)
-				fwd_mapping, rev_mapping = self._get_gene_mappings_from_kegg(species, df)
-				self._readable_name_mappings.update(self._get_id_to_readable_kegg_name_mapping(df))
-
-
-			# Use any arbitrary CSV file that is provided as the soure for the groupings.
-			elif source.lower() == "csv":
-				df = self._get_dataframe_from_csv(species,path)
-				fwd_mapping, rev_mapping = self._get_gene_mappings_from_csv(species, df)
-				self._readable_name_mappings.update(name_mapping)
-
-
-			# Not supporting whatever type of source string was provided yet.
-			else:
-				raise ValueError("name of groupings source ({}) not recognized".format(source))
-
-			self._species_to_df_dict[species] = df            
-			self._species_to_fwd_gene_mappings[species] = fwd_mapping
-			self._species_to_rev_gene_mappings[species] = rev_mapping
-
-
+		self._readable_name_mappings = name_mapping
+		
+		# The forward mapping maps group strings to lists of gene strings.
+		# The reverse mapping maps gene strings to lists of group strings.
+		# Note that all the gene strings will be lowercase in these dictionaries if _case_sensitive is false.
+		# This way, then any new incoming gene strings will also be lowercased before being used as keys in these dictionaries.
+		self._species_to_fwd_gene_mappings, self._species_to_rev_gene_mappings = self._get_gene_mappings_from_dataframe(self.df)
 
 
 
@@ -151,8 +131,6 @@ class Groupings:
 
 
 
-
-
 	def get_id_to_group_ids_dict(self, gene_dict):
 		"""Returns a mapping from IDs to lists of group IDs. Note that this retains as keys even IDs that don't map to any groups.
 		
@@ -167,6 +145,8 @@ class Groupings:
 			membership_dict[gene_id] = self.get_group_ids_from_gene_obj(gene_obj)
 		membership_dict = {k:remove_duplicates_retain_order(v) for k,v in membership_dict.items()}
 		return(membership_dict)
+
+
 
 
 
@@ -188,6 +168,8 @@ class Groupings:
 				reverse_membership_dict[group_id].append(gene_id)
 		reverse_membership_dict = {k:remove_duplicates_retain_order(v) for k,v in reverse_membership_dict.items()}      
 		return(reverse_membership_dict)
+
+
 
 
 
@@ -251,9 +233,9 @@ class Groupings:
 			TYPE: Description
 		"""
 		if not self._case_sensitive:
-			return(self._species_to_rev_gene_mappings[species][name.lower()])
+			return(self._species_to_rev_gene_mappings[species][gene_name.lower()])
 		else:
-			return(self._species_to_rev_gene_mappings[species][name])
+			return(self._species_to_rev_gene_mappings[species][gene_name])
 
 
 
@@ -296,29 +278,34 @@ class Groupings:
 
 
 
-	#################### Methods for using an arbitrary CSV to define pathways (or pathway-like groups) ####################
+	#################### Methods for using an arbitrary CSV to define groups that genes belong to ####################
 
-	def _get_dataframe_from_csv(self, species_code, filepath):
-		df = pd.read_csv(filepath,usecols=[0,1])
-		df.columns = ["group_id","gene_names"]
-		df["species"] = species_code
-		df = df[["species","group_id","gene_names"]]
+
+	def _get_gene_mappings_from_dataframe(self, df):
+
+		species_to_fwd_dict = defaultdict(lambda: defaultdict(set))
+		species_to_rev_dict = defaultdict(lambda: defaultdict(set))
+
+		assert list(df.columns[:3]) == ["species", "group_ids", "gene_identifiers"]
 		if not self._case_sensitive:
-			df["gene_names"] = df["gene_names"].map(str.lower)
-		return(df)
-
-	def _get_gene_mappings_from_csv(self, species_code, df):
-		group_dict_fwd = defaultdict(list)
-		group_dict_rev = defaultdict(list)
+			df["gene_identifiers"] = df["gene_identifiers"].map(str.lower)
 		delim = "|"
 		for row in df.itertuples():
-			gene_names = row.gene_names.strip().split(delim)
-			group_ids = row.group_id.strip().split(delim)
-			for gene_name in gene_names:
+			species_code = row.species
+			gene_identifiers = row.gene_identifiers.strip().split(delim)
+			group_ids = row.group_ids.strip().split(delim)
+			for gene_identifier in gene_identifiers:
 				for group_id in group_ids:
-					group_dict_fwd[group_id].append(gene_name)
-					group_dict_rev[gene_name].append(group_id)
-		return(group_dict_fwd, group_dict_rev)
+					species_to_fwd_dict[species_code][group_id].add(gene_identifier)
+					species_to_rev_dict[species_code][gene_identifier].add(group_id)
+
+		# Convert the sets of group IDs and gene IDs to lists instead inside the nested dictionaries.
+		species_to_fwd_dict = {k1:{k2:list(v2) for k2,v2 in v1.items()} for k1,v1 in species_to_fwd_dict.items()}
+		species_to_rev_dict = {k1:{k2:list(v2) for k2,v2 in v1.items()} for k1,v1 in species_to_rev_dict.items()}
+		return(species_to_fwd_dict, species_to_rev_dict)
+
+
+
 
 
 
@@ -334,7 +321,50 @@ class Groupings:
 
 	#################### Methods specific to using KEGG through the REST API ####################
 
-	def _get_dataframe_from_kegg(self, kegg_species_abbreviation, _case_sensitive):
+	@staticmethod
+	def save_all_kegg_pathway_files(paths):
+		"""Uses the KEGG REST API to find and save all pathway data files for each species in the input dictionary.
+		
+		Args:
+		    paths (dict of str:str): A mapping between strings referencing species and paths to the output directory for each.
+		"""
+		for species,path in paths.items():
+			pathways = REST.kegg_list("pathway", species)
+			for pathway in pathways:
+
+				# Get the pathway file contents through the REST API.
+				pathway_id = pathway.split()[0]
+				pathway_file = REST.kegg_get(dbentries=pathway_id).read()
+
+				# Where should the contents of the obtained file be written?
+				pathway_id_str = pathway_id.replace(":","_")
+				filename = os.path.join(path, "{}.txt".format(pathway_id_str))
+				if not os.path.exists(path):
+					os.makedirs(path)
+				with open(filename, "w") as outfile:
+					outfile.write(pathway_file)
+
+
+
+
+
+
+	# This is just a helper method for the larger method below that saves the KEGG pathways files.
+	@staticmethod
+	def _combine_kegg_gene_identifers(row):
+		delim = "|"
+		gene_names = row.gene_names.strip().split(delim)
+		if not row.ncbi_id == "":
+			gene_names.append(add_prefix(row.ncbi_id, NCBI_TAG))
+			gene_names.append(row.ncbi_id)
+		if not row.uniprot_id == "":
+			gene_names.append(add_prefix(row.uniprot_id, UNIPROT_TAG))
+		gene_names_str = delim.join(gene_names)
+		return(gene_names_str)
+
+
+	@staticmethod
+	def get_dataframe_for_kegg(paths):
 		"""
 		Create a dictionary mapping KEGG pathways to lists of genes. Code is adapted from the example of
 		parsing pathway files obtained through the KEGG REST API, which can be found here:
@@ -344,125 +374,129 @@ class Groupings:
 		everything else.
 		
 		Args:
-			kegg_species_abbreviation (str): Species abbreviation string, see table of options.
-			_case_sensitive (TYPE): Description
+		    paths (TYPE): Description
 		
 		Returns:
-			pandas.DataFrame: The dataframe containing all relevant information about all applicable KEGG pathways.
+		    pandas.DataFrame: The dataframe containing all relevant information about all applicable KEGG pathways.
+		
 		"""
+		dfs_for_each_species = []
+		for kegg_species_abbreviation,path in paths.items():
 
-		col_names = ["species", "pathway_id", "pathway_name", "gene_names", "ncbi_id", "uniprot_id", "ko_number", "ec_number"]
-		df = pd.DataFrame(columns=col_names)
-
-		pathway_dict_fwd = {}
-		pathway_dict_rev = defaultdict(list)
-		pathways = REST.kegg_list("pathway", kegg_species_abbreviation)
-		pathway_ids_dict = {}
-
-		for pathway in pathways:
-
-			pathway_id = pathway.split()[0]
-			pathway_file = REST.kegg_get(dbentries=pathway_id).read()
-			
+			col_names = ["species", "pathway_id", "pathway_name", "gene_names", "ncbi_id", "uniprot_id", "ko_number", "ec_number"]
+			df = pd.DataFrame(columns=col_names)
+			pathway_dict_fwd = {}
+			pathway_dict_rev = defaultdict(list)
+			ko_pathway_ids_dict = {}
 
 
-			for line in pathway_file.rstrip().split("\n"):
-				section = line[:12].strip()
-				if not section == "":
-					current_section = section
+			filenames = glob(os.path.join(path,"*.txt"))
+			for filename in filenames:
+				print(filename)
+				with open(filename,"r") as infile:
+				
 
-				# Collect information about the gene described on this line.
-				if current_section == "GENE":
-
-					# Parse this line of the pathway file.
-					row_string = line[12:]
-					row_tokens = line[12:].split()
-					ncbi_accession = row_tokens[0]
-					uniprot_accession = ""
-
-					# Handing the gene names and other accessions with regex.
-					names_portion_without_accessions = " ".join(row_tokens[1:])
-					pattern_for_ko = r"(\[[A-Za-z0-9_|\.|:]*?KO[A-Za-z0-9_|\.|:]*?\])"
-					pattern_for_ec = r"(\[[A-Za-z0-9_|\.|:]*?EC[A-Za-z0-9_|\.|:]*?\])"
-					result_for_ko = re.search(pattern_for_ko, row_string)
-					result_for_ec = re.search(pattern_for_ec, row_string)
-					if result_for_ko == None:
-						ko_accession = ""
-					else:
-						ko_accession = result_for_ko.group(1)
-						names_portion_without_accessions = names_portion_without_accessions.replace(ko_accession, "")
-						ko_accession = ko_accession[1:-1]
-					if result_for_ec == None:
-						ec_accession = ""
-					else:
-						ec_accession = result_for_ec.group(1)
-						names_portion_without_accessions = names_portion_without_accessions.replace(ec_accession, "")
-						ec_accession = ec_accession[1:-1]
-
-					# Parse the other different names or symbols mentioned.
-					names = names_portion_without_accessions.split(";")
-					names = [name.strip() for name in names]
-					names_delim = "|"
-					names_str = names_delim.join(names)
+					pathway_file = infile.read()
+					for line in pathway_file.rstrip().split("\n"):
+						section = line[:12].strip()
+						if not section == "":
+							current_section = section
 
 
-					# Update the dataframe no matter what the species was.
-					row = {
-						"species":kegg_species_abbreviation,
-						"pathway_id":pathway,
-						"pathway_name":pathway,
-						"gene_names":names_str,
-						"ncbi_id":ncbi_accession,
-						"uniprot_id":uniprot_accession,
-						"ko_number":ko_accession,
-						"ec_number":ec_accession
-					}
-					df = df.append(row, ignore_index=True, sort=False)
+						# Note that the pathway ID obtained here is species-specific, and is an identifier for this pathway in this species in KEGG.
+						# The actual species-indepenent pathway ID that we want to use is the KO identifier found in the later section.
+						if current_section == "ENTRY":
+							row_string = line[12:]
+							row_tokens = row_string.split()
+							pathway_id = row_tokens[0]
 
-				# Update the dictionary between pathway names and IDs.
-				if current_section == "KO_PATHWAY":
-					pathway_id = line[12:].strip()
-					pathway_ids_dict[pathway] = pathway_id
 
-		# Convert the gene names and identifiers to lowercase if case sensitive not set.
-		if not _case_sensitive:
-			df["gene_names"] = df["gene_names"].map(str.lower)
-			df["ncbi_id"] = df["ncbi_id"].map(str.lower)
+						# Should also try and remove the species information from this is using as the pathway name.
+						elif current_section == "NAME":
+							row_string = line[12:]
+							pathway_name = row_string.strip()
 
-		# Update the pathway ID fields using the dictionary.
-		df.replace({"pathway_id":pathway_ids_dict}, inplace=True)
+
+						# This isn't currently used for anything, just retaining the information in case we want to look at it later.
+						elif current_section == "CLASS":
+							row_string = line[12:]
+							pathway_class = row_string.strip()
+
+
+						# Collect information about the gene described on this line.
+						elif current_section == "GENE":
+
+							# Parse this line of the pathway file.
+							row_string = line[12:]
+							row_tokens = line[12:].split()
+							ncbi_accession = row_tokens[0]
+							uniprot_accession = ""
+
+							# Handing the gene names and other accessions with regex.
+							names_portion_without_accessions = " ".join(row_tokens[1:])
+							pattern_for_ko = r"(\[[A-Za-z0-9_|\.|:]*?KO[A-Za-z0-9_|\.|:]*?\])"
+							pattern_for_ec = r"(\[[A-Za-z0-9_|\.|:]*?EC[A-Za-z0-9_|\.|:]*?\])"
+							result_for_ko = re.search(pattern_for_ko, row_string)
+							result_for_ec = re.search(pattern_for_ec, row_string)
+							if result_for_ko == None:
+								ko_accession = ""
+							else:
+								ko_accession = result_for_ko.group(1)
+								names_portion_without_accessions = names_portion_without_accessions.replace(ko_accession, "")
+								ko_accession = ko_accession[1:-1]
+							if result_for_ec == None:
+								ec_accession = ""
+							else:
+								ec_accession = result_for_ec.group(1)
+								names_portion_without_accessions = names_portion_without_accessions.replace(ec_accession, "")
+								ec_accession = ec_accession[1:-1]
+
+							# Parse the other different names or symbols mentioned.
+							names = names_portion_without_accessions.split(";")
+							names = [name.strip() for name in names]
+							names_delim = "|"
+							names_str = names_delim.join(names)
+
+
+							# Update the dataframe no matter what the species was.
+							row = {
+								"species":kegg_species_abbreviation,
+								"group_ids":"",
+								"gene_identifiers":"",
+								"pathway_id":pathway_id,
+								"pathway_id_for_species":pathway_id,
+								"pathway_name":pathway_name,
+								"pathway_class":pathway_class,
+								"gene_names":names_str,
+								"ncbi_id":ncbi_accession,
+								"uniprot_id":uniprot_accession,
+								"ko_number":ko_accession,
+								"ec_number":ec_accession
+							}
+							df = df.append(row, ignore_index=True, sort=False)
+
+						# Update the dictionary between the species-specific pathway IDs and the species non-speicific KEGG pathways IDs.
+						elif current_section == "KO_PATHWAY":
+							ko_pathway_id = line[12:].strip()
+							ko_pathway_ids_dict[pathway_id] = ko_pathway_id
+
+			# Update the pathway ID field using the dictionary mapping species specific IDs to the general KEGG ones.
+			df.replace({"pathway_id":ko_pathway_ids_dict}, inplace=True)
+			dfs_for_each_species.append(df)
+
+		# Merge the dataframes that were created for each species, and make sure the columns are organized as expected.
+		df = pd.concat(dfs_for_each_species)
+		df["group_ids"] = df["pathway_id"]
+		df["gene_identifiers"] = df.apply(lambda row: Groupings._combine_kegg_gene_identifers(row), axis=1)
+		df = df[["species", "group_ids", "gene_identifiers", "pathway_id", "pathway_id_for_species", "pathway_name", "pathway_class", "gene_names", "ncbi_id", "uniprot_id", "ko_number", "ec_number"]]
 		return(df)
 
-
-	def _get_gene_mappings_from_kegg(self, kegg_species_abbreviation, kegg_pathways_df):
-		""" Obtain forward and reverse mappings between pathways and gene names.
-		Args:
-			kegg_species_abbreviation (str): The species code for which genes to look at.
-			kegg_pathways_df (pandas.DataFrame): The dataframe containing all the pathway information.
-		Returns:
-			(dict,dict): A mapping from pathway IDs to lists of gene names,
-						 and a mapping from gene names to lists of pathway IDs. 
-		"""
-		pathway_dict_fwd = defaultdict(list)
-		pathway_dict_rev = defaultdict(list)
-		delim = "|"
-		for row in kegg_pathways_df.itertuples():
-			gene_names = row.gene_names.strip().split(delim)
-			if not row.ncbi_id == "":
-				gene_names.append(add_prefix(row.ncbi_id, NCBI_TAG))
-				gene_names.append(row.ncbi_id)
-			if not row.uniprot_id == "":
-				gene_names.append(add_prefix(row.uniprot_id, UNIPROT_TAG))
-			for gene_name in gene_names:
-				pathway_dict_fwd[row.pathway_id].append(gene_name)
-				pathway_dict_rev[gene_name].append(row.pathway_id)
-		return(pathway_dict_fwd, pathway_dict_rev)
-
-
-	def _get_id_to_readable_kegg_name_mapping(self, pathways_df):
-		df_reduced = pathways_df.drop_duplicates(subset="pathway_id",keep="first", inplace=False)
-		id_to_pathway_name = {row.pathway_id:row.pathway_name for row in df_reduced.itertuples()}
-		return(id_to_pathway_name)
+		# Using drop duplicates to find the mapping between unique pathway IDs and the longer names for them. Problem is that its 1:many, because the names change based on species unfortunately.
+		# TODO address this.
+		# def _get_id_to_readable_kegg_name_mapping(self, pathways_df):
+		# df_reduced = pathways_df.drop_duplicates(subset="pathway_id",keep="first", inplace=False)
+		# id_to_pathway_name = {row.pathway_id:row.pathway_name for row in df_reduced.itertuples()}
+		# return(id_to_pathway_name)
 
 
 
@@ -497,89 +531,36 @@ class Groupings:
 
 	#################### Methods specific to handling the PlantCyc files obtained through Plant Metabolic Network (PMN) ####################
 
+	@staticmethod
+	def get_dataframe_for_plantcyc(paths):
 
-	def _get_dataframe_from_pmn(self, species_code, pathways_filepath, _case_sensitive):
-		usecols = ["Pathway-id", "Pathway-name", "Reaction-id", "EC", "Protein-id", "Protein-name", "Gene-id", "Gene-name"]
-		usenames = ["pathway_id", "pathway_name", "reaction_id", "ec_number", "protein_id", "protein_name", "gene_id", "gene_name"]
-		renamed = {k:v for k,v in zip(usecols,usenames)}
-		df = pd.read_table(pathways_filepath, usecols=usecols)
-		df.rename(columns=renamed, inplace=True)
-		df.fillna("", inplace=True)
-		
-		# Note, manually reviewed the conventions in gene names for the PlantCyc dataset.
-		# The string "unknown" is used for missing values, don't add this as a gene name.
-		df.replace(to_replace="unknown", value="", inplace=True)
 
-		df["gene_names"] = np.vectorize(concatenate_with_bar_delim)(df["protein_id"], df["protein_name"], df["gene_id"], df["gene_name"])
-		if not _case_sensitive:
-			df["gene_names"] = df["gene_names"].map(str.lower)
-		df["species"] = species_code
-		df = df[["species", "pathway_id", "pathway_name", "gene_names", "ec_number"]]
+		dfs_for_each_species = []
+		for species_code, pathways_filepath in paths.items():
+
+			usecols = ["Pathway-id", "Pathway-name", "Reaction-id", "EC", "Protein-id", "Protein-name", "Gene-id", "Gene-name"]
+			usenames = ["pathway_id", "pathway_name", "reaction_id", "ec_number", "protein_id", "protein_name", "gene_id", "gene_name"]
+			renamed = {k:v for k,v in zip(usecols,usenames)}
+			df = pd.read_table(pathways_filepath, usecols=usecols)
+			df.rename(columns=renamed, inplace=True)
+			df.fillna("", inplace=True)
+			
+			# Note, manually reviewed the conventions in gene names for the PlantCyc dataset.
+			# The string "unknown" is used for missing values, don't add this as a gene name.
+			df.replace(to_replace="unknown", value="", inplace=True)
+			df["gene_identifiers"] = np.vectorize(concatenate_with_bar_delim)(df["protein_id"], df["protein_name"], df["gene_id"], df["gene_name"])
+
+			# Some other manipulations to clean up the data, based on how missing value are specified in the PlantCyc Files.
+			# Don't retain rows where no gene names are referenced.
+			df = df[df["gene_identifiers"]!=""]
+			df["ec_number"] = df["ec_number"].map(lambda x: "" if x=="-" else x)
+			df["group_ids"] = df["pathway_id"]
+			df["species"] = species_code
+			df = df[["species", "group_ids", "gene_identifiers", "pathway_id", "pathway_name", "ec_number"]]
+			dfs_for_each_species.append(df)
+
+		df = pd.concat(dfs_for_each_species)
 		return(df)
-
-
-
-	def _get_gene_mappings_from_pmn(self, species_code, pathways_df):
-		pathway_dict_fwd = defaultdict(list)
-		pathway_dict_rev = defaultdict(list)
-		delim = "|"
-		for row in pathways_df.itertuples():
-			gene_names = row.gene_names.strip().split(delim)
-			for gene_name in gene_names:
-				pathway_dict_fwd[row.pathway_id].append(gene_name)
-				pathway_dict_rev[gene_name].append(row.pathway_id)
-		return(pathway_dict_fwd, pathway_dict_rev)
-
-
-
-
-
-	def _get_id_to_readable_pmn_name_mapping(self, pathways_df):
-		df_reduced = pathways_df.drop_duplicates(subset="pathway_id",keep="first", inplace=False)
-		id_to_pathway_name = {row.pathway_id:row.pathway_name for row in df_reduced.itertuples()}
-		return(id_to_pathway_name)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -592,39 +573,33 @@ class Groupings:
 	####################  Methods that are useful for interrogating the contents of an instance of this class  ####################
 
 
-	def to_csv(self, path):
-		"""Write the contents of internal dataframe for this object to a file.
-		
-		Args:
-			path (str): Path to the csv file that will be created.
-		"""
-		df = pd.concat(self._species_to_df_dict.values(), ignore_index=True) 
-		df.to_csv(path, index=False)
-
 	def to_pandas(self):
-		"""Get the internal dataframe used for this grouping object. The columns of the 
-		dataframe can vary based on what the groups for this object are and how they were 
-		found.
+		"""Returns that dataframe that this object was constructed with. This dataframe is unchanged from how
+		it was read in from the CSV file provided as the main argument. The first three columns are fixed and 
+		the remaining columns are unused and could contain any information, they are not removed when the object
+		is constructed.
 
 		Returns:
-			pandas.DataFrame: The internal dataframe used for this grouping.
+			pandas.DataFrame: The internal dataframe used to define the groupings.
 		"""
-		df = pd.concat(self._species_to_df_dict.values(), ignore_index=True) 
-		return(df)
+		return(self.df)
+
+
 
 
 
 	def describe(self):
-		"""Prints a quick summary of this objects contents.
+		"""Returns a summarizing dataframe for this object.
+		
+		Returns:
+		    pandas.DataFrame: The summarizing dataframe for this object.
 		"""
-		print("Number of groups present for each species")
-		for species in self._species_list:
-			print("  {}: {}".format(species, len(self._species_to_fwd_gene_mappings[species].keys())))
-		print("Number of genes names mapped to any group for each species")
-		for species in self._species_list:
-			print("  {}: {}".format(species, len(self._species_to_rev_gene_mappings[species].keys())))
-
-
+		num_groups_in_each_species = {s:len(self._species_to_fwd_gene_mappings[s].keys()) for s in self._species_list}
+		num_genes_mapped_in_each_species = {s:len(self._species_to_rev_gene_mappings[s].keys()) for s in self._species_list}
+		summary = pd.DataFrame(self._species_list, columns=["species"])
+		summary["num_groups"] = summary["species"].map(num_groups_in_each_species)
+		summary["num_genes"] = summary["species"].map(num_genes_mapped_in_each_species)
+		return(summary)
 
 
 

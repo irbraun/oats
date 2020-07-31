@@ -15,7 +15,7 @@ import oats
 @pytest.fixture
 def doc2vec_model():
 	import gensim
-	doc2vec_wikipedia_filename = "../phenologs-with-oats/gensim/enwiki_dbow/doc2vec.bin"     
+	doc2vec_wikipedia_filename = "../phenologs-with-oats/models/enwiki_dbow/doc2vec.bin"     
 	doc2vec_wiki_model = gensim.models.Doc2Vec.load(doc2vec_wikipedia_filename)
 	return(doc2vec_wiki_model)
 
@@ -23,7 +23,7 @@ def doc2vec_model():
 @pytest.fixture
 def word2vec_model():
 	import gensim
-	word2vec_model_filename = "../phenologs-with-oats/gensim/wiki_sg/word2vec.bin"    
+	word2vec_model_filename = "../phenologs-with-oats/models/wiki_sg/word2vec.bin"    
 	word2vec_model = gensim.models.Word2Vec.load(word2vec_model_filename)
 	return(word2vec_model)
 

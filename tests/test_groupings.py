@@ -23,10 +23,6 @@ def small_dataset():
 
 
 
-
-
-
-@pytest.mark.small
 def test_make_groupings(small_dataset):
 
 	
@@ -35,24 +31,19 @@ def test_make_groupings(small_dataset):
 	name_to_id = small_dataset.get_name_to_id_dictionary()
 
 
-	# For the species sp1 file:
+	# Contents of the groupings file for the small test dataset.
 	# -------------------------
-	# Group1			A|B
-	# Group1|Group2		A|B
-	#
-	#
-	#
-	# For the species sp2 file:
-	# -------------------------
-	# Group1			C|D
-	# Group2			C
-	# Group2			D
-	# Group3			C
-	# Group4			C|D
+	# sp1    Group1			A|B
+	# sp1    Group1|Group2		A|B
+	# sp2    Group1			C|D
+	# sp2    Group2			C
+	# sp2    Group2			D
+	# sp2    Group3			C
+	# sp2 	 Group4			C|D
 
 	from oats.biology.groupings import Groupings
-	d = {"sp1":"tests/data/small_dataset_groupings_sp1.csv", "sp2":"tests/data/small_dataset_groupings_sp2.csv"}
-	g = Groupings(d, source="csv", name_mapping={})
+	path = "tests/data/small_dataset_groupings.csv"
+	g = Groupings(path, name_mapping={})
 	d1,d2 = g.get_groupings_for_dataset(small_dataset)
 	id_to_groups = d1
 	group_to_ids = d2
@@ -78,12 +69,6 @@ def test_make_groupings(small_dataset):
 	assert len(group_to_ids["Group2"]) == 4
 	assert len(group_to_ids["Group3"]) == 1
 	assert len(group_to_ids["Group4"]) == 2
-
-
-
-
-
-
 
 
 

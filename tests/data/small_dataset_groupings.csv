@@ -1,0 +1,8 @@
+﻿species,group_ids,gene_identifiers
+sp1,Group1,A|B
+sp1,Group1|Group2,A|B
+sp2,Group1,C|D
+sp2,Group2,C
+sp2,Group2,D
+sp2,Group3,C
+sp2,Group4,C|D
