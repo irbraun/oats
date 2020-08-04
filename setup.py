@@ -22,8 +22,12 @@ setuptools.setup(
         "sparqlwrapper == 1.8.2",
         "rapidfuzz == 0.3.0",
         "nltk == 3.4.4",
-        "pronto == 0.12.2",
-        "biopython == 1.76"
+        "pronto == 2.1.0",
+        "biopython == 1.76",
+        "pytorch-pretrained-bert==0.6.2",
+        "more-itertools==8.2.0",
+        "networkx==2.4",
+        "scipy==1.4.1"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
