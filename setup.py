@@ -21,7 +21,7 @@ setuptools.setup(
         "rdflib == 4.2.2",
         "sparqlwrapper == 1.8.2",
         "rapidfuzz == 0.3.0",
-        "nltk == 3.4.4",
+        "nltk == 3.4.5",
         "pronto == 2.1.0",
         "biopython == 1.76",
         "pytorch-pretrained-bert==0.6.2",
