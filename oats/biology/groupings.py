@@ -109,6 +109,8 @@ class Groupings:
 
 
 
+
+
 	##############  The primary methods that should be used from outside this class  ##############
 
 	def get_groupings_for_dataset(self, dataset):
@@ -184,7 +186,10 @@ class Groupings:
 		Returns:
 			str: The full name for this group given as a string.
 		"""
-		return(self._readable_name_mappings[group_id])
+		if self._readable_name_mappings is not None:
+			return(self._readable_name_mappings[group_id])
+		else:
+			return(str(group_id))
 
 
 
