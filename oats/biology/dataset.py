@@ -27,7 +27,7 @@ class Dataset:
 
 
 
-	def __init__(self, data=None):
+	def __init__(self, data=None, keep_ids=False):
 		"""
 		Args:
 		    data (pandas.DataFrame or str, optional): A dataframe containing the data to be added to this
@@ -39,13 +39,59 @@ class Dataset:
 			delimited.
 
 		"""
-		self._col_names = ["id", "species", "unique_gene_identifiers", "other_gene_identifiers", "gene_models", "descriptions", "annotations", "sources"]
-		self._col_names_without_id = self._col_names
-		self._col_names_without_id.remove("id")
+
+		all_column_names = ["id", "species", "unique_gene_identifiers", "other_gene_identifiers", "gene_models", "descriptions", "annotations", "sources"]
+		column_names_without_id = all_column_names[1:]
+		self._col_names = all_column_names
+		self._col_names_without_id = column_names_without_id
 		self.df = pd.DataFrame(columns=self._col_names)
 		if data is not None:
-			self.add_data(data)
+			if keep_ids:
+				self._add_data_with_original_ids(data)
+			else:
+				self.add_data(data)
 		self._update_dictionaries()
+
+
+
+
+
+
+
+	def _add_data_with_original_ids(self, new_data, source="unnamed"):
+		"""
+		Only called by the constructor. Allows for saving a dataset to a CSV then regenerating it with the same IDs.
+		Retaining IDs is not supported when adding any new data, they always get merged and reset. This only works
+		for creating some dataset, saving it, then reading in that exact same dataset somewhere else. This is important
+		for sharing a given dataset with the streamlit application for intance. This does not call the method for 
+		resetting the ID column.
+
+		"""
+
+		if isinstance(new_data, pd.DataFrame):
+			new_data = new_data[self._col_names]
+			new_data.fillna("", inplace=True)
+			new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
+			self.df = self.df.append(new_data, ignore_index=True, sort=False)
+			self._update_dictionaries()
+
+		elif isinstance(new_data, str):
+			new_data = pd.read_csv(new_data)
+			new_data = new_data[self._col_names]
+			new_data.fillna("", inplace=True)
+			new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
+			self.df = self.df.append(new_data, ignore_index=True, sort=False)
+			self._update_dictionaries()
+
+		else:
+			raise ValueError("the data argument should be filename string or a pandas dataframe object")
+
+
+
+
+
+
+
 
 
 
@@ -98,16 +144,14 @@ class Dataset:
 
 	def _reset_ids(self):
 		"""
-		This method is called after every preprocessing, subsampling, sorting, or merging step
-		done during the preprocessing and creation of a given dataset. It resets the actual row
-		indices of the internal dataframe object, forgets the old ones, and uses the new ones 
-		to populate a column to use as IDs for entries in the dataset. This ensures that there
-		will always be an ID value to access where the IDs are always unique integers.
+		This method is only called after initially reading in a datafile that does not already have IDs 
+		speciied, or after adding additional data, or after merging based on gene identifers. It does 
+		not run after filtering, so filtering can be done without destroying the mapping between existing
+		IDs and the information each represents.
 		"""
 		self.df.reset_index(drop=True,inplace=True)
 		self.df.id = [int(i) for i in self.df.index.values]
-		self.df = self.df[["id", "species", "unique_gene_identifiers", "other_gene_identifiers", "gene_models", "descriptions", "annotations", "sources"]]
-
+		self.df = self.df[self._col_names]
 
 
 
