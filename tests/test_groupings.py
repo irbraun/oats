@@ -26,15 +26,14 @@ def small_dataset():
 def test_make_groupings(small_dataset):
 
 	
-	# Need a mapping between 'gene names' of this test dataset and the internal unique IDs used.
-	small_dataset.collapse_by_all_gene_names(case_sensitive=False)
+	# Need a mapping between gene identifiers in this test dataset and the internal unique IDs used.
 	name_to_id = small_dataset.get_name_to_id_dictionary()
 
 
 	# Contents of the groupings file for the small test dataset.
 	# -------------------------
 	# sp1    Group1			A|B
-	# sp1    Group1|Group2		A|B
+	# sp1    Group1|Group2	A|B
 	# sp2    Group1			C|D
 	# sp2    Group2			C
 	# sp2    Group2			D

@@ -31,7 +31,6 @@ def test_read_relationships(small_dataset):
 
 	
 	# Need a mapping between 'gene names' of this test dataset and the internal unique IDs used.
-	small_dataset.collapse_by_all_gene_names()
 	name_to_id = small_dataset.get_name_to_id_dictionary()
 
 	# From the txt file specifying relationships between genes.

@@ -1,14 +1,15 @@
 import pytest
 import sys
 import pandas as pd
+
+
 sys.path.append("../oats")
-import oats
+from oats.biology.dataset import Dataset
 
 
 
 
-
-
+# This is what the simple dataset looks like when read in.
 
 # species	unique_gene_identifiers	other_gene_identifiers	gene_models	descriptions	annotations	sources
 # sp1	A	Z	A	sentence from line 1	XO:0000111	Y
@@ -24,6 +25,8 @@ import oats
 
 
 
+
+
 datasets = {
 	"simple_dataset":pd.read_csv("/Users/irbraun/oats/tests/data/small_dataset.csv"),
 }
@@ -31,36 +34,48 @@ datasets = {
 
 
 
-@pytest.mark.small
+
+
 @pytest.mark.parametrize("input_data, expected", [
     (datasets["simple_dataset"], 10),      
 ])
 def test_reading_in_data(input_data, expected):
-	from oats.biology.dataset import Dataset
-	dataset = Dataset()
-	dataset.add_data(input_data)
+	
+	
+	# Using the constructor method and retaining the original IDs (and therefore size) of the dataset.
+	dataset = Dataset(data=input_data, keep_ids=True)
 	assert dataset.to_pandas().shape[0] == expected
-	print(dataset.describe())
 
 
 
 
 
 
-@pytest.mark.small
 @pytest.mark.parametrize("input_data, expected, case_sensitive", [
     (datasets["simple_dataset"], 6, True),
     (datasets["simple_dataset"], 4, False),      
 ])
 def test_collapsing_by_all_gene_names(input_data, expected, case_sensitive):
-	from oats.biology.dataset import Dataset
-	dataset = Dataset()
-	dataset.add_data(input_data)
-	dataset.collapse_by_all_gene_names(case_sensitive)
+	
+
+	# Using the constructor and retaining the original size, then collapsing by calling the hidden method.
+	# This is not the intended way to do this but it should always work.
+	dataset = Dataset(data=input_data, keep_ids=True)
+	dataset._collapse_by_all_gene_names(case_sensitive)
 	assert dataset.to_pandas().shape[0] == expected
-	print(dataset.describe())
 
 
+	# Create a blank dataset then add this information to it, and it should be automatically collapsed.
+	# This is one of the intended ways to do this.
+	dataset = Dataset()
+	dataset.add_data(new_data=input_data, case_sensitive=case_sensitive)
+	assert dataset.to_pandas().shape[0] == expected
+
+
+	# Use the constructor and don't specify that IDs should be kept, so it gets automatically collapsed.
+	# This is one of the intended ways to do this.
+	dataset = Dataset(data=input_data, keep_ids=False, case_sensitive=case_sensitive)
+	assert dataset.to_pandas().shape[0] == expected
 
 
 
