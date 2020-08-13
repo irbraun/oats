@@ -7,8 +7,8 @@ import re
 import os
 import itertools
 
-from oats.nlp.preprocess import concatenate_with_bar_delim
-from oats.nlp.preprocess import add_prefix
+from oats.nlp.preprocess import concatenate_with_delim
+from oats.nlp.small import add_prefix_safely
 from oats.utils.constants import NCBI_TAG, UNIPROT_TAG
 from oats.utils.utils import remove_duplicates_retain_order
 
@@ -553,7 +553,8 @@ class Groupings:
 			# Note, manually reviewed the conventions in gene names for the PlantCyc dataset.
 			# The string "unknown" is used for missing values, don't add this as a gene name.
 			df.replace(to_replace="unknown", value="", inplace=True)
-			df["gene_identifiers"] = np.vectorize(concatenate_with_bar_delim)(df["protein_id"], df["protein_name"], df["gene_id"], df["gene_name"])
+			combine_columns = lambda row, columns: concatenate_with_delim("|", [row[col] for col in columns])
+			df["gene_identifiers"] = df.apply(lambda x: combine_columns(x, ["protein_id", "protein_name", "gene_id", "gene_name"]), axis=1)
 
 			# Some other manipulations to clean up the data, based on how missing value are specified in the PlantCyc Files.
 			# Don't retain rows where no gene names are referenced.

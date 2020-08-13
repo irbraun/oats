@@ -5,8 +5,7 @@ import itertools
 import networkx as nx
 
 from oats.biology.gene import Gene
-from oats.nlp.preprocess import concatenate_descriptions
-from oats.nlp.preprocess import concatenate_with_bar_delim
+from oats.nlp.preprocess import concatenate_texts, concatenate_with_delim
 
 
 
@@ -27,7 +26,7 @@ class Dataset:
 
 
 
-	def __init__(self, data=None, keep_ids=False):
+	def __init__(self, data=None, keep_ids=False, case_sensitive=False, source=None):
 		"""
 		Args:
 		    data (pandas.DataFrame or str, optional): A dataframe containing the data to be added to this
@@ -47,9 +46,9 @@ class Dataset:
 		self.df = pd.DataFrame(columns=self._col_names)
 		if data is not None:
 			if keep_ids:
-				self._add_data_with_original_ids(data)
+				self._add_data_with_ids(new_data=data)
 			else:
-				self.add_data(data)
+				self.add_data(new_data=data, case_sensitive=case_sensitive, source=source)
 		self._update_dictionaries()
 
 
@@ -58,7 +57,7 @@ class Dataset:
 
 
 
-	def _add_data_with_original_ids(self, new_data, source="unnamed"):
+	def _add_data_with_ids(self, new_data, source=None):
 		"""
 		Only called by the constructor. Allows for saving a dataset to a CSV then regenerating it with the same IDs.
 		Retaining IDs is not supported when adding any new data, they always get merged and reset. This only works
@@ -94,12 +93,7 @@ class Dataset:
 
 
 
-
-
-
-
-
-	def add_data(self, new_data, source="unnamed"):
+	def add_data(self, new_data, case_sensitive=False, source=None):
 		"""Add additional data to this dataset.
 		
 		Args:
@@ -120,8 +114,14 @@ class Dataset:
 			new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
 			self.df = self.df.append(new_data, ignore_index=True, sort=False)
 			self.df = self.df.drop_duplicates(keep="first", inplace=False)
+			# The IDs need to be reset before collapsing by gene names, because it makes use of the that column.
 			self._reset_ids()
-			self._update_dictionaries()
+			self._collapse_by_all_gene_names(case_sensitive=case_sensitive)
+			# These two methods are already called after collapsing by all the gene names.
+			# Calling them again shouldn't break anything, it's just waste of processing.
+			#self._reset_ids()
+			#self._update_dictionaries()
+
 
 		elif isinstance(new_data, str):
 			new_data = pd.read_csv(new_data)
@@ -131,8 +131,13 @@ class Dataset:
 			new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
 			self.df = self.df.append(new_data, ignore_index=True, sort=False)
 			self.df = self.df.drop_duplicates(keep="first", inplace=False)
+			# The IDs need to be reset before collapsing by gene names, because it makes use of the that column.
 			self._reset_ids()
-			self._update_dictionaries()
+			self._collapse_by_all_gene_names(case_sensitive=case_sensitive)
+			# These two methods are already called after collapsing by all the gene names.
+			# Calling them again shouldn't break anything, it's just waste of processing.
+			#self._reset_ids()
+			#self._update_dictionaries()
 
 		else:
 			raise ValueError("the data argument should be filename string or a pandas dataframe object")
@@ -483,52 +488,6 @@ class Dataset:
 	######## Merging rows in the dataset based on overlaps in gene names #########
 
 
-
-
-
-
-
-	# This method reorganizes the internal dataframe object so that any lines that were referring
-	# to the same species and where the first value in the list of gene names is identical for 
-	# the entry are merged. Text descriptions are concatenated and a union of the gene names, term
-	# IDs and references are retained. This is not appreciably faster than collapsing by all the 
-	# gene names instead of just the first one, because that problem can be formulated as solving
-	# the connected components problem before doing the 'group by' step. So this method is included
-	# not to save time but for cases where only the first gene name is unique gene identifer and 
-	# the other are potentially not.
-	def collapse_by_first_gene_name(self):
-		"""Merges all the records where the species and first listed gene name or identifier match. Text descriptions 
-		are concatenated and a union of the gene names and ontology term IDs are retained.
-		"""
-
-		# Create the column that can be used to group by.
-		self.df["first_gene_name"] = self.df["gene_names"].apply(lambda x: x.split("|")[0])
-		self.df["first_gene_name"] = self.df["first_gene_name"]+":"+self.df["species"]
-
-		# Groupy by that column and merge the other fields appropriately.
-		collapsed_df = self.df.groupby("first_gene_name").agg({"species": lambda x: x.values[0],
-																"gene_names": lambda x: concatenate_with_bar_delim(*x),
-																"gene_synonyms": lambda x: concatenate_with_bar_delim(*x),
-																"description":lambda x: concatenate_descriptions(*x),
-																"term_ids":lambda x: concatenate_with_bar_delim(*x),
-																"sources":lambda x: concatenate_with_bar_delim(*x)})
-		collapsed_df["id"] = None
-		self.df = collapsed_df
-		self._reset_ids()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	# The input is the dataframe that has the form:
 	# 
 	# ID  Names
@@ -586,30 +545,32 @@ class Dataset:
 
 
 
-
+	# This is only called by collapse_by_all_gene_names().
 	# A method necessary for cleaning up lists of gene identifiers after merging.
+	# This removes things from the other gene identifiers if they are already listed as a unique gene identifier.
+	# This could happen after merging if some string was unsure about being a unique identifier, but some other entry confirms that is is.
 	@staticmethod
 	def _remove_duplicate_names(row):
-		"""Removes synonyms that are already listed as gene names.
-
-		Args:
-		    row (TYPE): Description
-		"""
 		gene_names = row["unique_gene_identifiers"].split("|")
 		gene_synonyms = row["other_gene_identifiers"].split("|")
 		updated_gene_synonyms = [x for x in gene_synonyms if x not in gene_names]
-		gene_synonyms_str = concatenate_with_bar_delim(*updated_gene_synonyms)
+		gene_synonyms_str = concatenate_with_delim("|", updated_gene_synonyms)
 		return(gene_synonyms_str)
 
 
+
+
+
+	# This is only called by collapse_by_all_gene_names().
 	# Another method necessary for cleaning up lists of gene identifiers after merging.
+	# This retains the order except for it puts anything that is also in the gene models column last.
 	@staticmethod
-	def reorder_unique_gene_identifers(row):
+	def _reorder_unique_gene_identifers(row):
 		unique_identifiers = row["unique_gene_identifiers"].split("|")
 		gene_models = row["gene_models"].split("|")
 		reordered_unique_identifiers = [x for x in unique_identifiers if x not in gene_models]
 		reordered_unique_identifiers.extend(gene_models)
-		reordered_unique_identifiers_str = concatenate_with_bar_delim(*reordered_unique_identifiers)
+		reordered_unique_identifiers_str = concatenate_with_delim("|", reordered_unique_identifiers)
 		return(reordered_unique_identifiers_str)
 
 
@@ -618,12 +579,7 @@ class Dataset:
 
 
 
-
-
-
-
-
-	def collapse_by_all_gene_names(self, case_sensitive=False):
+	def _collapse_by_all_gene_names(self, case_sensitive=False):
 		"""Merges all the records where the species and any of the listed gene names or identifiers match. Text descriptions 
 		are concatenated and a union of the gene names and ontology term IDs are retained.
 		
@@ -661,22 +617,23 @@ class Dataset:
 		# Create a new column that indicates which connected component that entry maps to.
 		self.df["component"] = self.df["id"].map(node_to_component)
 
+
+		print(self.df)
+
 		# Groupy by the connected component column and merge the other fields appropriately.
 		self.df = self.df.groupby("component").agg({"species": lambda x: x.values[0],
-															"unique_gene_identifiers": lambda x: concatenate_with_bar_delim(*x),
-															"other_gene_identifiers": lambda x: concatenate_with_bar_delim(*x),
-															"gene_models": lambda x: concatenate_with_bar_delim(*x),
-															"descriptions":lambda x: concatenate_descriptions(*x),
-															"annotations":lambda x: concatenate_with_bar_delim(*x),
-															"sources":lambda x: concatenate_with_bar_delim(*x)})
+															"unique_gene_identifiers": lambda x: concatenate_with_delim("|",x),
+															"other_gene_identifiers": lambda x: concatenate_with_delim("|",x),
+															"gene_models": lambda x: concatenate_with_delim("|",x),
+															"descriptions":lambda x: concatenate_texts(x),
+															"annotations":lambda x: concatenate_with_delim("|",x),
+															"sources":lambda x: concatenate_with_delim("|",x)})
 
 		
 		# Merging may have resulted in names or identifers being considered by gene names and synonyms.
 		# Remove them from the synonym list if they are in the gene name list.
 		self.df["other_gene_identifiers"] = self.df.apply(lambda x: Dataset._remove_duplicate_names(x), axis=1)
-
-		self.df["unique_gene_identifiers"] = self.df.apply(lambda x: Dataset.reorder_unique_gene_identifers(x), axis=1)
-
+		self.df["unique_gene_identifiers"] = self.df.apply(lambda x: Dataset._reorder_unique_gene_identifers(x), axis=1)
 
 		# Reset the ID values in the dataset to reflect this change.
 		self.df["id"] = None
