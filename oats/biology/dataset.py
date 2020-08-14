@@ -70,7 +70,7 @@ class Dataset:
 		if isinstance(new_data, pd.DataFrame):
 			new_data = new_data[self._col_names]
 			new_data.fillna("", inplace=True)
-			new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
+			#new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
 			self.df = self.df.append(new_data, ignore_index=True, sort=False)
 			self._update_dictionaries()
 
@@ -78,7 +78,7 @@ class Dataset:
 			new_data = pd.read_csv(new_data)
 			new_data = new_data[self._col_names]
 			new_data.fillna("", inplace=True)
-			new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
+			#new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
 			self.df = self.df.append(new_data, ignore_index=True, sort=False)
 			self._update_dictionaries()
 
@@ -111,7 +111,7 @@ class Dataset:
 			new_data = new_data[self._col_names_without_id]
 			new_data.loc[:,"id"] = None
 			new_data.fillna("", inplace=True)
-			new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
+			#new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
 			self.df = self.df.append(new_data, ignore_index=True, sort=False)
 			self.df = self.df.drop_duplicates(keep="first", inplace=False)
 			# The IDs need to be reset before collapsing by gene names, because it makes use of the that column.
@@ -128,7 +128,7 @@ class Dataset:
 			new_data = new_data[self._col_names_without_id]
 			new_data.loc[:,"id"] = None
 			new_data.fillna("", inplace=True)
-			new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
+			#new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
 			self.df = self.df.append(new_data, ignore_index=True, sort=False)
 			self.df = self.df.drop_duplicates(keep="first", inplace=False)
 			# The IDs need to be reset before collapsing by gene names, because it makes use of the that column.
@@ -617,9 +617,6 @@ class Dataset:
 		# Create a new column that indicates which connected component that entry maps to.
 		self.df["component"] = self.df["id"].map(node_to_component)
 
-
-		print(self.df)
-
 		# Groupy by the connected component column and merge the other fields appropriately.
 		self.df = self.df.groupby("component").agg({"species": lambda x: x.values[0],
 															"unique_gene_identifiers": lambda x: concatenate_with_delim("|",x),
@@ -696,12 +693,6 @@ class Dataset:
 	def describe(self):
 		"""Returns a summarizing dataframe for this dataset.
 		"""
-
-		#print("Number of rows in the dataframe: {}".format(len(self.df)))
-		#print("Number of unique IDs:            {}".format(len(pd.unique(self.df.id))))
-		#print("Number of unique descriptions:   {}".format(len(pd.unique(self.df.description))))
-		#print("Number of unique gene name sets: {}".format(len(pd.unique(self.df.gene_names))))
-		#print("Number of species represented:   {}".format(len(pd.unique(self.df.species))))
 
 		# Generate a dataframe that summarizes how many genes and unique descriptions there are for each species.
 		summary_df = self.df.groupby("species").agg({

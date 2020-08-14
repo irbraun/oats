@@ -360,10 +360,10 @@ class Groupings:
 		delim = "|"
 		gene_names = row.gene_names.strip().split(delim)
 		if not row.ncbi_id == "":
-			gene_names.append(add_prefix(row.ncbi_id, NCBI_TAG))
+			gene_names.append(add_prefix_safely(row.ncbi_id, NCBI_TAG))
 			gene_names.append(row.ncbi_id)
 		if not row.uniprot_id == "":
-			gene_names.append(add_prefix(row.uniprot_id, UNIPROT_TAG))
+			gene_names.append(add_prefix_safely(row.uniprot_id, UNIPROT_TAG))
 		gene_names_str = delim.join(gene_names)
 		return(gene_names_str)
 

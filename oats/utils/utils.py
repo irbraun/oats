@@ -3,7 +3,7 @@ from itertools import  chain
 import _pickle as pickle
 import time
 
-from oats.utils import constants
+#from oats.utils import constants
 
 
 
@@ -15,11 +15,11 @@ from oats.utils import constants
 
 ######### Random functions specific to this package #########
 
-def to_abbreviation(name, mapping=None):
-	if not mapping == None:
-		return(mapping[name])
-	else:
-		return(constants.ABBREVIATIONS_MAP[name])
+# def to_abbreviation(name, mapping=None):
+# 	if not mapping == None:
+# 		return(mapping[name])
+# 	else:
+# 		return(constants.ABBREVIATIONS_MAP[name])
 
 
 
@@ -32,24 +32,24 @@ def to_abbreviation(name, mapping=None):
 
 ######### Functions that do some logic step that is used often #########
 
-def merge_list_dicts(*dicts):
-	"""
-	Merges dictionaries where the values are lists of items. The behavior is that
-	when two mappings are combined, the key is the same but the values are a union
-	of the items that were in the two lists.
+# def merge_list_dicts(*dicts):
+# 	"""
+# 	Merges dictionaries where the values are lists of items. The behavior is that
+# 	when two mappings are combined, the key is the same but the values are a union
+# 	of the items that were in the two lists.
 	
-	Args:
-		*dicts: Any number of dictionaries to be merged.
-	Returns:
-		dict: A single dict merged from the input ones.
-	"""
-	merged_dict = defaultdict(list)
-	all_tuples = list(chain.from_iterable([d.items() for d in dicts]))
-	for (k,v) in all_tuples:
-		merged_dict[k].extend(v)
-	for (k,v) in merged_dict.items():
-		merged_dict[k] = remove_duplicates_retain_order(v)
-	return(merged_dict)
+# 	Args:
+# 		*dicts: Any number of dictionaries to be merged.
+# 	Returns:
+# 		dict: A single dict merged from the input ones.
+# 	"""
+# 	merged_dict = defaultdict(list)
+# 	all_tuples = list(chain.from_iterable([d.items() for d in dicts]))
+# 	for (k,v) in all_tuples:
+# 		merged_dict[k].extend(v)
+# 	for (k,v) in merged_dict.items():
+# 		merged_dict[k] = remove_duplicates_retain_order(v)
+# 	return(merged_dict)
 
 
 
@@ -118,18 +118,18 @@ def function_wrapper_with_duration(function, args):
 	total_time = time.perf_counter()-start_time
 	return(return_value,total_time)
 
-def print_nested_dict(d, indent=0):
-	"""Credited to comment at https://stackoverflow.com/a/3229493.
-	Args:
-		d (dict): Any nested dictionary.
-		indent (int, optional): Number of tabs in the indent.
-	"""
-	for key,value in d.items():
-		print('\t' * indent + str(key))
-		if isinstance(value, dict):
-			print_nested_dict(value, indent+1)
-		else:
-			print('\t' * (indent+1) + str(value))
+# def print_nested_dict(d, indent=0):
+# 	"""Credited to comment at https://stackoverflow.com/a/3229493.
+# 	Args:
+# 		d (dict): Any nested dictionary.
+# 		indent (int, optional): Number of tabs in the indent.
+# 	"""
+# 	for key,value in d.items():
+# 		print('\t' * indent + str(key))
+# 		if isinstance(value, dict):
+# 			print_nested_dict(value, indent+1)
+# 		else:
+# 			print('\t' * (indent+1) + str(value))
 
 
 
