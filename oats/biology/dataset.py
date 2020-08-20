@@ -264,7 +264,9 @@ class Dataset:
 		"""Summary
 		
 		Args:
-		    include_synonyms (bool, optional): Description
+		    nonuniques (bool, optional): Description
+		    
+		    lowercase (bool, optional): Description
 		
 		Returns:
 		    TYPE: Description

@@ -5,6 +5,7 @@ from nltk.corpus import wordnet
 from nltk.tokenize import word_tokenize
 from pywsd.lesk import cosine_lesk
 from scipy.stats import fisher_exact
+from gensim.utils import simple_preprocess
 import itertools
 import itertools
 import numpy as np
@@ -13,7 +14,6 @@ import networkx as nx
 
 
 from oats.utils.utils import flatten
-from oats.nlp.preprocess import get_clean_token_list
 
 
 
@@ -145,7 +145,7 @@ def get_wordnet_related_words_from_doc(description, synonyms=1, hyperhyms=0, hyp
 	Returns:
 		dict: A mapping from a string to a list of strings, the found related words..
 	"""
-	tokens = get_clean_token_list(description)
+	tokens = simple_preprocess(description)
 	synonym_dict = {token:get_wordnet_related_words_from_word(token, description, synonyms, hypernyms, hyponyms) for token in tokens}
 	return(synonym_dict)
 
@@ -172,7 +172,7 @@ def get_word2vec_related_words_from_doc(description, model, threshold, max_qty):
 	Returns:
 		dict: A mapping from a string to a list of strings, the found related words..
 	"""
-	tokens = get_clean_token_list(description)
+	tokens = simple_preprocess(description)
 	synonym_dict = {token:get_word2vec_related_words_from_word(token, model, threshold, max_qty) for token in tokens}
 	return(synonym_dict)
 
