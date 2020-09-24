@@ -667,13 +667,16 @@ class Dataset:
 
 
 	def to_csv(self, path):
-		"""Writes the dataset to a file.
+		"""Writes the dataset to a csv file.
 		
 		Args:
 			path (str): Path of the csv file that will be created.
 		"""
 		self._sort_by_species()
 		self.df.to_csv(path, index=False)
+
+
+
 
 
 
@@ -687,6 +690,39 @@ class Dataset:
 		"""
 		self._sort_by_species()
 		return(self.df)
+
+
+
+
+
+
+
+	def to_json(self):
+		"""Creates a nested dictionary from this dataset.
+		
+		Returns:
+		    defaultdict: A nested dictionary representation of this dataset.
+		"""
+		infinite_defaultdict = lambda: defaultdict(infinite_defaultdict)
+		split_on_bar_without_empty_strings = lambda x: [y.strip() for y in x.split("|") if y.strip() != ""]
+		json_data = []
+		for row in self.df.itertuples():
+			d = infinite_defaultdict() 
+			d["id"] = row.id
+			d["species"] = row.species
+			d["unique_gene_identifiers"] = split_on_bar_without_empty_strings(row.unique_gene_identifiers)
+			d["other_gene_identifiers"] = split_on_bar_without_empty_strings(row.other_gene_identifiers)
+			d["gene_models"] = split_on_bar_without_empty_strings(row.gene_models)
+			d["descriptions"] = row.descriptions
+			d["annotations"] = split_on_bar_without_empty_strings(row.annotations)
+			d["sources"] = split_on_bar_without_empty_strings(row.sources)
+			json_data.append(d)
+		return(json_data)
+
+
+
+
+
 
 
 

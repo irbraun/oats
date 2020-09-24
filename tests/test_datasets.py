@@ -79,3 +79,16 @@ def test_collapsing_by_all_gene_names(input_data, expected, case_sensitive):
 
 
 
+
+
+
+def test_json():
+	input_data = datasets["simple_dataset"]
+	dataset = Dataset(data=input_data, keep_ids=True)
+	import json
+	with open("/Users/irbraun/Desktop/testing.json", "w") as f:
+		json.dump(dataset.to_json(), f, indent=4)
+
+
+
+
