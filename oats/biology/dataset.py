@@ -1,7 +1,6 @@
 from itertools import chain
 from collections import defaultdict
 import pandas as pd
-import itertools
 import networkx as nx
 
 from oats.biology.gene import Gene
@@ -26,7 +25,7 @@ class Dataset:
 
 
 
-	def __init__(self, data=None, keep_ids=False, case_sensitive=False, source=None):
+	def __init__(self, data=None, keep_ids=False, case_sensitive=False):
 		"""
 		Args:
 		    data (pandas.DataFrame or str, optional): A dataframe containing the data to be added to this
@@ -46,9 +45,9 @@ class Dataset:
 		self.df = pd.DataFrame(columns=self._col_names)
 		if data is not None:
 			if keep_ids:
-				self._add_data_with_ids(new_data=data)
+				self._add_data_with_ids(data=data)
 			else:
-				self.add_data(new_data=data, case_sensitive=case_sensitive, source=source)
+				self.add_data(new_data=data, case_sensitive=case_sensitive)
 		self._update_dictionaries()
 
 
@@ -57,33 +56,33 @@ class Dataset:
 
 
 
-	def _add_data_with_ids(self, new_data, source=None):
+	def _add_data_with_ids(self, data):
 		"""
 		Only called by the constructor. Allows for saving a dataset to a CSV then regenerating it with the same IDs.
 		Retaining IDs is not supported when adding any new data, they always get merged and reset. This only works
 		for creating some dataset, saving it, then reading in that exact same dataset somewhere else. This is important
-		for sharing a given dataset with the streamlit application for intance. This does not call the method for 
+		for sharing a given dataset with the streamlit application for instance. This does not call the method for
 		resetting the ID column.
 
 		"""
 
-		if isinstance(new_data, pd.DataFrame):
-			new_data = new_data[self._col_names]
-			new_data.fillna("", inplace=True)
+		if isinstance(data, pd.DataFrame):
+			data = data[self._col_names]
+			data.fillna("", inplace=True)
 			#new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
-			self.df = self.df.append(new_data, ignore_index=True, sort=False)
+			self.df = self.df.append(data, ignore_index=True, sort=False)
 			self._update_dictionaries()
 
-		elif isinstance(new_data, str):
-			new_data = pd.read_csv(new_data)
-			new_data = new_data[self._col_names]
-			new_data.fillna("", inplace=True)
+		elif isinstance(data, str):
+			data = pd.read_csv(data)
+			data = data[self._col_names]
+			data.fillna("", inplace=True)
 			#new_data["descriptions"] = new_data["descriptions"].map(lambda x: x.replace(";","."))
-			self.df = self.df.append(new_data, ignore_index=True, sort=False)
+			self.df = self.df.append(data, ignore_index=True, sort=False)
 			self._update_dictionaries()
 
 		else:
-			raise ValueError("the data argument should be filename string or a pandas dataframe object")
+			raise ValueError("the data argument should be filepath string or a pandas dataframe object")
 
 
 
@@ -93,7 +92,7 @@ class Dataset:
 
 
 
-	def add_data(self, new_data, case_sensitive=False, source=None):
+	def add_data(self, new_data, case_sensitive=False):
 		"""Add additional data to this dataset.
 		
 		Args:
@@ -171,7 +170,7 @@ class Dataset:
 
 
 
-	def filter_random_k(self, k, seed=1483):
+	def filter_randomly(self, k, seed=1483):
 		"""Remove all but k randomly sampled records from the dataset.
 		
 		Args:
@@ -329,7 +328,7 @@ class Dataset:
 	####### Accessing information from the dataset ##########
 
 
-	def get_gene_dictionary(self):
+	def genes(self):
 		"""Get a mapping from record IDs to their corresponding gene objects.
 		
 		Returns:
@@ -340,21 +339,25 @@ class Dataset:
 
 
 
-	def get_annotations_dictionary(self, ontology_name=None):
+
+	def annotations(self, ontologies=None):
 		"""Get a mapping from IDs to lists of ontology term IDs.
 		
 		Returns:
 		    dict of int:list of str: Mapping between record IDs and lists of ontology term IDs.
 		
 		Args:
-		    ontology_name (str, optional): The name of on ontology.
+		    ontologies (list of str, optional): Names of ontologies to subset the annotations.
 		"""
 		annotations_dict = {}
+		ontology_term_name_and_id_separator = ":"
+		if ontologies is not None:
+			ontologies = [x.lower() for x in ontologies]
 		for row in self.df.itertuples():
 			delim = "|"
 			term_ids = row.annotations.split(delim)
-			if ontology_name is not None:
-				term_ids = [t for t in term_ids if ontology_name.lower() in t.lower()]
+			if ontologies is not None:
+				term_ids = [t for t in term_ids if t.split(ontology_term_name_and_id_separator)[0].lower() in ontologies]
 			annotations_dict[row.id] = term_ids
 		return(annotations_dict)
 
@@ -363,7 +366,7 @@ class Dataset:
 
 
 
-	def get_description_dictionary(self):
+	def descriptions(self):
 		"""Get a mapping from record IDs to text descriptions.
 		
 		Returns:
@@ -376,7 +379,7 @@ class Dataset:
 
 
 
-	def get_species_dictionary(self):
+	def species(self):
 		"""Get a mapping from record IDs to species names.
 		
 		Returns:
@@ -391,7 +394,7 @@ class Dataset:
 
 
 
-	def get_ids(self):
+	def ids(self):
 		"""Get a list of the IDs for all records in this dataset.
 		
 		Returns:
@@ -400,16 +403,6 @@ class Dataset:
 		return(list(self.df.id.values))
 
 
-
-
-
-	def get_species(self):
-		"""Get a list of all the species that are represented in this dataset.
-		
-		Returns:
-			list of str: Names of all the species represented in the dataset.
-		"""
-		return(list(pd.unique(self.df.species.values)))
 
 
 

@@ -57,7 +57,7 @@ class Groupings:
 	
 	"""
 	
-	def __init__(self, path, name_mapping=None, case_sensitive=False):
+	def __init__(self, path, case_sensitive=False):
 		"""
 		Args:
 		    path (str): The path to the CSV file that is used to build this instance. 
@@ -89,7 +89,7 @@ class Groupings:
 		self.df = pd.read_csv(path)
 		self._species_list = self.df["species"].unique()
 		self._case_sensitive = case_sensitive
-		self._readable_name_mappings = name_mapping
+		#self._readable_name_mappings = name_mapping
 		
 		# The forward mapping maps group strings to lists of gene strings.
 		# The reverse mapping maps gene strings to lists of group strings.
@@ -122,7 +122,7 @@ class Groupings:
 		Returns:
 		    (dict,dict): A mapping from IDs to lists of group identifiers, and a mapping from group identifiers to lists of IDs.
 		"""
-		gene_dict = dataset.get_gene_dictionary()
+		gene_dict = dataset.genes()
 		id_to_group_ids_dict = self.get_id_to_group_ids_dict(gene_dict)
 		group_id_to_ids_dict = self.get_group_id_to_ids_dict(gene_dict)
 		return(id_to_group_ids_dict, group_id_to_ids_dict)
@@ -177,19 +177,19 @@ class Groupings:
 
 
 
-	def get_long_name(self, group_id):
-		"""Returns a string which is the long and readable name for this group ID.
-		
-		Args:
-			group_id (obj): Any group ID.
-		
-		Returns:
-			str: The full name for this group given as a string.
-		"""
-		if self._readable_name_mappings is not None:
-			return(self._readable_name_mappings[group_id])
-		else:
-			return(str(group_id))
+	#def get_long_name(self, group_id):
+	#	"""Returns a string which is the long and readable name for this group ID.
+	#
+	#	Args:
+	#		group_id (obj): Any group ID.
+	#
+	#	Returns:
+	#		str: The full name for this group given as a string.
+	#	"""
+	#	if self._readable_name_mappings is not None:
+	#		return(self._readable_name_mappings[group_id])
+	#	else:
+	#		return(str(group_id))
 
 
 
