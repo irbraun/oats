@@ -12,14 +12,6 @@ oats.distances.distances module
    :undoc-members:
    :show-inheritance:
 
-oats.distances.edgelists module
--------------------------------
-
-.. automodule:: oats.distances.edgelists
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 oats.distances.pairwise module
 ------------------------------
 

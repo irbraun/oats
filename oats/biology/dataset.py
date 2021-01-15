@@ -12,11 +12,11 @@ from oats.nlp.preprocess import concatenate_texts, concatenate_with_delim
 
 class Dataset:
 
-	"""A class that wraps a dataframe containing gene names, text, and ontology annotations.
+	"""
+	A class that wraps a dataframe containing gene names, text, and ontology annotations.
 	
 	Attributes:
-		df (pandas.DataFrame): The dataframe containing the dataset accessed through this class or the path
-		to a csv file that can be loaded as a comparable dataframe. 
+		df (pandas.DataFrame): The dataframe containing the dataset accessed through this class or the path to a csv file that can be loaded as a comparable dataframe. 
 
 	"""
 	
@@ -28,12 +28,12 @@ class Dataset:
 	def __init__(self, data=None, keep_ids=False, case_sensitive=False):
 		"""
 		Args:
-		    data (pandas.DataFrame or str, optional): A dataframe containing the data to be added to this
-		    dataset, or the path to a csv file that can be loaded as a comparable dataframe. The columns
-		    of this dataframe must contain "species", "gene_names", "gene_synonyms", "description", "term_ids",
-		    and "sources". Any of those columns can contain any number of missing values but the columns must 
-		    exist. Any columns that are outside of that list of column names are ignored. Gene names, symbols,
-		    and ontology term IDS in the "gene_names", "gene_synonyms", and "term_ids" columns should be pipe 
+			data (pandas.DataFrame or str, optional): A dataframe containing the data to be added to this
+			dataset, or the path to a csv file that can be loaded as a comparable dataframe. The columns
+			of this dataframe must contain "species", "gene_names", "gene_synonyms", "description", "term_ids",
+			and "sources". Any of those columns can contain any number of missing values but the columns must 
+			exist. Any columns that are outside of that list of column names are ignored. Gene names, symbols,
+			and ontology term IDS in the "gene_names", "gene_synonyms", and "term_ids" columns should be pipe 
 			delimited.
 
 		"""
@@ -187,7 +187,7 @@ class Dataset:
 		"""Remove all records not related to these species.
 		
 		Args:
-		    species (list of str): A list of strings referring the species names.
+			species (list of str): A list of strings referring the species names.
 		"""
 		self.df = self.df[self.df["species"].isin(species)]
 		self._update_dictionaries()
@@ -263,12 +263,12 @@ class Dataset:
 		"""Summary
 		
 		Args:
-		    nonuniques (bool, optional): Description
-		    
-		    lowercase (bool, optional): Description
+			nonuniques (bool, optional): Description
+			
+			lowercase (bool, optional): Description
 		
 		Returns:
-		    TYPE: Description
+			TYPE: Description
 		"""
 		species_to_name_to_ids_dictionary = defaultdict(lambda: defaultdict(list))
 		for row in self.df.itertuples():
@@ -291,7 +291,7 @@ class Dataset:
 		"""Summary
 		
 		Returns:
-		    TYPE: Description
+			TYPE: Description
 		"""
 		gene_dict = {}
 		for row in self.df.itertuples():
@@ -344,10 +344,10 @@ class Dataset:
 		"""Get a mapping from IDs to lists of ontology term IDs.
 		
 		Returns:
-		    dict of int:list of str: Mapping between record IDs and lists of ontology term IDs.
+			dict of int:list of str: Mapping between record IDs and lists of ontology term IDs.
 		
 		Args:
-		    ontologies (list of str, optional): Names of ontologies to subset the annotations.
+			ontologies (list of str, optional): Names of ontologies to subset the annotations.
 		"""
 		annotations_dict = {}
 		ontology_term_name_and_id_separator = ":"
@@ -451,11 +451,11 @@ class Dataset:
 		"""Summary
 		
 		Args:
-		    include_synonyms (bool, optional): Description
-		    lowercase (bool, optional): Description
+			include_synonyms (bool, optional): Description
+			lowercase (bool, optional): Description
 		
 		Returns:
-		    TYPE: Description
+			TYPE: Description
 		"""
 		if include_synonyms:
 			if lowercase:
@@ -579,8 +579,8 @@ class Dataset:
 		are concatenated and a union of the gene names and ontology term IDs are retained.
 		
 		Args:
-		    case_sensitive (bool, optional): Set to true if gene names that only differ in terms of case
-		    should be treated as different genes, by default these genes are considered to be the same gene.
+			case_sensitive (bool, optional): Set to true if gene names that only differ in terms of case
+			should be treated as different genes, by default these genes are considered to be the same gene.
 		"""
 
 		# Build the graph model of this data where nodes are gene names or IDs.
@@ -694,7 +694,7 @@ class Dataset:
 		"""Creates a nested dictionary from this dataset.
 		
 		Returns:
-		    defaultdict: A nested dictionary representation of this dataset.
+			defaultdict: A nested dictionary representation of this dataset.
 		"""
 		infinite_defaultdict = lambda: defaultdict(infinite_defaultdict)
 		split_on_bar_without_empty_strings = lambda x: [y.strip() for y in x.split("|") if y.strip() != ""]

@@ -19,16 +19,17 @@ from oats.utils.utils import flatten
 class Ontology(pronto.Ontology):
 
 
-	"""A wrapper class for pronto.ontology.Ontology to provided some extra functions that may be 
+	"""
+	A wrapper class for pronto.ontology.Ontology to provided some extra functions that may be 
 	useful for natural language processing problems. Note that the inherited attributes and methods
 	are not documented here, only the additional ones added for this derived class. See the
 	documentation for the pronto package for information about the inherited class and its methods.
 
 	
 	Attributes:
-	    term_to_tokens (dict of str:list of str): Mapping between ontology term IDs and lists of words that are related to those terms.
+		term_to_tokens (dict of str:list of str): Mapping between ontology term IDs and lists of words that are related to those terms.
 	
-	    token_to_terms (dict of str:list of str): Mapping between words and the lists of ontology term IDs that are related to those words.
+		token_to_terms (dict of str:list of str): Mapping between words and the lists of ontology term IDs that are related to those words.
 	
 	"""
 	
@@ -39,15 +40,11 @@ class Ontology(pronto.Ontology):
 	def __init__(self, path):
 		"""
 		Args:
-		    path (str): Path for the .obo file of the ontology to build this object from.
+			path (str): Path for the .obo file of the ontology to build this object from.
 		"""
 
 		# Run the parent class constructor. 
 		super(Ontology, self).__init__(path)
-
-
-
-		print("HEREAREAREAE$")
 
 		
 		# Generate all the data structures that are accessible from instances of the ontology class.
@@ -79,7 +76,7 @@ class Ontology(pronto.Ontology):
 		This is intented to be useful for treating the ontology as a vocabulary source.
 		
 		Returns:
-		    list of str: Lists of words in the set of all words present in all term labels and synonyms in this ontology.
+			list of str: Lists of words in the set of all words present in all term labels and synonyms in this ontology.
 		"""
 		labels_and_synonyms = list(itertools.chain.from_iterable(list(self.term_to_tokens.values())))
 		tokens = set(list(itertools.chain.from_iterable([word_tokenize(x) for x in labels_and_synonyms])))
@@ -95,10 +92,10 @@ class Ontology(pronto.Ontology):
 		The depth provided is an integer that indicates the shortest possible path from that term to a root term.
 		
 		Args:
-		    term_id (str): The ID for a particular ontology term.
+			term_id (str): The ID for a particular ontology term.
 		
 		Returns:
-		    int: The depth of the term.
+			int: The depth of the term.
 		"""
 		return(self._depth_dict.get(term_id, None))
 
@@ -120,10 +117,10 @@ class Ontology(pronto.Ontology):
 		available.
 		
 		Args:
-		    term_id (str): The ID for a particular ontology term.
+			term_id (str): The ID for a particular ontology term.
 		
 		Returns:
-		    float: The information content of the term.
+			float: The information content of the term.
 		"""
 		if as_weight:
 			return(self._graph_based_ic_dict_as_weights.get(term_id, None))
@@ -144,10 +141,10 @@ class Ontology(pronto.Ontology):
 		in the list are returned, including every term in the passed in list.
 		
 		Args:
-		    term_ids (list of str or str): The ID for a particular ontology, or a list of ID(s).
+			term_ids (list of str or str): The ID for a particular ontology, or a list of ID(s).
 		
 		Returns:
-		    TYPE: Description
+			TYPE: Description
 		"""
 
 		if isinstance(term_ids, str):
@@ -172,10 +169,10 @@ class Ontology(pronto.Ontology):
 		are returned, including every term in the passed in list.
 		
 		Args:
-		    term_ids (list of str or str): The ID for a particular ontology, or a list of ID(s).
+			term_ids (list of str or str): The ID for a particular ontology, or a list of ID(s).
 		
 		Returns:
-		    TYPE: Description
+			TYPE: Description
 		"""
 
 
@@ -222,7 +219,7 @@ class Ontology(pronto.Ontology):
 		"""Summary
 		
 		Returns:
-		    TYPE: Description
+			TYPE: Description
 		"""
 		superclass_dict = {}
 		for term in self.terms():

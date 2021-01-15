@@ -25,11 +25,11 @@ class ProteinInteractions:
 	def __init__(self, id_to_gene_dict, name_mapping_file, *string_data_files):		
 		"""
 		Args:
-		    id_to_gene_dict (dict of oats.biodata.gene.Gene:int): Mapping between gene objects and unique integer IDs from a dataset.
+			id_to_gene_dict (dict of oats.biodata.gene.Gene:int): Mapping between gene objects and unique integer IDs from a dataset.
 		
-		    name_mapping_file (str): The path to a file linking gene names with protein names used in STRING, available from STRING.
+			name_mapping_file (str): The path to a file linking gene names with protein names used in STRING, available from STRING.
 		
-		    *string_data_files (str): Any number of paths to protein-protein interaction files obtained from STRING.
+			*string_data_files (str): Any number of paths to protein-protein interaction files obtained from STRING.
 		"""
 		self.name_map = pd.read_table(name_mapping_file)
 		self.df, self.ids = self._process_interaction_files(id_to_gene_dict, string_data_files)
@@ -62,12 +62,12 @@ class ProteinInteractions:
 		"""Summary
 		
 		Args:
-		    id_to_gene_dict (TYPE): Description
-		    
-		    string_data_files (TYPE): Description
+			id_to_gene_dict (TYPE): Description
+			
+			string_data_files (TYPE): Description
 		
 		Returns:
-		    TYPE: Description
+			TYPE: Description
 
 		"""
 		# Need to produce a mapping between STRING names and our IDs. Having this will allow for replacing
@@ -205,9 +205,9 @@ class AnyInteractions:
 	def __init__(self, name_to_id_dictionary, filename):		
 		"""
 		Args:
-		    name_to_id_dictionary (dict of str:int): Mapping between gene name strings and unique integer IDs from a dataset.
+			name_to_id_dictionary (dict of str:int): Mapping between gene name strings and unique integer IDs from a dataset.
 		
-		    filename (str): Path to a csv file containing lines that identify edges between strings mentioned in the dictionary.
+			filename (str): Path to a csv file containing lines that identify edges between strings mentioned in the dictionary.
 		"""
 		self.df,self.ids = self._get_edge_values_from_file(name_to_id_dictionary, filename)
 
