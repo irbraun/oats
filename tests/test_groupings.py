@@ -1,7 +1,7 @@
 import pytest
 import sys
 import pandas as pd
-sys.path.append("../oats")
+sys.path.append("../oats-active")
 import oats
 
 
@@ -42,7 +42,7 @@ def test_make_groupings(small_dataset):
 
 	from oats.biology.groupings import Groupings
 	path = "tests/data/small_dataset_groupings.csv"
-	g = Groupings(path, name_mapping={})
+	g = Groupings(path)
 	d1,d2 = g.get_groupings_for_dataset(small_dataset)
 	id_to_groups = d1
 	group_to_ids = d2

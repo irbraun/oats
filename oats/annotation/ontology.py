@@ -44,6 +44,11 @@ class Ontology(pronto.Ontology):
 
 		# Run the parent class constructor. 
 		super(Ontology, self).__init__(path)
+
+
+
+		print("HEREAREAREAE$")
+
 		
 		# Generate all the data structures that are accessible from instances of the ontology class.
 		forward_term_dict, reverse_term_dict = self._get_term_dictionaries()
@@ -52,8 +57,9 @@ class Ontology(pronto.Ontology):
 
 		# Create dictionaries that are used by some of the internal methods for this class.
 		self._inherited_dict = self._get_inherited_dict()
+		self._descendant_dict = self._get_descendant_dict()
 		self._depth_dict = self._get_term_depth_dictionary()
-		self._graph_based_ic_dict = self._get_graph_based_ic_dictionary()
+		self._graph_based_ic_dict, self._graph_based_ic_dict_as_weights = self._get_graph_based_ic_dictionary()
 		
 
 
@@ -100,7 +106,7 @@ class Ontology(pronto.Ontology):
 
 
 
-	def ic(self, term_id):
+	def ic(self, term_id, as_weight=True):
 		"""
 		Given an ontology term ID, return the information content of that term from the structure of the 
 		hierarchical ontology graph. This information content value takes into account the depth of the
@@ -119,7 +125,11 @@ class Ontology(pronto.Ontology):
 		Returns:
 		    float: The information content of the term.
 		"""
-		return(self._graph_based_ic_dict.get(term_id, None))
+		if as_weight:
+			return(self._graph_based_ic_dict_as_weights.get(term_id, None))
+		else:
+			return(self._graph_based_ic_dict.get(term_id, None))
+
 
 
 
@@ -146,8 +156,35 @@ class Ontology(pronto.Ontology):
 		for term_id in term_ids:
 			inherited_ids.extend(self._inherited_dict.get(term_id, [term_id]))
 		return(list(set(inherited_ids)))
-		
 
+
+
+
+
+		
+	def descendants(self, term_ids):
+		"""
+		Given an ontology term ID, return a list of the term IDs for all the terms that are descendants
+		of this particular term, including the term itself. This list is prepopulated using the pronto
+		subclasses method. The only difference is that a list of term ID strings is provided instead of
+		a generator or term objects, which is useful for other methods in this class. This also accepts
+		a list of one or more term IDs in which the union of the terms inherited by all terms in the list
+		are returned, including every term in the passed in list.
+		
+		Args:
+		    term_ids (list of str or str): The ID for a particular ontology, or a list of ID(s).
+		
+		Returns:
+		    TYPE: Description
+		"""
+
+
+		if isinstance(term_ids, str):
+			term_ids = [term_ids]
+		descendant_ids = []
+		for term_id in term_ids:
+			descendant_ids.extend(self._descendant_dict.get(term_id, [term_id]))
+		return(list(set(descendant_ids)))
 
 
 
@@ -177,6 +214,21 @@ class Ontology(pronto.Ontology):
 		for term in self.terms():
 			subclass_dict[term.id] = [t.id for t in self[term.id].superclasses(with_self=True)]
 		return(subclass_dict)
+
+
+
+
+	def _get_descendant_dict(self):
+		"""Summary
+		
+		Returns:
+		    TYPE: Description
+		"""
+		superclass_dict = {}
+		for term in self.terms():
+			superclass_dict[term.id] = [t.id for t in self[term.id].subclasses(with_self=True)]
+		return(superclass_dict)
+
 
 
 
@@ -229,6 +281,17 @@ class Ontology(pronto.Ontology):
 
 		# TODO find the literature reference or presentation where this equation is from instead of just the presentation.
 
+		#ic_dict = {}
+		#num_terms_in_ontology = len(self)
+		#for term in self.terms():
+		#	depth = self._depth_dict[term.id]
+		#	num_descendants = len(list(term.subclasses(with_self=False)))
+		#	ic_value = float(depth)*(1-(math.log(num_descendants+1)/math.log(num_terms_in_ontology)))
+		#	ic_dict[term.id] = ic_value
+		#return(ic_dict)
+
+
+		# Getting the information content of each term in the ontology based on graph structure.
 		ic_dict = {}
 		num_terms_in_ontology = len(self)
 		for term in self.terms():
@@ -236,8 +299,22 @@ class Ontology(pronto.Ontology):
 			num_descendants = len(list(term.subclasses(with_self=False)))
 			ic_value = float(depth)*(1-(math.log(num_descendants+1)/math.log(num_terms_in_ontology)))
 			ic_dict[term.id] = ic_value
-		return(ic_dict)
 
+
+		# Converting to weights based on information content rather than raw value.
+		ic_dict_as_weights = {}
+		ic_values = ic_dict.values()
+		min_ic = min(ic_values)
+		max_ic = max(ic_values)
+		new_max = 1.00
+		new_min = 0.00
+		for k,v in ic_dict.items():
+			old_range = max_ic-min_ic
+			new_range = new_max-new_min
+			new_value = (((v - min_ic) * new_range) / old_range) + new_min
+			ic_dict_as_weights[k] = new_value
+
+		return(ic_dict, ic_dict_as_weights)
 
 
 
@@ -347,7 +424,7 @@ class Ontology(pronto.Ontology):
 
 
 
-	def similarity_ic(self, term_id_list_1, term_id_list_2, inherited=False):
+	def similarity_ic(self, term_id_list_1, term_id_list_2, inherited=False, as_weight=True):
 		"""
 		Find the similarity between two lists of ontology terms, by finding the information 
 		content of the most specific term that is shared by the sets of all terms inherited
@@ -376,7 +453,10 @@ class Ontology(pronto.Ontology):
 			term_id_set_2 = set(inherited_term_list_2)
 
 		intersection = list(term_id_set_1.intersection(term_id_set_2))
-		intersection_ic_values = [self._graph_based_ic_dict[term_id] for term_id in intersection]
+		if as_weight:
+			intersection_ic_values = [self._graph_based_ic_dict_as_weights[term_id] for term_id in intersection]
+		else:
+			intersection_ic_values = [self._graph_based_ic_dict[term_id] for term_id in intersection]
 		if len(intersection_ic_values) == 0:
 			return(0.000)
 		return(max(intersection_ic_values))

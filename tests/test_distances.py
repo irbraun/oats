@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 import numpy as np
 import json
-sys.path.append("../oats")
+sys.path.append("../oats-active")
 import oats
 
 

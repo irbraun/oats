@@ -1,7 +1,7 @@
 import pytest
 import sys
 import pandas as pd
-sys.path.append("../oats")
+sys.path.append("../oats-active")
 import oats
 
 

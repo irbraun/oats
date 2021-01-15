@@ -1,7 +1,7 @@
 import pytest
 import sys
 import pandas as pd
-sys.path.append("../oats")
+sys.path.append("../oats-active")
 import oats
 
 
@@ -55,19 +55,46 @@ def test_ontology_term_depths(ontology):
 
 
 
+
+
+
+
+
 @pytest.mark.fast
 def test_ontology_term_graph_based_information_content(ontology):
 	"""Is the information content calculated from the graph structure what is expected?
 	"""
-	assert ontology.ic("TO:0000001") == 0.000
-	assert ontology.ic("TO:0000002") == 0.3690702464285426
-	assert ontology.ic("TO:0000003") == 0.3690702464285426
-	assert ontology.ic("TO:0000004") == 1.000
-	assert ontology.ic("TO:0000005") == 3.000
-	assert ontology.ic("TO:0000006") == 3.000
-	assert ontology.ic("TO:0000007") == 0.500
-	assert ontology.ic("TO:0000008") == 1.3690702464285427
-	assert ontology.ic("TO:0000009") == 3.000
+	assert ontology.ic("TO:0000001", as_weight=False) == 0.000
+	assert ontology.ic("TO:0000002", as_weight=False) == 0.3690702464285426
+	assert ontology.ic("TO:0000003", as_weight=False) == 0.3690702464285426
+	assert ontology.ic("TO:0000004", as_weight=False) == 1.000
+	assert ontology.ic("TO:0000005", as_weight=False) == 3.000
+	assert ontology.ic("TO:0000006", as_weight=False) == 3.000
+	assert ontology.ic("TO:0000007", as_weight=False) == 0.500
+	assert ontology.ic("TO:0000008", as_weight=False) == 1.3690702464285427
+	assert ontology.ic("TO:0000009", as_weight=False) == 3.000
+
+
+@pytest.mark.fast
+def test_ontology_term_graph_based_information_content_as_weights(ontology):
+	"""Is the information content calculated from the graph structure what is expected?
+	"""
+	assert ontology.ic("TO:0000001", as_weight=True) == 0.000
+	assert ontology.ic("TO:0000002", as_weight=True) == (((0.3690702464285426 - 0.000) * 1.000) / 3.000) + 0.000
+	assert ontology.ic("TO:0000003", as_weight=True) == (((0.3690702464285426 - 0.000) * 1.000) / 3.000) + 0.000
+	assert ontology.ic("TO:0000004", as_weight=True) == (((1.000 - 0.000) * 1.000) / 3.000) + 0.000
+	assert ontology.ic("TO:0000005", as_weight=True) == 1.000
+	assert ontology.ic("TO:0000006", as_weight=True) == 1.000
+	assert ontology.ic("TO:0000007", as_weight=True) == (((0.5 - 0.000) * 1.000) / 3.000) + 0.000
+	assert ontology.ic("TO:0000008", as_weight=True) == (((1.3690702464285427 - 0.000) * 1.000) / 3.000) + 0.000
+	assert ontology.ic("TO:0000009", as_weight=True) == 1.000
+
+
+
+
+
+
+
 
 
 
@@ -101,19 +128,25 @@ def test_ontology_term_inheritance(ontology):
 def test_ontology_ic_similarity(ontology):
 	"""Is the information content of the most informative common ancestor term as expected for these lists of terms?
 	"""
-	assert ontology.similarity_ic(["TO:0000001"],["TO:0000002"], inherited=False) == 0
-	assert ontology.similarity_ic(["TO:0000001"],["TO:0000003"], inherited=False) == 0
-	assert ontology.similarity_ic(["TO:0000002"],["TO:0000003"], inherited=False) == 0
-	assert ontology.similarity_ic(["TO:0000003"],["TO:0000005"], inherited=False) == 0.3690702464285426
-	assert ontology.similarity_ic(["TO:0000007"],["TO:0000008"], inherited=False) == 0.5
-	assert ontology.similarity_ic(["TO:0000005"],["TO:0000009"], inherited=False) == 0
+	assert ontology.similarity_ic(["TO:0000001"],["TO:0000002"], inherited=False, as_weight=False) == 0
+	assert ontology.similarity_ic(["TO:0000001"],["TO:0000003"], inherited=False, as_weight=False) == 0
+	assert ontology.similarity_ic(["TO:0000002"],["TO:0000003"], inherited=False, as_weight=False) == 0
+	assert ontology.similarity_ic(["TO:0000003"],["TO:0000005"], inherited=False, as_weight=False) == 0.3690702464285426
+	assert ontology.similarity_ic(["TO:0000007"],["TO:0000008"], inherited=False, as_weight=False) == 0.5
+	assert ontology.similarity_ic(["TO:0000005"],["TO:0000009"], inherited=False, as_weight=False) == 0
 
-	assert ontology.similarity_ic(["TO:0000001"],["TO:0000002","TO:0000001"], inherited=False) == 0
-	assert ontology.similarity_ic(["TO:0000003"],["TO:0000001","TO:0000009"], inherited=False) == 0
-	assert ontology.similarity_ic(["TO:0000002"],["TO:0000003","TO:0000002"], inherited=False) == 0.3690702464285426
-	assert ontology.similarity_ic(["TO:0000003"],["TO:0000005","TO:0000002"], inherited=False) == 0.3690702464285426
-	assert ontology.similarity_ic(["TO:0000008"],["TO:0000008","TO:0000007"], inherited=False) == 1.3690702464285427
-	assert ontology.similarity_ic(["TO:0000005"],["TO:0000009","TO:0000002"], inherited=False) == 0.3690702464285426
+	assert ontology.similarity_ic(["TO:0000001"],["TO:0000002","TO:0000001"], inherited=False, as_weight=False) == 0
+	assert ontology.similarity_ic(["TO:0000003"],["TO:0000001","TO:0000009"], inherited=False, as_weight=False) == 0
+	assert ontology.similarity_ic(["TO:0000002"],["TO:0000003","TO:0000002"], inherited=False, as_weight=False) == 0.3690702464285426
+	assert ontology.similarity_ic(["TO:0000003"],["TO:0000005","TO:0000002"], inherited=False, as_weight=False) == 0.3690702464285426
+	assert ontology.similarity_ic(["TO:0000008"],["TO:0000008","TO:0000007"], inherited=False, as_weight=False) == 1.3690702464285427
+	assert ontology.similarity_ic(["TO:0000005"],["TO:0000009","TO:0000002"], inherited=False, as_weight=False) == 0.3690702464285426
+
+
+
+
+
+
 
 
 @pytest.mark.fast

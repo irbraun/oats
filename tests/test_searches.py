@@ -1,6 +1,6 @@
 import pytest
 import sys
-sys.path.append("../oats")
+sys.path.append("../oats-active")
 import oats
 
 
