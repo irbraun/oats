@@ -62,34 +62,13 @@ class Groupings:
 		Args:
 		    path (str): The path to the CSV file that is used to build this instance. 
 		
-		
-		
-		
-		
-		
-		    name_mapping (dict of obj:str, optional): This argument is only necessary if specifying groups using csv files. It should be a 
-		    
-		    case_sensitive (bool, optional): Set to true to account for differences in capitalization between gene names or identifiers in
-		    Not every type of grouping object that can be created needs files to be specified in this dictionary. The values can be 
-		    missing if KEGG is used for example, because the KEGG REST API is used to obtain the information related to the pathways.
-		
-		    is used then the values in species_dict argument are not used, otherwise they are. If "pmn" or "plantcyc" is used the files 
-		    should be the PlantCyc files for that particular species. If the "csv" is used the files should be contain a mapping between gene
-		    names or identifiers in the first column and strings that represent groups in the second column. Multiple entries can be present
-		    in either column by separating with a pipe. All gene listed on given line are considered mapped to all groups listed on a given 
-		    line (because genes can belong to more than one group).
-		
-		    dictionary mapping integers or strings (whatever the datatype of the group IDs are) to strings that represent the full name of those
-		    groups, which are useful for outputtting to tables. 
-		
-		    the dataset used and in the databases or files used to create these groups.
+		    case_sensitive (bool, optional): Set to true to account for differences in capitalization between gene names or identifiers. 
 		
 		"""
 
 		self.df = pd.read_csv(path)
 		self._species_list = self.df["species"].unique()
 		self._case_sensitive = case_sensitive
-		#self._readable_name_mappings = name_mapping
 		
 		# The forward mapping maps group strings to lists of gene strings.
 		# The reverse mapping maps gene strings to lists of group strings.
@@ -170,32 +149,6 @@ class Groupings:
 				reverse_membership_dict[group_id].append(gene_id)
 		reverse_membership_dict = {k:remove_duplicates_retain_order(v) for k,v in reverse_membership_dict.items()}      
 		return(reverse_membership_dict)
-
-
-
-
-
-
-
-	#def get_long_name(self, group_id):
-	#	"""Returns a string which is the long and readable name for this group ID.
-	#
-	#	Args:
-	#		group_id (obj): Any group ID.
-	#
-	#	Returns:
-	#		str: The full name for this group given as a string.
-	#	"""
-	#	if self._readable_name_mappings is not None:
-	#		return(self._readable_name_mappings[group_id])
-	#	else:
-	#		return(str(group_id))
-
-
-
-
-
-
 
 
 
