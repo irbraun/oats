@@ -2,20 +2,18 @@
 
 ### Description
 
-`oats` is a python package created to provide functions for evaluting similarity between text using a wide variety of approaches including natural language processing, machine learning, and semantic annotation using ontologies. This package was specifically created to be used in a project to assess similarity between phenotype descriptions across plant species in order to better organize this data and make biological predictions. For this reason, some of the subpackages are specifically oriented towards working with biological datasets, although many of the functions are applicable outside of this domain. In general, the purpose of this package is to provide useful wrappers or shortcut functions on top of a number of existing packages and tools for working with biological datasets, ontologies, or natural language in order to make analysis of this kind of data easier. 
+`oats` is a Python package created to provide functions for evaluting similarity between text using a wide variety of approaches including natural language processing, machine learning, and semantic annotation using ontologies. This package was specifically created to be used in a project to assess similarity between phenotype descriptions across plant species in order to better organize this data and make biological predictions. For this reason, some of the subpackages are specifically oriented towards working with biological datasets, although many of the functions are applicable outside of this domain. In general, the purpose of this package is to provide useful wrappers or shortcut functions on top of a number of existing packages and tools for working with biological datasets, ontologies, or natural language in order to make analysis of this kind of data easier. 
 
 
-### Setup
+### Installing
 
-`pip install dist/oats-0.0.1-py3-none-any.whl`
+The package can be installed using the provided wheel with `pip install dist/oats-0.0.1-py3-none-any.whl`.
 
 
 
 ### Documentation
 
-Available on Read the Docs [here](https://irbraun-oats.readthedocs.io/en/latest/).
-
-
+Full documentation is available on [Read the Docs](https://irbraun-oats.readthedocs.io/en/latest/).
 
 
 ### 1. Biological Datasets
@@ -23,47 +21,52 @@ Available on Read the Docs [here](https://irbraun-oats.readthedocs.io/en/latest/
 Loading a dataset with plant genes, phenotype descriptions, and ontology terms.
 ```
 >>> from oats.biology.dataset import Dataset
->>> data = Dataset("example.csv")
->>> data.to_pandas()
+>>> dataset = Dataset("example.csv")
+>>> dataset.to_pandas()
 ```
 ```
-  id  species    gene_names           gene_synonyms                                   description                                                                            term_ids               sources
-----  ---------  -------------------  ----------------------------------------------  -------------------------------------------------------------------------------------  ---------------------  ---------
-   0  ath        At1g74030            F2P9_10                                         Decreased root hair density. Distorted trichomes.                                      GO:0009507|PO:0001170  example
-   1  ath        At1g74030|ENO1       F2P9_10|AT1G74030.1                             Trichomes are less turgescent and are distorted with respect to the wild type.         GO:0009735             example
-   2  ath        ENO1|enolase 1       F2P9_10|AT1G74030.1                             Plants also have fewer root hairs with respect to wild type.                           GO:0009735             example
-   3  ath        At3g56960|PIP5K4     phosphatidyl inositol monophosphate 5 kinase 4  Decreased stomatal opening.                                                            PO:0009046             example
-   4  ath        At3g56960            T8M16.6                                         Delayed stomatal opening.                                                              GO:0009860             example
-   5  ath        At1g74920|ALDH10A8   aldehyde dehydrogenase 10A8                     Sensitive to drought. Sensitive to mannitol.                                           GO:0005618|GO:0009516  example
-   6  ath        At1g74920            F25A4_11                                        Sensitive to salt.                                                                     PO:0007123             example
-   7  zma        nec4|GRMZM5G870342   nec4|cpx1                                       Necrotic leaf. Affected tissue dies.                                                                          example
-   8  zma        GRMZM5G870342        cpx1|dks8                                       Pale green seedling.  Yellow green leaf.                                                                      example
-   9  zma        GRMZM2G117878|ufgt2                                                  Salt stress intolerant.                                                                                       example
-  10  zma        GRMZM2G117878        UDP-glycosyltransferase 76C1                    Drought susceptible.                                                                                          example
-  11  zma        ccd8                 Zmccd8                                          A plant with a thin culm, giving the plant an overall slender appearance. Small ears.  GO:0010311|GO:0022622  example
-  12  zma        ccd8|GRMZM2G446858   ccd8-trDs|ccd8                                  Short plant.                                                                           GO:1901601             example
-  13  zma        ccd8|Zm00001d043442  ccd8|ccd8a                                      Slender plant.                                                                         GO:0010016             example
+  id  species    unique_gene_identifiers            other_gene_identifiers                                  gene_models                   descriptions                                                                                                                                                                                   annotations                                  sources
+----  ---------  ---------------------------------  ------------------------------------------------------  ----------------------------  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  -------------------------------------------  -----------
+   0  ath        ENO1|enolase 1|At1g74030           F2P9_10|AT1G74030.1                                     At1g74030                     Decreased root hair density. Distorted trichomes. Trichomes are less turgescent and are distorted with respect to the wild type. Plants also have fewer root hairs with respect to wild type.  GO:0009507|PO:0001170|GO:0009735             sample data
+   1  ath        PIP5K4|At3g56960                   phosphatidyl inositol monophosphate 5 kinase 4|T8M16.6  At3g56960                     Decreased stomatal opening. Delayed stomatal opening.                                                                                                                                          PO:0009046|GO:0009860                        sample data
+   2  ath        ALDH10A8|At1g74920                 aldehyde dehydrogenase 10A8|F25A4_11                    At1g74920                     Sensitive to drought. Sensitive to mannitol. Sensitive to salt.                                                                                                                                GO:0005618|GO:0009516|PO:0007123             sample data
+   3  zma        nec4|GRMZM5G870342                 cpx1|dks8                                               GRMZM5G870342                 Necrotic leaf. Affected tissue dies. Pale green seedling. Yellow green leaf.                                                                                                                                                                sample data
+   4  zma        ufgt2|GRMZM2G117878                UDP-glycosyltransferase 76C1                            GRMZM2G117878                 Salt stress intolerant. Drought susceptible.                                                                                                                                                                                                sample data
+   5  zma        ccd8|GRMZM2G446858|Zm00001d043442  Zmccd8|ccd8-trDs|ccd8a                                  GRMZM2G446858|Zm00001d043442  A plant with a thin culm, giving the plant an overall slender appearance. Small ears. Short plant. Slender plant.                                                                              GO:0010311|GO:0022622|GO:1901601|GO:0010016  sample data
+```
+
+The `oats.biology.Dataset` contains several methods for adding to, filtering, or accessing the dataset in different ways. This includes getting dictionaries that map the unique internal identifiers to text descriptions or annotations. See the documention for other methods.
+
+```
+>>> descriptions = data.get_description_dictionary()
+>>> descriptions
+```
+```
+{0: 'Decreased root hair density. Distorted trichomes. Trichomes are less turgescent and are distorted with respect to the wild type. Plants also have fewer root hairs with respect to wild type.',
+ 1: 'Decreased stomatal opening. Delayed stomatal opening.',
+ 2: 'Sensitive to drought. Sensitive to mannitol. Sensitive to salt.',
+ 3: 'Necrotic leaf. Affected tissue dies. Pale green seedling.  Yellow green leaf.',
+ 4: 'Salt stress intolerant. Drought susceptible.',
+ 5: 'A plant with a thin culm, giving the plant an overall slender appearance. Small ears. Short plant. Slender plant.'}
+```
+
+
+```
+>>> annotations = data.get_description_dictionary()
+>>> annotations
+```
+```
+{0: ['GO:0009507', 'PO:0001170', 'GO:0009735'],
+ 1: ['PO:0009046', 'GO:0009860'],
+ 2: ['GO:0005618', 'GO:0009516', 'PO:0007123'],
+ 3: [''],
+ 4: [''],
+ 5: ['GO:0010311', 'GO:0022622', 'GO:1901601', 'GO:0010016']}
 ```
 
 
 
 
-
-Merging the dataset so that each row and unique ID represents a single gene.
-```
->>> data.collapse_by_all_gene_names()
->>> data.to_pandas()
-```
-```
-  id  species    gene_names                         gene_synonyms                                           description                                                                                                                                                                                    term_ids                                     sources
-----  ---------  ---------------------------------  ------------------------------------------------------  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  -------------------------------------------  ---------
-   0  ath        At1g74030|ENO1|enolase 1           F2P9_10|AT1G74030.1                                     Decreased root hair density. Distorted trichomes. Trichomes are less turgescent and are distorted with respect to the wild type. Plants also have fewer root hairs with respect to wild type.  GO:0009507|PO:0001170|GO:0009735             example
-   1  ath        At3g56960|PIP5K4                   phosphatidyl inositol monophosphate 5 kinase 4|T8M16.6  Decreased stomatal opening. Delayed stomatal opening.                                                                                                                                          PO:0009046|GO:0009860                        example
-   2  ath        At1g74920|ALDH10A8                 aldehyde dehydrogenase 10A8|F25A4_11                    Sensitive to drought. Sensitive to mannitol. Sensitive to salt.                                                                                                                                GO:0005618|GO:0009516|PO:0007123             example
-   3  zma        nec4|GRMZM5G870342                 nec4|cpx1|dks8                                          Necrotic leaf. Affected tissue dies. Pale green seedling.  Yellow green leaf.                                                                                                                                                               example
-   4  zma        GRMZM2G117878|ufgt2                UDP-glycosyltransferase 76C1                            Salt stress intolerant. Drought susceptible.                                                                                                                                                                                                example
-   5  zma        ccd8|GRMZM2G446858|Zm00001d043442  Zmccd8|ccd8-trDs|ccd8|ccd8a                             A plant with a thin culm, giving the plant an overall slender appearance. Small ears. Short plant. Slender plant.                                                                              GO:0010311|GO:0022622|GO:1901601|GO:0010016  example
-```
 
 
 
