@@ -70,44 +70,94 @@ The `oats.biology.Dataset` contains several methods for adding to, filtering, or
 
 
 
-
-Relating those unique IDs for each gene to biochemical pathways from PlantCyc.
-```
->>> from oats.biology.groupings import Groupings
->>> pathway_species_files = {"ath":"aracyc_pathways.20180702", "zma":"corncyc_pathways.20180702"}
->>> groupings = Groupings(pathway_species_files, "plantcyc")
->>> id_to_groups, group_to_ids = groupings.get_groupings_for_dataset(data)
->>> id_to_groups
-```
-```
-{0: ['PWY-1042', 'PWY-5723', 'PWY66-399', 'PWY-5484', 'GLUCONEO-PWY', 'GLYCOLYSIS'],
- 1: ['PWY-6351', 'PWY-6352'],
- 2: ['PWY-2', 'PWY1F-353'],
- 3: [],
- 4: [],
- 5: ['PWY-7101', 'PWY-6806']}
-```
-
-
-
-
-
 ### 2. Ontologies and Annotations
 
 
-Get a dictionary that relates unique IDs to phenotype descriptions.
+Create an ontology object from reading in an obo file. This class inherits from the `pronto.Ontology` class with some added methods. 
 ```
->>> descriptions = data.get_description_dictionary()
->>> descriptions
+>>> from oats.annotation.ontology import Ontology
+>>> ont = Ontology("pato.obo")  
+>>> ont["
 ```
 ```
-{0: 'Decreased root hair density. Distorted trichomes. Trichomes are less turgescent and are distorted with respect to the wild type. Plants also have fewer root hairs with respect to wild type.',
- 1: 'Decreased stomatal opening. Delayed stomatal opening.',
- 2: 'Sensitive to drought. Sensitive to mannitol. Sensitive to salt.',
- 3: 'Necrotic leaf. Affected tissue dies. Pale green seedling.  Yellow green leaf.',
- 4: 'Salt stress intolerant. Drought susceptible.',
- 5: 'A plant with a thin culm, giving the plant an overall slender appearance. Small ears. Short plant. Slender plant.'}
+
 ```
+
+
+Getting additional information about a particular ontology term.
+```
+>>> term_id = "PATO:0000587"
+>>> ont["PATO:0000587"].name 
+```
+```
+'decreased size'
+```
+
+
+
+
+Getting the weight of this term (from 0 to 1) through relative information content.
+```
+>>> ont.ic(term_id, as_weight=True)
+```
+```
+0.21138654602703566
+```
+
+
+Getting the names of the terms that are inherited by this term.
+```
+>>> [ont[t].name for t in ont.inherited(term_id)]
+```
+```
+['size',
+ 'quality',
+ 'physical object quality',
+ 'qualitative',
+ 'morphology',
+ 'decreased object quality',
+ 'deviation (from_normal)',
+ 'decreased quality',
+ 'decreased size']
+```
+
+
+
+
+Getting the names of the terms that are descendants of this one and their depths in the graph.
+```
+>>> [(ont[t].name,ont.depth(t)) for t in ont.descendants(term_id)]
+```
+```
+[('decreased thickness', 4),
+ ('hypoplastic', 3),
+ ('decreased width and length', 5),
+ ('decreased diameter', 5),
+ ('dwarf-like', 4),
+ ('hypotrophic', 5),
+ ('decreased area', 4),
+ ('decreased perimeter', 5),
+ ('dystrophic', 4),
+ ('decreased circumference', 6),
+ ('decreased length', 4),
+ ('decreased volume', 4),
+ ('atrophied', 4),
+ ('decreased anterior-posterior diameter', 6),
+ ('decreased width', 4),
+ ('decreased depth', 4),
+ ('decreased height', 4),
+ ('decreased size', 3)]
+```
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -144,6 +194,14 @@ Look at the labels of the terms that were annotated to the descriptions.
  4: ['susceptible toward'],
  5: ['slender', 'decreased size', 'decreased height', 'decreased length', 'decreased thickness']}
 ```
+
+
+
+
+
+
+
+
 
 
 ### 3. Text Distances
