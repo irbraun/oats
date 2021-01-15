@@ -77,14 +77,11 @@ Create an ontology object from reading in an obo file. This class inherits from 
 ```
 >>> from oats.annotation.ontology import Ontology
 >>> ont = Ontology("pato.obo")  
->>> ont["
-```
-```
-
 ```
 
 
-Getting additional information about a particular ontology term.
+
+Getting the label of this particular term.
 ```
 >>> term_id = "PATO:0000587"
 >>> ont["PATO:0000587"].name 
@@ -92,7 +89,6 @@ Getting additional information about a particular ontology term.
 ```
 'decreased size'
 ```
-
 
 
 
@@ -105,7 +101,7 @@ Getting the weight of this term (from 0 to 1) through relative information conte
 ```
 
 
-Getting the names of the terms that are inherited by this term.
+Getting the labels of the terms that are inherited by this term.
 ```
 >>> [ont[t].name for t in ont.inherited(term_id)]
 ```
@@ -120,8 +116,6 @@ Getting the names of the terms that are inherited by this term.
  'decreased quality',
  'decreased size']
 ```
-
-
 
 
 Getting the names of the terms that are descendants of this one and their depths in the graph.
@@ -154,29 +148,19 @@ Getting the names of the terms that are descendants of this one and their depths
 
 
 
-
-
-
-
-
-
-
-Create an ontology object and annotate descriptions with terms using NOBLE Coder.
+Annotate descriptions from the dataset with ontology terms using NOBLE Coder.
 ```
->>> from oats.annotation.ontology import Ontology
 >>> from oats.annotation.annotation import annotate_using_noble_coder
->>>
->>> ont = Ontology("pato.obo")    
->>> annots = annotate_using_noble_coder(descriptions, "NobleCoder-1.0.jar", "pato", precise=1)
+>>> annots = annotate_using_noble_coder(descriptions, "lib/NobleCoder-1.0.jar", "pato", precise=1)
 >>> annots
 ```
 ```
-{0: ['PATO:0001997', 'PATO:0001617', 'PATO:0001019'],
+{0: ['PATO:0001997', 'PATO:0001019', 'PATO:0001617'],
  1: ['PATO:0001997', 'PATO:0000502'],
  2: ['PATO:0000516'],
- 3: ['PATO:0001941', 'PATO:0000647', 'PATO:0001272'],
+ 3: ['PATO:0001272', 'PATO:0000647', 'PATO:0001941'],
  4: ['PATO:0001152'],
- 5: ['PATO:0002212', 'PATO:0000587', 'PATO:0000569', 'PATO:0000574', 'PATO:0000592']}
+ 5: ['PATO:0000592', 'PATO:0000574', 'PATO:0002212', 'PATO:0000569', 'PATO:0000587']}
 ```
 
 
@@ -187,12 +171,12 @@ Look at the labels of the terms that were annotated to the descriptions.
 >>> annot_labels
 ```
 ```
-{0: ['decreased amount', 'deformed', 'mass density'],
+{0: ['decreased amount', 'mass density', 'deformed'],
  1: ['decreased amount', 'delayed'],
  2: ['sensitive toward'],
- 3: ['yellow green', 'necrotic', 'desaturated green'],
+ 3: ['desaturated green', 'necrotic', 'yellow green'],
  4: ['susceptible toward'],
- 5: ['slender', 'decreased size', 'decreased height', 'decreased length', 'decreased thickness']}
+ 5: ['decreased thickness', 'decreased length', 'slender', 'decreased height', 'decreased size']}
 ```
 
 
