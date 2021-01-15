@@ -20,6 +20,14 @@ oats.nlp.search module
    :undoc-members:
    :show-inheritance:
 
+oats.nlp.small module
+---------------------
+
+.. automodule:: oats.nlp.small
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 oats.nlp.vocabulary module
 --------------------------
 
