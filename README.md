@@ -242,11 +242,12 @@ Pairwise distance matrix between descriptions using documenting embeddings infer
 
 Getting the first few values of the vector represention of a particular description in the dataset.
 ```
->>> vector = dists.vector_dictionary[3]
->>> vector[:4]
+>>> id_to_lookup
+>>> vector = dists.vector_dictionary[id_to_lookup]
+>>> vector[:5]
 ```
 ```
-['0.0548', '-0.1059', '-0.0027', '0.1615']
+['0.0548', '-0.1059', '-0.0027', '0.1615', '0.0077']
 ```
 
 
