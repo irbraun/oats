@@ -191,41 +191,26 @@ Look at the labels of the terms that were annotated to the descriptions.
 ### 3. Text Distances
 
 
-Pairwise distance matrix between descriptions using the ontology term annotations assigned above.
+Pairwise distance matrix between descriptions using the ontology term annotations assigned above and Jaccard distance.
 ```
->>> from oats.distances import pairwise as pw
->>> dists = dists = pw.pairwise_square_annotations(annots, ont, metric="jaccard")  
+>>> from oats.distances import pairwise
+>>> dists = pairwise.with_annotations(annots, ont, metric="jaccard")    
 >>> dists.array
 ```
 ```
-[['0.0000', '0.5714', '0.8333', '0.7500', '0.8462', '0.6842'],
- ['0.5714', '0.0000', '0.9286', '0.9000', '0.9333', '0.8182'],
- ['0.8333', '0.9286', '0.0000', '0.8462', '0.3333', '0.8889'],
- ['0.7500', '0.9000', '0.8462', '0.0000', '0.8571', '0.8696'],
- ['0.8462', '0.9333', '0.3333', '0.8571', '0.0000', '0.8947'],
- ['0.6842', '0.8182', '0.8889', '0.8696', '0.8947', '0.0000']]
+[['0.0000', '0.5556', '0.8750', '0.8182', '0.8824', '0.7600'],
+ ['0.5556', '0.0000', '0.9412', '0.9600', '0.9444', '0.8519'],
+ ['0.8750', '0.9412', '0.0000', '0.8824', '0.5000', '0.9091'],
+ ['0.8182', '0.9600', '0.8824', '0.0000', '0.8889', '0.8966'],
+ ['0.8824', '0.9444', '0.5000', '0.8889', '0.0000', '0.9130'],
+ ['0.7600', '0.8519', '0.9091', '0.8966', '0.9130', '0.0000']]
 ```
 
 
 
-Pairwise distance matrix between descriptions using n-grams.
+Pairwise distance matrix using a learned topic model vectors with LDA and using euclidean distance. 
 ```
->>> dists = pw.pairwise_square_ngrams(ids_to_texts=descriptions, binary=True, metric="jaccard")    
->>> dists.array
-```
-```
-[['0.0000', '0.9583', '0.9600', '1.0000', '1.0000', '0.9375'],
- ['0.9583', '0.0000', '1.0000', '1.0000', '1.0000', '1.0000'],
- ['0.9600', '1.0000', '0.0000', '1.0000', '0.7500', '1.0000'],
- ['1.0000', '1.0000', '1.0000', '0.0000', '1.0000', '1.0000'],
- ['1.0000', '1.0000', '0.7500', '1.0000', '0.0000', '1.0000'],
- ['0.9375', '1.0000', '1.0000', '1.0000', '1.0000', '0.0000']]
-```
-
-
-Pairwise distance matrix between descriptions using topic modeling.
-```
->>> dists = pw.pairwise_square_topic_model(ids_to_texts=descriptions, num_topics=3, algorithm="lda", metric="euclidean")  
+>>> dists = pairwise.with_topic_model(descriptions, num_topics=3, algorithm="lda", metric="euclidean")  
 >>> dists.array
 ```
 ```
@@ -238,21 +223,36 @@ Pairwise distance matrix between descriptions using topic modeling.
 ```
 
 
-Pairwise distance matrix between descriptions using a Doc2Vec model.
+Pairwise distance matrix between descriptions using documenting embeddings inferred from a Doc2Vec model.
 ```
 >>> import gensim
->>> model = gensim.models.Doc2Vec.load("doc2vec.bin" )
->>> dists = pw.pairwise_square_doc2vec(model=model, ids_to_texts=descriptions, metric="cosine")    
+>>> model = gensim.models.Doc2Vec.load("models/doc2vec.bin" )
+>>> dists = pairwise.with_doc2vec(descriptions, model=model, metric="cosine")  
 >>> dists.array
 ```
 ```
-[['0.0000', '0.3742', '0.4558', '0.3409', '0.4186', '0.3525'],
- ['0.3742', '0.0000', '0.4461', '0.3658', '0.4026', '0.4185'],
- ['0.4558', '0.4461', '0.0000', '0.4557', '0.4146', '0.4586'],
- ['0.3409', '0.3658', '0.4557', '0.0000', '0.4205', '0.3088'],
- ['0.4186', '0.4026', '0.4146', '0.4205', '0.0000', '0.4536'],
- ['0.3525', '0.4185', '0.4586', '0.3088', '0.4536', '0.0000']]
+[['0.0000', '0.3748', '0.4558', '0.3408', '0.4184', '0.3530'],
+ ['0.3748', '0.0000', '0.4455', '0.3657', '0.4021', '0.4193'],
+ ['0.4558', '0.4455', '0.0000', '0.4565', '0.4158', '0.4606'],
+ ['0.3408', '0.3657', '0.4565', '0.0000', '0.4192', '0.3084'],
+ ['0.4184', '0.4021', '0.4158', '0.4192', '0.0000', '0.4539'],
+ ['0.3530', '0.4193', '0.4606', '0.3084', '0.4539', '0.0000']]
 ```
+
+
+Getting the first few values of the vector represention of a particular description in the dataset.
+```
+>>> vector = dists.vector_dictionary[3]
+>>> vector[:4]
+```
+```
+['0.0548', '-0.1059', '-0.0027', '0.1615']
+```
+
+
+
+
+
 
 ### References
 This package makes use of several underlying methods, libraries, and resources.
