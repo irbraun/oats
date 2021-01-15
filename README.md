@@ -35,7 +35,7 @@ Loading a dataset with plant genes, phenotype descriptions, and ontology terms.
    5  zma        ccd8|GRMZM2G446858|Zm00001d043442  Zmccd8|ccd8-trDs|ccd8a                                  GRMZM2G446858|Zm00001d043442  A plant with a thin culm, giving the plant an overall slender appearance. Small ears. Short plant. Slender plant.                                                                              GO:0010311|GO:0022622|GO:1901601|GO:0010016  sample data
 ```
 
-The `oats.biology.Dataset` contains several methods for adding to, filtering, or accessing the dataset in different ways. This includes getting dictionaries that map the unique internal identifiers to text descriptions or annotations. See the documention for other methods.
+This class contains several methods for adding to, filtering, or accessing the dataset in different ways. This includes getting dictionaries that map the unique internal identifiers to text descriptions or annotations. See the documention for other methods.
 
 ```
 >>> descriptions = data.get_description_dictionary()
