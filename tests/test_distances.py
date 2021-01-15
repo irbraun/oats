@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 import numpy as np
 import json
-sys.path.append("../oats-active")
+sys.path.append("../oats")
 import oats
 
 
@@ -16,7 +16,7 @@ import oats
 @pytest.fixture
 def doc2vec_model():
 	import gensim
-	doc2vec_wikipedia_filename = "../phenologs-with-oats/models/enwiki_dbow/doc2vec.bin"     
+	doc2vec_wikipedia_filename = "/Users/irbraun/phenologs-with-oats/models/enwiki_dbow/doc2vec.bin"     
 	doc2vec_wiki_model = gensim.models.Doc2Vec.load(doc2vec_wikipedia_filename)
 	return(doc2vec_wiki_model)
 
@@ -24,7 +24,7 @@ def doc2vec_model():
 @pytest.fixture
 def word2vec_model():
 	import gensim
-	word2vec_model_filename = "../phenologs-with-oats/models/wiki_sg/word2vec.bin"    
+	word2vec_model_filename = "/Users/irbraun/phenologs-with-oats/models/wiki_sg/word2vec.bin"    
 	word2vec_model = gensim.models.Word2Vec.load(word2vec_model_filename)
 	return(word2vec_model)
 
@@ -46,7 +46,7 @@ def bert_tokenizer():
 @pytest.fixture
 def ontology():
 	from oats.annotation.ontology import Ontology
-	ontology_filename = "../phenologs-with-oats/ontologies/po.obo"   
+	ontology_filename = "tests/large/po.obo"   
 	ontology = Ontology(ontology_filename)
 	return(ontology)
 

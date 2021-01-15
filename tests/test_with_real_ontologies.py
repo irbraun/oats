@@ -1,7 +1,7 @@
 import pytest
 import sys
 import pandas as pd
-sys.path.append("../oats-active")
+sys.path.append("../oats")
 import oats
 
 
@@ -15,7 +15,7 @@ import oats
 @pytest.fixture
 def po():
 	from oats.annotation.ontology import Ontology
-	ontology_filename = "../phenologs-with-oats/ontologies/po.obo"   
+	ontology_filename = "tests/large/po.obo"   
 	ontology = Ontology(ontology_filename)
 	return(ontology)
 
@@ -23,7 +23,7 @@ def po():
 @pytest.fixture
 def pato():
 	from oats.annotation.ontology import Ontology
-	ontology_filename = "../phenologs-with-oats/ontologies/pato.obo"   
+	ontology_filename = "tests/large/pato.obo"   
 	ontology = Ontology(ontology_filename)
 	return(ontology)
 
