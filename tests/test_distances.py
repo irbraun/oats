@@ -207,9 +207,9 @@ def test_get_all_square_distance_matrices(word2vec_model, doc2vec_model, bert_mo
 	# The only assertion statements run are the ones inside of all of these methods.
 	g = with_precomputed_vectors(ids_to_vectors=b_vectors, metric="euclidean")
 	g = with_ngrams(ids_to_texts=b_strings, metric="euclidean")
-	g = with_word2vec(word2vec_model, ids_to_texts=b_strings, metric="euclidean")
-	g = with_doc2vec(doc2vec_model, ids_to_texts=b_strings, metric="euclidean")
-	g = with_bert(bert_model, bert_tokenizer, ids_to_texts=b_strings, metric="euclidean", method="concat", layers=4)
+	g = with_word2vec(ids_to_texts=b_strings, model=word2vec_model, metric="euclidean")
+	g = with_doc2vec(b_strings, doc2vec_model, metric="euclidean")
+	g = with_bert(b_strings, bert_model, bert_tokenizer, metric="euclidean", method="concat", layers=4)
 	g = with_annotations(ids_to_annotations=b_terms, ontology=ontology, metric="jaccard")
 	g = with_topic_model(ids_to_texts=b_strings, metric="euclidean", num_topics=4, algorithm="lda")
 	g = with_topic_model(ids_to_texts=b_strings, metric="euclidean", num_topics=4, algorithm="nmf")

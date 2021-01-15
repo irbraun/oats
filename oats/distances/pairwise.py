@@ -426,7 +426,7 @@ def with_precomputed_vectors(ids_to_vectors, metric):
 
 
 
-def with_doc2vec(model, ids_to_texts, metric):
+def with_doc2vec(ids_to_texts, model, metric):
 	"""
 	Find distance between strings of text in some input data using Doc2Vec. Note that only 
 	very simple preprocessing is done here (case normalizing and splitting on whitespace)
@@ -434,14 +434,14 @@ def with_doc2vec(model, ids_to_texts, metric):
 	a dictionary to this function.
 	
 	Args:
-	    model (gensim.models.doc2vec): An already loaded Doc2Vec model from a file or training.
-
 	    ids_to_texts (dict): A mapping between IDs and strings of text.
-	    
+	
+	    model (gensim.models.doc2vec): An already loaded Doc2Vec model from a file or training.
+	
 	    metric (str): A string indicating which distance metric should be used (e.g., cosine). 
 	
 	Returns:
-	   	oats.pairwise.SquarePairwiseDistances: Distance matrix and accompanying information.
+	    oats.pairwise.SquarePairwiseDistances: Distance matrix and accompanying information.
 	"""
 
 	# Send the relevant functions and arguments to the general case method for generating the distance matrix object.
@@ -459,8 +459,8 @@ def with_doc2vec(model, ids_to_texts, metric):
 
 
 
-def with_word2vec(model, ids_to_texts, metric, method="mean"):
-	"""	
+def with_word2vec(ids_to_texts, model, metric, method="mean"):
+	"""
 	Find distance between strings of text in some input data using Word2Vec. Note that only 
 	very simple preprocessing is done here (case normalizing and splitting on whitespace)
 	so any preprocessing steps on the text strings should be done prior to passing them in
@@ -471,18 +471,18 @@ def with_word2vec(model, ids_to_texts, metric, method="mean"):
 	long as the text has been preprocessed into reasonable tokens and the model is large.
 	
 	Args:
-	    model (gensim.models.word2vec): An already loaded Word2Vec model from a file or training.
-	    
 	    ids_to_texts (dict): A mapping between IDs and strings of text.
-	    
+	
+	    model (gensim.models.word2vec): An already loaded Word2Vec model from a file or training.
+	
 	    metric (str): A string indicating which distance metric should be used (e.g., cosine). 
-	    
+	
 	    method (str, optional): Should the word embeddings be combined with mean or max.
 	
 	Returns:
-	   	oats.pairwise.SquarePairwiseDistances: Distance matrix and accompanying information.
+	    oats.pairwise.SquarePairwiseDistances: Distance matrix and accompanying information.
 	
-	Raises:
+	No Longer Raises:
 	    Error: The 'method' argument has to be one of "mean" or "max".
 	"""
 	
@@ -536,7 +536,7 @@ def with_similarities(ids_to_texts, vocab_tokens, vocab_matrix, metric):
 
 
 
-def with_bert(model, tokenizer, ids_to_texts, metric, method, layers):
+def with_bert(ids_to_texts, model, tokenizer, metric, method, layers):
 	"""
 	Find distance between strings of text in some input data using Doc2Vec. The preprocessing
 	done to the text strings here is complex, and uses the passed in tokenizer object as well.
@@ -545,21 +545,21 @@ def with_bert(model, tokenizer, ids_to_texts, metric, method, layers):
 	in the helper function for this function.
 	
 	Args:
-	    model (pytorch model): An already loaded BERT PyTorch model from a file or other source.
-	    
-	    tokenizer (bert tokenizer): Object which handles how tokenization specific to BERT is done. 
-	    
 	    ids_to_texts (dict): A mapping between IDs and strings of text.
-	    
+	
+	    model (pytorch model): An already loaded BERT PyTorch model from a file or other source.
+	
+	    tokenizer (bert tokenizer): Object which handles how tokenization specific to BERT is done. 
+	
 	    metric (str): A string indicating which distance metric should be used (e.g., cosine).
-	    
+	
 	    method (str): A string indicating how layers for a token should be combined (concat or sum).
-	    
+	
 	    layers (int): An integer saying how many layers should be used for each token.
 	
 	Returns:
-	   	oats.pairwise.SquarePairwiseDistances: Distance matrix and accompanying information.
-
+	    oats.pairwise.SquarePairwiseDistances: Distance matrix and accompanying information.
+	
 	"""
 
 
